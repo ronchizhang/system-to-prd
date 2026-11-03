@@ -2,6 +2,20 @@
 
 Semantic versioning is not used here; versions track **structural** changes to the deliverable, and each entry states what was wrong rather than what was added. Full narrative history, with the reasoning and the real cases behind each change, lives at the end of [`SKILL.md`](./SKILL.md#七版本记录).
 
+## v6.2 — every change now shows what it replaced
+
+原型里的粉色块只能说明「这里改了」，答不了「原来是什么」——而评审第一个问的就是这句。
+所以给改动加了 `changes` 台账（`id / title / where / before / after / why`），渲染成右侧的
+**改前 → 改后** 对照卡：点原型里那块粉，卡片亮起来；点卡片，原型滚回去。
+
+数据是新增的，不是从 HTML 反推的——原型只留改后的样子，改前那一版已经不在 DOM 里了。
+`schema.py` 同时加了门禁：原型标了而台账没有的编号，直接报错。漏一条不会白屏，
+只会少一张卡，读者以为这处没改过，这种静默缺失比报错难查得多。
+
+顺带修掉一个真实隐患：`FieldController → FormFieldController` 这类替换，
+目标串里含源串（`FormFieldController` 里有 `FieldController`），第二遍会套成
+`FormFormFormFieldController`。现在类名规则带负向断言，并加了一条自愈正则把已套娃的压回去。
+
 ## v6.1 — four lanes, filled in
 
 Defined "four lanes, one reader each" in v6.0 but never said how to fill them. This version adds the test-case lane (three-step cleanup from an xmind tree, every case pinned to a rule), the code lane (plain-language Q&A on top, front-end/back-end mapping below), and entity relations (5–7 top-level entities, each with "who creates it").

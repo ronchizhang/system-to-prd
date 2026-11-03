@@ -2,7 +2,7 @@
 name: system-to-prd
 description: 把正在运行的系统变成一份「能自证的 PRD」。进测试环境（账号由使用者每次现给）逐页实拍，按六源核查（渲染 UI / 后端接口 / 前端代码 / 后端代码 / 用例库 / 业务确认），产出一个单文件 HTML：原型图 + 叙事 8 段 + 测试用例 + 代码栏 + 事实清单，每条结论都能追到出处。两种交付：①现状 PRD——系统现在怎么跑，不标改动；②迭代 PRD——在上一稿上设计下一版，本次改动用粉色标注 + 锚点跳转，开工先问终端/版本/基线/范围。Turn a running system into an evidence-backed PRD: capture every page and dialog, cross-check six sources, emit a single-file HTML where every claim cites its source. Use when the user says 给 XX 模块跑一份 PRD / 按六源核查这个页面 / 把这页重绘成原型 / 该版要改哪些标出来 / 基于上一稿改一版 / 团队分模块后合成全量 PRD；or "run a PRD for module X", "verify this page across sources", "redraw as a prototype", "mark what changed", "merge modules into one master PRD".
 license: MIT
-version: 6.1
+version: 6.2
 ---
 
 # 系统转 PRD
@@ -197,6 +197,25 @@ python scripts/plan_iteration.py --root <工作台> --check    # 四项一致才
 C1…C23 里可能只有 3 处是这一稿改的。不带稿次，总览的「本次改动 20 处」就会被读成「这一稿改了 20 处」——
 这是业务方当场指出过的错读，现在由 `schema.py` 硬拦（缺 `data-draft`、稿次超过 `meta.draft`、同一编号两个稿次，都报错）。
 模块的 `meta.draft` 必须等于 `meta.version` 里的「第 N 稿」，两个数字不一致同样打回。
+
+**每处改动还要在 `changes` 台账里有一条。** 原型里只保留改后的样子，「改前」那一版早就不在 HTML 里了，
+渲染器无从反推——所以必须显式写下来，渲染成右侧那张「改前 → 改后」对照卡：
+
+```json
+"changes": [{
+  "id": "C1", "no": "①", "draft": 2,
+  "title": "列表新增「报名者端可见」一列",
+  "where": "字段列表 · 表头",
+  "before": ["字段名称", "字段类型", "是否必填", "主办方可见", "状态"],
+  "after":  ["字段名称", "字段类型", "是否必填", "主办方可见", "+报名者端可见", "状态"],
+  "why": "主办方反复问「这个字段报名的人到底看不看得到」，以前只能口头解释"
+}]
+```
+
+`before` / `after` 一行一项，`+` 开头=新增（粉色高亮）、`-` 开头=删除（删除线）。
+`id` 必须和原型上的 `data-chg` 同号。漏一条 `schema.py` 直接报错——**漏了不会白屏，只会少一张卡，
+读者会以为这处没改过**，这种静默缺失比报错难查得多。`why` 写动机不写动作：要让三个月后的人看懂
+「当初为什么非改不可」，而不是「改了哪里」——改了哪里看 `before` / `after` 就够了。
 
 ### 9 · 同一个错误被指出第二次，就把它做成门禁
 

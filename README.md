@@ -12,13 +12,21 @@
 
 **[English](#en) ｜ [中文](#zh)**　·　[as-is PRD](./docs/demo-prd.html)　·　[Draft 2 with change marks](./docs/demo-iteration.html)
 
-[![Version](https://img.shields.io/badge/version-6.1-blue)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-6.2-blue)](./CHANGELOG.md)
 [![Python](https://img.shields.io/badge/python-%E2%89%A53.8-blue)](https://www.python.org/)
 [![Dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen)](./scripts)
 [![License](https://img.shields.io/badge/license-MIT-black)](./LICENSE)
 [![Format](https://img.shields.io/badge/agent%20skill-SKILL.md-orange)](./SKILL.md)
 
 ![four lanes](docs/shots/hero.png)
+
+*One file, four lanes — prototype + narrative · test cases · code logic · evidence.*
+*一份文件，四栏：原型 + 叙事 · 测试用例 · 代码逻辑 · 核查。*
+
+![draft 2 with change marks](docs/shots/iteration.png)
+
+*The same file, one draft later. Changes are pink, numbered and clickable, and every one carries a **before → after** card — so nobody has to ask "what did it look like before".*
+*还是这份文件，往后一稿。改动粉标、带编号可点，每一处都配一张 **改前 → 改后** 的对照卡——评审不用再问「原来是什么样」。*
 
 <a id="en"></a>
 
@@ -83,10 +91,16 @@ Models are only now strong enough to read all six and reconcile them. This proje
 
 ![fact ledger](docs/shots/facts.png)
 
-### 6 · Draft 2 — changes in pink, anchored, numbered
+### 6 · Draft 2 — changes in pink, each with a before/after card
 *迭代态：第二稿。粉色虚线框 + 徽标 = 本稿改动，编号可点、可跳转、可发链接指到具体一处。*
 
 ![iteration draft](docs/shots/iteration.png)
+
+*右边那两块是 **改前 / 改后**。原型里的粉色只能说明「这里改了」，答不了「原来是什么」——而评审第一个问的恰恰是这个。所以每一处改动配一张对照卡：点原型里那块粉，卡片会亮起来；点卡片，原型会滚回去。*
+
+*The pink block tells you **that** something changed. It cannot tell you what it was before — which is the first thing anyone asks. So every change carries a before / after card, and the two ends are wired together.*
+
+![before and after](docs/shots/changecase.png)
 
 ## Why it's different
 

@@ -273,6 +273,42 @@ SCHEMA = {
             },
         },
 
+        # ---------------- 改动台账（只有迭代稿才有） ----------------
+        # 为什么必须单独存一份：原型里只剩「改后」的样子，
+        # 「改前」那一版已经不在 HTML 里了，渲染器无从反推。
+        # 而评审时最先被问的恰恰是「原来是什么样」。
+        "changes": {
+            "type": "array",
+            "hint": "本稿改动台账，一处一条；现状稿留空数组。"
+                    "每条写清改前改后，读者不必翻上一稿就能判断这次改得对不对",
+            "items": {
+                "type": "object",
+                "required": ["id", "title", "before", "after"],
+                "additionalProperties": False,
+                "properties": {
+                    "id": {"type": "string", "pattern": r"^C\d{1,2}$",
+                           "hint": "C1、C2……必须和原型里的 data-chg 一模一样，"
+                                   "编号对不上就点不联动"},
+                    "no": {"type": "string",
+                           "hint": "圈码，如 ①。不填就直接显示 id"},
+                    "draft": {"type": "integer",
+                              "hint": "第几稿引入的，和原型标注的 data-draft 一致。"
+                                      "比本稿小的会自动归到「前稿」并收起"},
+                    "title": {"type": "string", "minLength": 4,
+                              "hint": "一句话说清改了什么，不要写成「优化体验」这种"},
+                    "where": {"type": "string",
+                              "hint": "落在哪个页面/弹窗的哪个位置，如「字段列表 · 表头」"},
+                    "before": {"type": "array", "items": {"type": "string"},
+                               "hint": "改前的样子，一行一项。以 - 开头表示这一项被删掉"},
+                    "after": {"type": "array", "items": {"type": "string"},
+                              "hint": "改后的样子，一行一项。以 + 开头表示这一项是新增"},
+                    "why": {"type": "string",
+                            "hint": "写动机不写动作——「为了让 X 不再发生」，"
+                                    "而不是「改了 Y」。评审时被追问的就是这一句"},
+                },
+            },
+        },
+
         # ---------------- ④ 核查 ----------------
         # ---- 以下两块是 v6.0 新增：文档分栏后，用例与代码各归各位 ----
         # 为什么不再塞进叙事：读者是三类人（业务 / 测试 / 研发），
@@ -688,6 +724,17 @@ def _check_chg_draft(d, e):
               "%s 在不同位置标了 %s 个稿次：%s"
               % (k, len(mixed[k]), "、".join("第 %d 稿" % x for x in mixed[k])),
               "同一处改动只能属于一稿。后续又改了它，就把所有标注一起改成新稿次")
+
+    # 第 4 件：原型里标了的每一处，改动台账里都要有对应一条。
+    # 漏写不会报错、不会白屏，只会让右边少一张对照卡——读者以为这处没改过，
+    # 这种「静默缺失」比报错难查得多，所以做成硬门禁。
+    declared = {c.get("id") for c in (d.get("changes") or [])}
+    missing = sorted(set(seen_drafts) - declared, key=lambda x: int(x[1:]))
+    if missing:
+        e.add("changes",
+              "原型标了 %d 处改动，改动台账里没有：%s" % (len(missing), "、".join(missing)),
+              "在 changes 里各补一条，写清 title / before / after / why；"
+              "否则「改前→改后」对照面板里会少这几张卡")
 
 
 # 产品版本 + 稿次的三段式。产品版本可以是任意 Vn.m（后台会换版），稿次必须是「第 N 稿」

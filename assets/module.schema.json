@@ -88,6 +88,16 @@
           "type": "string",
           "minLength": 2
         },
+        "rev": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 99
+        },
+        "draft": {
+          "type": "integer",
+          "minimum": 1,
+          "hint": "本稿稿次（整数）。改动编号是累积的，没有它分不出「本稿改的」和「前几稿累积的」"
+        },
         "owner": {
           "type": "string",
           "hint": "负责人，团队协作时用于回溯"
@@ -559,6 +569,10 @@
               "route": {
                 "type": "string"
               },
+              "from": {
+                "type": "string",
+                "hint": "这帧的实拍来源：snapshot/<key>.json#p1。填了就必须有对应快照和截图，验收会查——这是「不许凭印象画」的凭据"
+              },
               "note": {
                 "type": "string",
                 "hint": "看图时必须交代的事：哪些是示例数据、哪里被裁掉了"
@@ -570,6 +584,226 @@
               }
             }
           }
+        }
+      }
+    },
+    "changes": {
+      "type": "array",
+      "hint": "本稿改动台账，一处一条；现状稿留空数组。每条写清改前改后，读者不必翻上一稿就能判断这次改得对不对",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "before",
+          "after"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^C\\d{1,2}$",
+            "hint": "C1、C2……必须和原型里的 data-chg 一模一样，编号对不上就点不联动"
+          },
+          "no": {
+            "type": "string",
+            "hint": "圈码，如 ①。不填就直接显示 id"
+          },
+          "draft": {
+            "type": "integer",
+            "hint": "第几稿引入的，和原型标注的 data-draft 一致。比本稿小的会自动归到「前稿」并收起"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 4,
+            "hint": "一句话说清改了什么，不要写成「优化体验」这种"
+          },
+          "where": {
+            "type": "string",
+            "hint": "落在哪个页面/弹窗的哪个位置，如「字段列表 · 表头」"
+          },
+          "before": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "hint": "改前的样子，一行一项。以 - 开头表示这一项被删掉"
+          },
+          "after": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "hint": "改后的样子，一行一项。以 + 开头表示这一项是新增"
+          },
+          "why": {
+            "type": "string",
+            "hint": "写动机不写动作——「为了让 X 不再发生」，而不是「改了 Y」。评审时被追问的就是这一句"
+          }
+        }
+      }
+    },
+    "testcases": {
+      "type": "array",
+      "hint": "测试用例规整。从 用例库库取回后统一成一种形态，一条一个功能点，标出它验证的是哪条业务规则。没有就留空数组，别编",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "group",
+          "title",
+          "pre",
+          "steps",
+          "expect"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 3,
+            "hint": "沿用用例库编号（如 TC-WDR-012）；没有编号就用 TC-<模块缩写>-序号"
+          },
+          "group": {
+            "type": "string",
+            "minLength": 2,
+            "hint": "功能点分组：列表 / 筛选 / 详情 / 导出 …，同一组排在一起"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 4,
+            "hint": "这条用例验什么，一句话"
+          },
+          "pre": {
+            "type": "string",
+            "hint": "前提：什么数据、什么账号、什么状态；没有写「无」"
+          },
+          "steps": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            },
+            "hint": "操作步骤，一步一句，不夹断言"
+          },
+          "expect": {
+            "type": "string",
+            "minLength": 4,
+            "hint": "预期结果，必须可判定（看到什么、变成什么状态）"
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "hint": "这条用例守的是哪几条 R-xxx。填了就能从规则点过来"
+          },
+          "norule": {
+            "type": "string",
+            "hint": "确实没有对应规则时写为什么（如「页面通用行为：筛选与分页」）。空着不写会被门禁当成漏挂"
+          },
+          "src": {
+            "type": "string",
+            "hint": "用例来源：用例库 / 业务口述 / 本次补写"
+          },
+          "gap": {
+            "type": "string",
+            "hint": "用例与现状不一致、或本次改动后必须重写的地方，写在这里"
+          }
+        }
+      }
+    },
+    "code": {
+      "type": "object",
+      "hint": "代码逻辑。上半段用大白话讲「这个数谁算的、什么时候算、失败会怎样」，下半段给研发的对照（页面 → 组件 → 接口 → 字段）。两块都要，因为业务方看上半段就能判断对不对，研发看下半段就能动手",
+      "additionalProperties": false,
+      "properties": {
+        "plain": {
+          "type": "array",
+          "minItems": 1,
+          "hint": "大白话段：一段一件事，说清「谁算的 / 什么时候算 / 算不出来怎么办」",
+          "items": {
+            "type": "object",
+            "required": [
+              "q",
+              "a"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "q": {
+                "type": "string",
+                "minLength": 4,
+                "hint": "业务方真的会问的那句话：这个金额是谁算的？"
+              },
+              "a": {
+                "type": "string",
+                "minLength": 8,
+                "hint": "大白话回答，不用技术词"
+              }
+            }
+          }
+        },
+        "fe": {
+          "type": "array",
+          "hint": "前端对照：页面 / 组件 / 取数 / 校验时机",
+          "items": {
+            "type": "object",
+            "required": [
+              "where",
+              "what"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "where": {
+                "type": "string",
+                "minLength": 2,
+                "hint": "页面或组件位置"
+              },
+              "what": {
+                "type": "string",
+                "minLength": 4,
+                "hint": "这个位置做什么、数据从哪来"
+              },
+              "path": {
+                "type": "string",
+                "hint": "文件或路由，可留空"
+              }
+            }
+          }
+        },
+        "be": {
+          "type": "array",
+          "hint": "后端对照：接口 / 表 / 关键判断",
+          "items": {
+            "type": "object",
+            "required": [
+              "where",
+              "what"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "where": {
+                "type": "string",
+                "minLength": 2,
+                "hint": "接口或表名"
+              },
+              "what": {
+                "type": "string",
+                "minLength": 4,
+                "hint": "它做什么、返回什么判定"
+              },
+              "path": {
+                "type": "string",
+                "hint": "代码位置，可留空"
+              }
+            }
+          }
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "hint": "技术侧遗留风险：并发、超时、精度… 一条一句"
         }
       }
     },
