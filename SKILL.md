@@ -398,7 +398,7 @@ S3 不是对照表、S7 不是四列表、S1 缺五要素 → **WARN**。
 |:--|:--|:--|
 | 接口地址 | `POST /demo/activity/refund/submit` | 「出纳点『确认结算』后，系统把这批单交给银行通道」 |
 | 返回 / 业务字段 | `refundId`、`refund_amount`、`refund_channel` | 「这批单」「本单总金额」「界面上那列『支付协议』」 |
-| 常量 / 枚举名 | `Constant.TICKET_CORP`、`TICKET_SWITCH_LOCK_FORMAT` | 「企业内训票 项目」「同一个人在同一次结算里的锁」 |
+| 常量 / 枚举名 | `Constant.TICKET_GROUP`、`TICKET_SWITCH_LOCK_FORMAT` | 「企业内训票 项目」「同一个人在同一次结算里的锁」 |
 | 表名 / 状态码 | `payment_pending`、`in_progress` | 「待结算」「结算中」 |
 | 实现手段 | 落库、幂等、序列化、schema、轮询、回调 | 换成**它保证了什么**：「存下来」「重复点也只生效一次」「把当时那张单原样复印一份」 |
 

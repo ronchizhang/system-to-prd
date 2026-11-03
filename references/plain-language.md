@@ -15,7 +15,7 @@
 | **接口地址** | `POST /demo/activity/refund/submit` | 「出纳点『确认结算』后，系统把这批单交给银行通道」 | 附录 B |
 | **返回字段** | `refundId`、`refund_amount`、`order_id` | 「这批单」「本单总金额」 | 附录 B |
 | **业务字段名** | `paymentMethod`、`refund_channel` | 界面上那一列的字：「打款方式」「支付协议」 | 附录 B |
-| **常量 / 枚举名** | `Constant.TICKET_CORP`、`TICKET_SWITCH_LOCK_FORMAT` | 「企业内训票 项目」「同一个人在同一次结算里的锁」 | 附录 B |
+| **常量 / 枚举名** | `Constant.TICKET_GROUP`、`TICKET_SWITCH_LOCK_FORMAT` | 「企业内训票 项目」「同一个人在同一次结算里的锁」 | 附录 B |
 | **表名 / 状态码** | `payment_pending`、`in_progress`、`transitions` | 「待结算」「结算中」 | 附录 B |
 | **实现手段** | 落库、幂等、序列化、schema、轮询、回调 | 说**它保证了什么**：见下表 | 附录 B |
 | **页面路径** | `管理后台 → 财务管理 → 结算工作台` | 照写，**这个要留** | 正文 |
