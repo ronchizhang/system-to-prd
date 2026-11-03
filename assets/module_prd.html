@@ -897,6 +897,41 @@ body.onlycur .doc .dwip.old > .dchg-bd{display:none}
 .wire circle{fill:#EC407A}
 @keyframes wireRun{to{stroke-dashoffset:-11}}
 
+/* 改动对照：改前 / 改后 并排。
+   原型里那块粉色只说明「这里改了」，说不出「原来长什么样」——
+   而评审时最先被问的恰恰是「原来是什么」。所以每一处改动配一张对照卡。 */
+.ccase{margin:6px 0 20px}
+.ccase-hd{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.ccase-hd b{font-size:13.5px;color:#B0244F}
+.ccase-hd span{font-size:11.5px;color:#9A7B86}
+.cc{background:#fff;border:1px solid #F3D6E1;border-radius:10px;padding:11px 13px 10px;
+  margin:9px 0;cursor:pointer;transition:box-shadow .18s,border-color .18s}
+.cc:hover{border-color:#EC9BB8;box-shadow:0 3px 12px rgba(236,64,122,.10)}
+.cc.on{border-color:#EC407A;box-shadow:0 0 0 2px rgba(236,64,122,.22),0 6px 18px rgba(236,64,122,.16)}
+.cc-hd{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;margin-bottom:9px}
+.cc-no{font:600 10px/1 -apple-system,"PingFang SC";color:#fff;background:#EC407A;
+  border-radius:9px;padding:3px 7px;flex:none}
+.cc-tt{font-size:12.5px;font-weight:600;color:#3A2A31}
+.cc-where{font-size:10.5px;color:#9A7B86;font-family:var(--mono)}
+.cc-row{display:grid;grid-template-columns:1fr 16px 1fr;gap:7px;align-items:stretch}
+.cc-ar{display:flex;align-items:center;justify-content:center;color:#E0A8BD;font-size:12px}
+.cc-side{border-radius:7px;padding:8px 9px;min-width:0}
+.cc-side.bf{background:#F7F8FA;border:1px solid #E7EAF0}
+.cc-side.af{background:#FFF5F8;border:1px solid #F7CBDA}
+.cc-tag{display:block;font:600 9.5px/1 -apple-system,"PingFang SC";letter-spacing:.04em;
+  color:#8A93A0;margin-bottom:6px}
+.cc-side.af .cc-tag{color:#B0244F}
+.cc-li{font-size:11.5px;line-height:1.8;color:#4A3B42;display:flex;gap:5px;word-break:break-word}
+.cc-li em{font-style:normal;font-family:var(--mono);font-size:10px;color:#C3CAD3;flex:none;width:8px}
+.cc-li.add{color:#B0244F;font-weight:600;background:rgba(255,77,121,.09);border-radius:3px}
+.cc-li.add em{color:#EC407A}
+.cc-li.del{color:#A8AFB8;text-decoration:line-through}
+.cc-why{margin-top:8px;font-size:11px;line-height:1.75;color:#6E5A63;
+  border-top:1px dashed #F0DDE5;padding-top:7px}
+.cc-why b{color:#B0244F;font-weight:600;margin-right:5px}
+/* 只看当前态时，前稿的对照卡一起收起来，跟原型和叙事保持一致 */
+body.onlycur .cc.old{display:none}
+
 /* 叙事里的改动块 */
 .doc .dchg{position:relative;background:#FFF5F8;border-left:3px solid #F06292;
   padding:12px 14px 11px 16px;border-radius:0 8px 8px 0;margin:13px 0;transition:box-shadow .2s}
@@ -1646,6 +1681,63 @@ function fillPChg(){
   box.innerHTML = html;
 }
 
+/* 改动对照面板：把「改前 / 改后」并排画出来。
+   数据必须来自 PRD_DATA.changes —— 不能从原型反推，因为原型里只剩改后的样子，
+   「改前」那一版已经不在 DOM 里了。这也是为什么 fillPChg 能自动生成改动条，
+   却生成不了对照卡。 */
+function fillChgCase(){
+  var host = document.getElementById("doc");
+  if (!host) return;
+  var prev = document.getElementById("ccase");
+  if (prev && prev.parentNode) prev.parentNode.removeChild(prev);
+  var list = (window.PRD_DATA && window.PRD_DATA.changes) || [];
+  if (!list.length) return;
+
+  function col(tag, arr, cls){
+    var rows = (arr || []).map(function(t){
+      t = String(t);
+      var k = "", body = t, mark = "·";
+      // 全角 ＋ － 也要认：数据是中文写的，输入法很容易打成全角，
+      // 只认半角的话「删除线」会静默失效，而作者以为标了
+      var c0 = t.charAt(0);
+      if (c0 === "+" || c0 === "＋") { k = "add"; body = t.slice(1); mark = "+"; }
+      else if (c0 === "-" || c0 === "－" || c0 === "—") { k = "del"; body = t.slice(1); mark = "−"; }
+      return '<div class="cc-li ' + k + '"><em>' + mark + '</em><span>' + esc(body) + '</span></div>';
+    }).join("");
+    return '<div class="cc-side ' + cls + '"><span class="cc-tag">' + tag + '</span>' + rows + '</div>';
+  }
+
+  var h = '<div class="ccase" id="ccase"><div class="ccase-hd"><b>本稿改动对照</b>'
+        + '<span>点原型里的粉色块，或点下面任意一张卡 —— 两边会互相对上</span></div>';
+  list.forEach(function(c){
+    var cur = PROTO.draft;
+    var isOld = c.draft && cur && c.draft !== cur;
+    h += '<div class="cc chg-jump' + (isOld ? " old" : "") + '" data-chg="' + esc(c.id) + '"'
+       + ' data-draft="' + (c.draft || "") + '" id="cc-' + esc(c.id) + '">'
+       + '<div class="cc-hd"><span class="cc-no">改' + esc(c.no || c.id) + '</span>'
+       + '<span class="cc-tt">' + esc(c.title || "") + '</span>'
+       + (c.where ? '<span class="cc-where">' + esc(c.where) + '</span>' : "")
+       + '</div><div class="cc-row">'
+       + col("改前", c.before, "bf")
+       + '<div class="cc-ar">→</div>'
+       + col("改后", c.after, "af")
+       + '</div>'
+       + (c.why ? '<div class="cc-why"><b>为什么改</b>' + esc(c.why) + '</div>' : "")
+       + '</div>';
+  });
+  h += '</div>';
+  host.insertAdjacentHTML("afterbegin", h);
+}
+
+/* 联动：wireTo 选了哪处改动，就把对应卡片点亮 */
+function markCase(id){
+  Array.prototype.forEach.call(document.querySelectorAll(".cc"), function(e){
+    var on = e.getAttribute("data-chg") === id;
+    e.classList.toggle("on", on);
+    if (on) landOn(e);
+  });
+}
+
 /* 给每个带稿次的标注打 .old 标记。「只看本稿」和胶囊分组都靠它，
    不在 CSS 里比数字——样式表不知道本稿是第几稿。 */
 function markDraft(){
@@ -1981,6 +2073,7 @@ document.getElementById("aiBody").innerHTML = renderAI();
 renderCases();
 renderProto();
 markDraft();          // 叙事里的改动块也要按稿次分「本稿 / 前稿」
+fillChgCase();        // 改动对照卡：改前 / 改后 并排
 if (ONLYCUR) document.body.classList.add("onlycur");
 renderFacts();
 bind();
@@ -2090,19 +2183,24 @@ function wireTo(id, keep){
   if (!n.px.length || !n.doc.length) {
     // 只有一头存在（改③ 这种纯规则改动，页面上没有对应块）：只高亮能高亮的那头
     (n.doc.length ? n.doc : n.px).forEach(function(e){ e.classList.add('wired'); });
-    var box = pickDocTarget(n.doc) || n.doc[0] || n.px[0];
+    var box = document.getElementById('cc-' + id) || pickDocTarget(n.doc) || n.doc[0] || n.px[0];
     if (box) { box.scrollIntoView({block: 'center', behavior: 'auto'}); landOn(box); }
+    markCase(id);
     return;
   }
   // 滚动目标要挑「改动点正文块」，不能拿文档最上面索引里的那颗小标签——
   // 它们带同一个 data-chg，取 doc[0] 就会滚到文档最顶端（2026-11-03 业务方指出）
   var docTarget = pickDocTarget(n.doc);
-  var pxEl = n.px[0], docEl = docTarget || n.doc[0];
+  var pxEl = n.px[0];
+  // 有「改前/改后」对照卡时优先滚到卡：读者点改动，要的是「原来长什么样」，
+  // 正文块说的还是改后的事，答不了这一问。
+  var docEl = document.getElementById('cc-' + id) || docTarget || n.doc[0];
   pxEl.scrollIntoView({block: 'center', behavior: 'auto'});
   if (docEl) docEl.scrollIntoView({block: 'center', behavior: 'auto'});
   n.px.forEach(function(e){ e.classList.add('wired'); });
   n.doc.forEach(function(e){ e.classList.add('wired'); });
   if (docEl) landOn(docEl);
+  markCase(id);
   paint(id);
 }
 document.addEventListener('click', function(e){

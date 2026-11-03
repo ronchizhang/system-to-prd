@@ -22,7 +22,15 @@
   "apis": [{"method":"POST","path":"/x/y","purpose":"…","auth":"…","evidence":"…"}],
   "questions": [{"id":"Q-01","title":"…","why":"…","ask":"…"}],
   "dialogs": [{"type":"弹窗","name":"…","entry":"…","route":"…","covered":true}],
-  "layout": "yaml 文本"
+  "layout": "yaml 文本",
+
+  // 只有迭代稿需要：改动台账。id 必须与原型上的 data-chg 同号，
+  // 漏一条 schema 就报错——因为漏了不白屏，只会少一张对照卡。
+  "changes": [{"id":"C1","no":"①","draft":2,"title":"列表新增一列",
+               "where":"字段列表 · 表头",
+               "before":["字段名称","状态"],
+               "after": ["字段名称","+报名者端可见","状态"],
+               "why":"主办方反复问这一列看不看得到，做成列就不用解释了"}]
 }
 """
 

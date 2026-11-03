@@ -107,6 +107,44 @@ class IterationDraft(unittest.TestCase):
             self.assertGreaterEqual(html.count("data-chg="), 2, "改动标注少于 2 处")
             self.assertIn("chg-col", html, "列级改动没有被渲染")
 
+    def test_change_cards_are_rendered(self):
+        """改动台账要变成「改前 / 改后」对照卡，而不只是数据躺在 JSON 里。"""
+        path = os.path.join(ROOT, "assets", "example_iteration.json")
+        data = load(path)
+        self.assertTrue(data.get("changes"), "示例缺 changes 台账")
+        with tempfile.TemporaryDirectory() as tmp:
+            out = os.path.join(tmp, "d2.html")
+            r = run(os.path.join(SCRIPTS, "build_module_prd.py"),
+                    "--data", path, "--out", out, "--strict")
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            html = read(out)
+            # 对照卡是运行时由 JS 画的，静态产物里只有图样与数据，不会出现 id="cc-C1"
+            self.assertIn("本稿改动对照", html, "没有改动对照面板")
+            self.assertIn("fillChgCase", html, "没有渲染函数")
+            for c in data["changes"]:
+                self.assertIn('"id": "%s"' % c["id"], html,
+                              "changes 里的 %s 没注进产物" % c["id"])
+            self.assertIn('"before"', html)
+            self.assertIn('"after"', html)
+
+    def test_missing_change_entry_breaks_the_build(self):
+        """原型标了改动、台账漏写 —— 必须报错。
+
+        这一条是「门禁要能抓」的证明：漏写不会白屏、不会抛异常，
+        只会让右边少一张对照卡，读者以为这处没改过。
+        """
+        import copy
+        data = copy.deepcopy(load(os.path.join(ROOT, "assets", "example_iteration.json")))
+        dropped = data["changes"].pop()["id"]
+        with tempfile.TemporaryDirectory() as tmp:
+            bad = os.path.join(tmp, "bad.json")
+            with open(bad, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False)
+            r = run(os.path.join(SCRIPTS, "build_module_prd.py"),
+                    "--data", bad, "--out", os.path.join(tmp, "x.html"), "--strict")
+            self.assertNotEqual(r.returncode, 0, "台账漏了 %s，构建居然通过了" % dropped)
+            self.assertIn(dropped, r.stdout + r.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()
