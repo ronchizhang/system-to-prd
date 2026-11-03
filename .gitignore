@@ -1,0 +1,21 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+*.log
+
+# 工作台产物：属于用户自己的项目，不进仓库
+prd-run/
+prd-*/
+modules/
+facts/
+out/
+snapshot/
+*.facts.json
+
+# 临时凭据
+*_token.json
+*.token
+.env
+
+# 本地构建产物
+build/

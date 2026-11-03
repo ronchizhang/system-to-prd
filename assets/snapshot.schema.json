@@ -1,0 +1,44 @@
+{
+  "schema": "snapshot/1.0",
+  "engine": "system-to-prd@2.0",
+  "_说明": "snapshot_page.py 的输出格式。它只是原型帧的来源凭据，不是交付物本身；团队不用手写，由脚本生成。",
+  "key": "模块 key，如 ops-person-field",
+  "base": "抓取时用的站点根地址（必须是测试环境）",
+  "capturedAt": "抓取时间 ISO8601",
+  "frames": [
+    {
+      "page": "帧页号 p1 / p2 …，被原型帧的 from 引用",
+      "name": "帧名字，默认取页面标题",
+      "route": "真实路由（相对路径，不含域名）",
+      "url": "抓取时的完整 URL",
+      "title": "页面标题（从 DOM 抽）",
+      "desc": "页面描述文字（标题下方那段说明）",
+      "crumb": ["面包屑", "逐级"],
+      "tabs": [{"t": "页签名", "on": true}],
+      "inModal": "true 表示这一帧抓的是弹窗/抽屉内部",
+      "dialogTitle": "弹窗标题",
+      "openedBy": "点了哪个按钮打开的（plan 里的 open）",
+      "topNav": [{"t": "顶栏菜单", "on": "是否当前选中"}],
+      "sideNav": [{"t": "侧栏菜单", "sub": "是否二级", "on": "是否选中"}],
+      "groups": [
+        {"name": "分组名（折叠面板头）", "open": true,
+         "fields": [{"name": "字段名", "type": "text|select|date|radio|checkbox|upload|number|textarea",
+                     "required": true, "disabled": false, "placeholder": "", "value": "",
+                     "options": ["选项"], "hint": "字段下方说明"}]}
+      ],
+      "tables": [
+        {"caption": "卡片/面板标题", "th": ["列名"],
+         "rows": [[{"text": "单元格文本", "tag": "若原本是彩色标签则填这里"}]],
+         "rowCount": "实拍到的行数"}
+      ],
+      "listItems": ["弹窗里既非表单也非表格的自定义列表项，按纵向顺序"],
+      "buttons": [{"text": "按钮文案", "primary": false, "danger": false, "link": false, "disabled": false}],
+      "total": "共 N 条",
+      "pager": ["1", "2"],
+      "empty": "空态文案",
+      "cards": ["卡片标题"],
+      "dims": {"sidebar": 216, "header": 1680, "modal": 0},
+      "shot": "实拍截图文件名，存在 snapshot/shots/ 下"
+    }
+  ]
+}
