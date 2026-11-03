@@ -4,17 +4,18 @@
 
 `Capture · 取证` ｜ `Evolve · 演进` ｜ `Merge · 收敛`
 
-**[English](#en) ｜ [中文](#zh)**
+> **AI 来了，所有人都在问：新的产研协同到底长什么样。**
+> 卡点不在模型，在于产品、测试、技术的信息从来不在同一个地方——就算都在，也对不齐。产品文档尤其乱，图和文对不上号。
+> 与其缝缝补补，不如推倒重来：用 AI 重写一套 PRD 的模板。以后写 PRD 不是填 Excel、不是用在线文档工具，而是**直接跟 AI 对话，把它迭代出来**。
+>
+> *Most PRDs are written from memory. This one is written from evidence.*
 
-> Most PRDs are written from memory. This one is written from evidence.
-> 大多数 PRD 是凭记忆写的。这一份是凭证据写的。
+**[English](#en) ｜ [中文](#zh)**　·　[as-is PRD](./docs/demo-prd.html)　·　[Draft 2 with change marks](./docs/demo-iteration.html)
 
 [![Python](https://img.shields.io/badge/python-%E2%89%A53.8-blue)](https://www.python.org/)
 [![Dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen)](./scripts)
 [![License](https://img.shields.io/badge/license-MIT-black)](./LICENSE)
 [![Format](https://img.shields.io/badge/agent%20skill-SKILL.md-orange)](./SKILL.md)
-
-👉 **Live sample:** [as-is PRD](./docs/demo-prd.html) · [Draft 2 with change marks](./docs/demo-iteration.html) — single files, work offline.
 
 ![four lanes](docs/shots/hero.png)
 
@@ -99,6 +100,21 @@ GitHub already has hundreds of PRD tools. Almost all of them take an **idea** as
 | Second version | regenerate from scratch | Draft 2, change-marked, anchored |
 | Six modules | six documents | one consolidated PRD |
 
+## Bring your own sources
+
+The reference workflow reads test cases from a knowledge base and code from a code host. Those are **two examples, not two requirements**.
+
+| What you have | How it gets read |
+|:--|:--|
+| Notion · Feishu · Yuque · Confluence · TestRail · any searchable knowledge base | connector, if one exists |
+| an `.xmind` · `.md` · `.csv` · `.xlsx` sitting in a folder | read straight from disk |
+| GitHub · GitLab · self-hosted Git · a local clone | code-host CLI, or `harvest.py be --local <path>` |
+| nothing but a browser and a person who remembers | ask them, and label the source as verbal |
+
+What it will **not** do is pretend. A source it could not read is marked with a status and a reason, and the deliverable states how many sources it actually verified: **≥4 is normal, 2–3 gets flagged at the top, 1 produces a single-source draft, 0 refuses to start.**
+
+Recipe for wiring a new connector in 30 minutes — three hard requirements (read-only, idempotent, never stores credentials), a three-step acceptance test, and three integration levels — in [`references/sources-adapters.md`](./references/sources-adapters.md).
+
 ## Recommended setup
 
 | Layer | Works with | Notes |
@@ -142,7 +158,7 @@ assets/
   module.schema.json      data contract, human-readable
   example_module.json     complete fictional sample — as-is PRD
   example_iteration.json  the same module as Draft 2, with change marks
-references/               17 deep-dive docs
+references/               18 deep-dive docs
 scripts/                  24 zero-dependency Python tools
 docs/shots/               the screenshots above
 tests/                    smoke tests, including "the gate must go red"
@@ -195,6 +211,21 @@ Zero third-party dependencies. Python ≥ 3.8.
 | **代码逻辑** | 上半段大白话，下半段前后端对照 | 研发（上半段业务也能看） |
 | **核查** | 33 条事实，每条追得到来源 | 所有人，尤其不想背锅的人 |
 | **迭代态** | 第 2 稿，粉色 = 本稿改动 | 评审时所有人 |
+
+### 用例库和代码仓不绑定任何产品
+
+样本是从「能连知识库 + 能连代码托管」的环境里跑出来的，但那只是一种组合：
+
+| 你手上是什么 | 它怎么读 |
+|:--|:--|
+| Notion / 飞书 / 语雀 / Confluence / TestRail / 任何可搜的知识库 | 有连接器就用连接器 |
+| 一个 `.xmind`、`.md`、`.csv`、`.xlsx`，放在目录里 | 直接读文件 |
+| GitHub / GitLab / 自建 Git / 本机 clone | 托管平台 CLI，或 `harvest.py be --local <路径>` |
+| 只有一个浏览器，和一个记得住的人 | 问他，并把这一源标成「口述」 |
+
+它**不会装作读过**。没读到的源会带状态和原因，交付里会写明这次到底核了几个源：**≥4 正常，2–3 顶部标出来，1 出单源稿，0 拒绝开工。**
+
+接一个新连接器的最短路径（只读 / 幂等 / 不落凭据 三条硬要求 + 三步验收 + 三种接入方式）见 [`references/sources-adapters.md`](./references/sources-adapters.md)。
 
 ### 跑通需要的组合
 
