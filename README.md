@@ -12,6 +12,7 @@
 
 **[English](#en) ｜ [中文](#zh)**　·　[as-is PRD](./docs/demo-prd.html)　·　[Draft 2 with change marks](./docs/demo-iteration.html)
 
+[![Version](https://img.shields.io/badge/version-6.1-blue)](./CHANGELOG.md)
 [![Python](https://img.shields.io/badge/python-%E2%89%A53.8-blue)](https://www.python.org/)
 [![Dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen)](./scripts)
 [![License](https://img.shields.io/badge/license-MIT-black)](./LICENSE)
