@@ -10,7 +10,9 @@
 >
 > *Most PRDs are written from memory. This one is written from evidence.*
 
-**[English](#en) ｜ [中文](#zh)**　·　[as-is PRD](./docs/demo-prd.html)　·　[Draft 2 with change marks](./docs/demo-iteration.html)
+**[English](#en) ｜ [中文](#zh)**　·　[▸ 在线看](https://ronchizhang.github.io/system-to-prd/)　·　[as-is PRD](https://ronchizhang.github.io/system-to-prd/demo-prd.html)　·　[Draft 2 with change marks](https://ronchizhang.github.io/system-to-prd/demo-iteration.html)
+
+[![Live demo](https://img.shields.io/badge/live%20demo-online-brightgreen)](https://ronchizhang.github.io/system-to-prd/)
 
 [![Version](https://img.shields.io/badge/version-6.2-blue)](./CHANGELOG.md)
 [![Python](https://img.shields.io/badge/python-%E2%89%A53.8-blue)](https://www.python.org/)
