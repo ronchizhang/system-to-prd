@@ -280,7 +280,7 @@ B │ 菜单 + 基线稿 │  ───▶       （同一套命令、同一套�
 迭代 PRD 里，「改动说明」常常在主文档、对应原型在另一栏，或者反过来。要能一键跳过去。
 
 ```html
-<span class="golink" data-goto="r-demo-stl-09">R-AWX-PWB-09</span>
+<span class="golink" data-goto="r-demo-stl-09">R-DEMO-STL-09</span>
 ```
 
 规矩：
