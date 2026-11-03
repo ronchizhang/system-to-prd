@@ -17,7 +17,7 @@
 
     # 源4 后端码：读一个文件（代码仓库 或本地仓库都可）
     python3 harvest.py be --repo acme/events/form-service \\
-        --path geo-backstage-app/src/.../FormFieldController.java -o be_ctrl.txt
+        --path form-service/src/.../FormFieldController.java -o be_ctrl.txt
     python3 harvest.py be --local /path/to/repo --path <相对路径> -o be_ctrl.txt
     python3 harvest.py be-list --repo <完整路径> --path <目录>
 

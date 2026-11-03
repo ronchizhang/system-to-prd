@@ -40,7 +40,7 @@ CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 **免登录：把 token 塞进 localStorage**
 
 ```python
-p.evaluate("localStorage.setItem('geoAdminToken', %s)" % json.dumps(tok))
+p.evaluate("localStorage.setItem('demoAdminToken', %s)" % json.dumps(tok))
 p.send("Page.navigate", {"url": target})
 ```
 
