@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>system-to-prd · 一份能自证的 PRD</title>
+<style>
+:root{
+  --deep:#0B2E4E; --blue:#1E6FD9; --mid:#346FC5; --pink:#EC407A;
+  --sub:#5C6F84; --line:#E3EAF2; --bg:#F7FAFD; --card:#fff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",Arial,sans-serif;
+  color:#3A4A5C;background:var(--bg);font-size:15px;line-height:1.7;
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;display:flex;align-items:center;justify-content:center;padding:48px 22px;
+}
+.wrap{width:100%;max-width:760px}
+.eyebrow{
+  display:inline-block;font-size:11px;letter-spacing:.14em;font-weight:700;
+  color:var(--blue);background:#EAF2FD;border-radius:5px;padding:4px 9px;margin-bottom:16px;
+}
+h1{font-size:30px;line-height:1.35;color:var(--deep);font-weight:700;letter-spacing:-.2px}
+h1 em{font-style:normal;color:var(--blue)}
+.en{margin-top:9px;font-size:14px;color:var(--sub);font-style:italic}
+.strip{display:flex;gap:10px;flex-wrap:wrap;margin:22px 0 30px;font-size:12.5px;color:var(--sub)}
+.strip span{background:#fff;border:1px solid var(--line);border-radius:20px;padding:4px 12px}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:640px){.cards{grid-template-columns:1fr}}
+a.card{
+  display:block;text-decoration:none;background:var(--card);border:1px solid var(--line);
+  border-radius:13px;padding:18px 19px 16px;transition:.18s;position:relative;overflow:hidden;
+}
+a.card:hover{border-color:#BBD3F0;transform:translateY(-2px);box-shadow:0 8px 26px rgba(11,46,78,.09)}
+a.card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:#CBD9E8}
+a.card.pink::before{background:var(--pink)}
+a.card.blue::before{background:var(--blue)}
+.card .t{font-size:15.5px;font-weight:700;color:var(--deep);margin-bottom:5px}
+.card .d{font-size:12.5px;color:var(--sub);line-height:1.65}
+.card .go{margin-top:11px;font-size:12px;font-weight:600;color:var(--blue)}
+a.card.pink .go{color:#C2185B}
+.foot{margin-top:26px;font-size:12.5px;color:#8595A6;line-height:1.9;border-top:1px solid var(--line);padding-top:16px}
+.foot a{color:var(--blue);text-decoration:none}
+.foot a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <span class="eyebrow">AGENT SKILL · MIT</span>
+
+  <h1>把跑着的系统，变成一份<em>能自证</em>的 PRD</h1>
+  <p class="en">Turn a running system into a PRD that cites its sources.</p>
+
+  <div class="strip">
+    <span>原型 + 叙事</span><span>测试用例</span><span>代码逻辑</span><span>事实核查</span><span>改前 / 改后</span>
+  </div>
+
+  <div class="cards">
+    <a class="card blue" href="./demo-prd.html">
+      <div class="t">现状稿 · 一个模块的完整 PRD</div>
+      <div class="d">四栏并排：左边是系统长什么样，右边是它为什么这样。每条结论都追得到来源。</div>
+      <div class="go">打开看看 →</div>
+    </a>
+    <a class="card pink" href="./demo-iteration.html">
+      <div class="t">第二稿 · 改动带改前 / 改后</div>
+      <div class="d">同一份文件往后一稿。改动粉标、编号可点，每处配一张对照卡：原来是什么，改成了什么。</div>
+      <div class="go">对比一下 →</div>
+    </a>
+  </div>
+
+  <div class="foot">
+    这两份都是真实产出的单文件 HTML，离线可开、不加载任何外部资源。<br>
+    源码与安装说明在 <a href="https://github.com/ronchizhang/system-to-prd">GitHub</a> ·
+    <a href="https://github.com/ronchizhang/system-to-prd/blob/main/README.md">README</a> ·
+    <a href="https://github.com/ronchizhang/system-to-prd/blob/main/LICENSE">License</a>
+  </div>
+
+</div>
+</body>
+</html>
