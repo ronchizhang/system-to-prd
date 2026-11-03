@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>PRD 阅读器骨架</title>
+<!--
+  用法：整份复制，改三处即可投产
+    1. MODULES 数组 —— 模块与页面清单（唯一数据源）
+    2. PAGES 对象  —— 每个页面 key 对应的 HTML 字符串
+    3. DOCS 对象   —— 每个页面 key 对应的文档 HTML
+  设计要点见 references/reader-shell.md，样式坑见 references/css-pitfalls.md
+-->
+<style>
+:root{
+  --ink:#1D2939; --text2:#5C6F84; --text3:#8C99AB;
+  --line:#E3E8EF; --brand:#1677FF; --bg:#F2F4F7;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font:14px/1.6 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+  color:var(--ink);background:var(--bg);height:100vh;display:flex;flex-direction:column;}
+
+/* 顶栏 */
+.top{height:56px;background:#fff;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;padding:0 20px;gap:28px;flex:0 0 auto;}
+.top .lg{display:flex;align-items:baseline;gap:10px;flex:0 0 auto;}
+.top .lg b{font-size:15px;}
+.top .lg i{font-style:normal;font-size:11.5px;color:var(--text3);}
+.tabs{display:flex;gap:4px;overflow-x:auto;}
+.tab{padding:6px 12px;border-radius:7px;font-size:13px;color:var(--text2);
+  cursor:pointer;white-space:nowrap;transition:background .15s;}
+.tab:hover{background:#F5F7FA;}
+.tab.on{background:#EFF5FF;color:var(--brand);font-weight:500;}
+.tab u{text-decoration:none;font-size:10.5px;opacity:.6;margin-left:4px;}
+.tools{margin-left:auto;display:flex;gap:8px;flex:0 0 auto;}
+.btn{height:28px;padding:0 12px;border:1px solid var(--line);background:#fff;
+  border-radius:6px;font-size:12px;color:var(--text2);cursor:pointer;}
+.btn.on{background:#EFF5FF;border-color:#B5D4F4;color:var(--brand);}
+
+/* 模块内 chip 行；单页模块自动隐藏 */
+.chb{height:0;overflow:hidden;background:#fff;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:8px;padding:0 20px;flex:0 0 auto;
+  transition:height .15s;}
+.chb.show{height:44px;}
+.chip{padding:4px 11px;border-radius:14px;font-size:12px;color:var(--text2);
+  border:1px solid var(--line);cursor:pointer;white-space:nowrap;}
+.chip.on{background:#EFF5FF;border-color:#B5D4F4;color:var(--brand);}
+
+/* 主体 */
+.main{flex:1;display:flex;min-height:0;}
+.stage{flex:1;min-width:0;overflow:auto;padding:16px;}
+.stage .box{background:#fff;border-radius:10px;border:1px solid var(--line);
+  overflow:hidden;height:100%;}
+#cv{width:100%;height:100%;border:0;display:block;}
+
+/* 文档栏：min-width:0 必须写，否则宽表格会把页面区挤成一条缝 */
+.doc{width:524px;flex:0 0 auto;min-width:0;background:#fff;
+  border-left:1px solid var(--line);overflow-y:auto;padding:24px 28px 80px;}
+.doc.hide{display:none;}
+.doc h2{font-size:15px;margin-bottom:12px;}
+.doc h3{font-size:13px;margin:18px 0 8px;color:var(--text2);}
+.doc p{font-size:12.5px;color:#425066;line-height:1.85;margin-bottom:10px;}
+.doc table{width:100%;border-collapse:collapse;font-size:11.5px;margin:8px 0 14px;
+  table-layout:fixed;}
+.doc th{background:#FAFBFD;color:var(--text2);text-align:left;padding:7px 9px;
+  border-bottom:1px solid var(--line);}
+.doc td{padding:7px 9px;border-bottom:1px solid #F2F5F9;color:#425066;
+  word-break:break-word;vertical-align:top;}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="lg"><b>系统 PRD</b><i>原型版</i></div>
+  <div class="tabs" id="tabs"></div>
+  <div class="tools">
+    <button class="btn on" id="btnDoc" onclick="toggleDoc()">文档</button>
+    <button class="btn on" id="btnFit" onclick="toggleFit()">适应</button>
+  </div>
+</div>
+<div class="chb" id="chipBar"><div id="chips" style="display:flex;gap:8px"></div></div>
+
+<div class="main">
+  <div class="stage"><div class="box"><iframe id="cv"></iframe></div></div>
+  <div class="doc" id="doc"></div>
+</div>
+
+<script>
+// ========== 唯一数据源：改这里 ==========
+// [模块key, 模块名, [[页面key, 页面名], ...]]
+var MODULES = [
+  ["ov",    "总览",      [["ov","总览"]]],
+  ["goods", "商品管理",  [["g1","商品列表"], ["g2","商品详情"]]],
+  ["order", "订单管理",  [["o1","订单列表"]]]
+];
+
+// 页面 HTML（这里是极简示例，真实项目由构建脚本生成）
+var PAGES = {
+  "ov":   '<div style="padding:40px;font-family:sans-serif"><h1>总览</h1><p>替换成你的页面。</p></div>',
+  "g1":   '<div style="padding:24px;font-family:sans-serif"><h2>商品列表</h2><table border="1" cellpadding="8" style="border-collapse:collapse;width:100%"><tr><th>ID</th><th>名称</th><th>状态</th></tr><tr><td>1001</td><td>示例商品</td><td>在售</td></tr></table></div>',
+  "g2":   '<div style="padding:24px;font-family:sans-serif"><h2>商品详情</h2><p>字段区……</p></div>',
+  "o1":   '<div style="padding:24px;font-family:sans-serif"><h2>订单列表</h2><p>表格……</p></div>'
+};
+
+// 文档 HTML（key 与页面 key 对齐）
+var DOCS = {
+  "ov":   '<h2>总览</h2><p>说明这个系统在做什么。</p>',
+  "g1":   '<h2>商品列表</h2><h3>页面在做什么</h3><p>展示全部商品，支持按状态筛选。</p><h3>字段</h3><table><tr><th>字段</th><th>说明</th></tr><tr><td>状态</td><td>在售 / 下架 / 售罄</td></tr></table><h3>待确认</h3><p>下架商品是否仍可被搜索到？</p>',
+  "g2":   '<h2>商品详情</h2><p>……</p>',
+  "o1":   '<h2>订单列表</h2><p>……</p>'
+};
+
+// ========== 渲染逻辑：一般不用改 ==========
+var curMid = MODULES[0][0], curPid = MODULES[0][2][0][0];
+var fitOn = true;
+
+function renderTabs(){
+  document.getElementById("tabs").innerHTML = MODULES.map(function(m){
+    return '<div class="tab' + (m[0]===curMid?' on':'') + '" onclick="go(\'' + m[0] + '\')">'
+         + m[1] + '<u>' + m[2].length + '</u></div>';
+  }).join("");
+}
+
+function renderChips(){
+  var m = MODULES.filter(function(x){ return x[0]===curMid; })[0];
+  var bar = document.getElementById("chipBar");
+  // 单页模块不显示 chip 行
+  bar.className = "chb" + (m[2].length > 1 ? " show" : "");
+  document.getElementById("chips").innerHTML = m[2].map(function(p){
+    return '<span class="chip' + (p[0]===curPid?' on':'') + '" onclick="go(\'' + curMid + '\',\'' + p[0] + '\')">'
+         + p[1] + '</span>';
+  }).join("");
+}
+
+function go(mid, pid){
+  curMid = mid;
+  var m = MODULES.filter(function(x){ return x[0]===mid; })[0];
+  if (!m) return false;
+  curPid = pid || m[2][0][0];
+  renderTabs(); renderChips();
+  document.getElementById("cv").srcdoc = PAGES[curPid] || "<p>缺页面</p>";
+  document.getElementById("doc").innerHTML = DOCS[curPid] || "<p>缺文档</p>";
+  setTimeout(fit, 60);
+  return true;
+}
+
+// 按页面 key 直达：截图脚本和外部深链都靠它
+function goKey(pid){
+  for (var i=0;i<MODULES.length;i++)
+    for (var j=0;j<MODULES[i][2].length;j++)
+      if (MODULES[i][2][j][0] === pid) return go(MODULES[i][0], pid);
+  return false;
+}
+
+function toggleDoc(){
+  var d = document.getElementById("doc");
+  d.classList.toggle("hide");
+  document.getElementById("btnDoc").classList.toggle("on", !d.classList.contains("hide"));
+  fit();
+}
+
+function toggleFit(){
+  fitOn = !fitOn;
+  document.getElementById("btnFit").classList.toggle("on", fitOn);
+  fit();
+}
+
+function fit(){
+  var f = document.getElementById("cv");
+  if (!fitOn){ f.style.transform=""; f.style.width="100%"; return; }
+  f.style.transform = "";           // 简化示例：iframe 用 100% 自适应
+  f.style.width = "100%";
+}
+
+window.addEventListener("resize", fit);
+go(MODULES[0][0], MODULES[0][2][0][0]);
+</script>
+</body>
+</html>

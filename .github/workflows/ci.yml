@@ -1,0 +1,30 @@
+name: ci
+on:
+  push: { branches: [main] }
+  pull_request:
+jobs:
+  smoke:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-22.04, python: "3.8" }
+          - { os: ubuntu-latest, python: "3.10" }
+          - { os: ubuntu-latest, python: "3.13" }
+          - { os: macos-latest, python: "3.10" }
+          - { os: windows-latest, python: "3.10" }
+    name: smoke · ${{ matrix.os }} · py${{ matrix.python }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Environment self-check
+        run: python scripts/doctor.py
+      - name: Smoke tests (including "the gate must go red")
+        run: python -m unittest discover -s tests -v
+      - name: Sample builds strict
+        run: python scripts/build_module_prd.py --data assets/example_module.json --out build/prd.html --strict
+      - name: Iteration sample builds strict
+        run: python scripts/build_module_prd.py --data assets/example_iteration.json --out build/d2.html --strict
