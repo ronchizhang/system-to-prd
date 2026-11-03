@@ -22,7 +22,7 @@
 
   T1 接口地址  正文里出现 POST /xxx、/demo/…——读者是业务方，不是研发
   T2 字段名    驼峰 / 下划线字段名（paymentMethod、refund_channel）
-  T3 常量枚举名 Constant.TICKET_CORP、TICKET_SWITCH_LOCK_FORMAT
+  T3 常量枚举名 Constant.TICKET_GROUP、TICKET_SWITCH_LOCK_FORMAT
   T4 实现词    落库 / 幂等 / 序列化 / schema / 轮询 / 回调 …
 
 T 类只扫叙事正文与原型帧，且豁免 <table class="tech-map">（附录 B 就是放这些的地方）。
