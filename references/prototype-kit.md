@@ -21,7 +21,7 @@
 | 上传区 | `px-upload` | 「N / M」+ 上传文件按钮 |
 
 **顺序只由 y 决定。** 分块、表格、统计、上传是按 y 交错排的，不是「先所有分块、再所有表格」——
-后者会把「打款信息」排到费用明细前面，图就废了。
+后者会把「结算信息」排到费用明细前面，图就废了。
 
 
 单页 PRD 的第一块是**原型图**。它和叙事、AI 读、核查同在一个 HTML 里，靠顶栏切。
@@ -110,17 +110,17 @@ python scripts/proto_from_snapshot.py --snapshot snapshot/ops-x.json \
 <div class="px">
   <div class="px-top">
     <div class="px-logo">Demo <i>Brand</i></div>
-    <div class="px-tmenu"><span>客户</span><span class="on">人员</span></div>
-    <div class="px-tright"><span>客户名</span><div class="px-av">运</div></div>
+    <div class="px-tmenu"><span>机构</span><span class="on">学员</span></div>
+    <div class="px-tright"><span>机构名</span><div class="px-av">运</div></div>
   </div>
   <div class="px-body">
     <div class="px-side">
-      <div class="px-mi on">人员管理</div>
-      <div class="px-mi sub on">人员字段配置</div>
+      <div class="px-mi on">学员管理</div>
+      <div class="px-mi sub on">学员档案字段</div>
     </div>
     <div class="px-main">
-      <div class="px-crumb">人员管理 <i>/</i> 人员字段配置</div>
-      <div class="px-h1">人员字段配置</div>
+      <div class="px-crumb">学员管理 <i>/</i> 学员档案字段</div>
+      <div class="px-h1">学员档案字段</div>
       …内容…
     </div>
   </div>
@@ -225,7 +225,7 @@ python scripts/proto_from_snapshot.py --snapshot snapshot/ops-x.json \
 | `style="…"` | 用组件 class；缺 class 就提给引擎维护者，别自己加 |
 | `<script>` | 原型是静态的，交互靠多帧表达 |
 | 外链图片 | 需要图标用文字或 `.px-tag` |
-| 真实客户姓名、手机号、证件号 | 用「示例客户A有限公司」「138****0000」这类脱敏示例 |
+| 真实机构姓名、手机号、证件号 | 用「示例校区A」「138****0000」这类脱敏示例 |
 | 一个帧塞两种状态 | 拆成两帧 |
 
 契约校验会拒 `style=`，报错信息是「%s 里写了内联 style」。
@@ -252,8 +252,8 @@ python build_module_prd.py --data modules/<key>.json --out out/<key>.html
 
 画原型时最容易犯的错，不是画错组件，是**画出后端根本不存在的值**。
 
-真实案例：出款二次确认弹窗上写了「发送批次 **2 批**（本地 · 清算网络FA / 清算网络S）」。
-全库搜 `xpay + payout` 只有两个 DTO 字段，**没有任何出款调用代码** —— 批次这个概念在后端不存在。
+真实案例：打款二次确认弹窗上写了「发送批次 **2 批**（本地 · 通道FA / 通道S）」。
+全库搜 `xpay + payout` 只有两个 DTO 字段，**没有任何打款调用代码** —— 批次这个概念在后端不存在。
 图上线了，开发照着做，等于让他去实现一个我凭空造出来的字段。
 
 **规矩**：
@@ -273,7 +273,7 @@ python build_module_prd.py --data modules/<key>.json --out out/<key>.html
 | 类 / 属性 | 用途 |
 |:--|:--|
 | `.px-ellip` | 长文本单行截断 + 省略号（配 `title` 悬停看全名）。**一段太长用它** |
-| `td.wrap` | 允许单元格换行。**只用于「一条里有多段」**（金额、人员名单），不是给长文本用的 |
+| `td.wrap` | 允许单元格换行。**只用于「一条里有多段」**（金额、学员名单），不是给长文本用的 |
 | `th.w-l` / `th.w-n` / `th.w-m` / `th.w-dt` | 列宽：24% / 178px / 216px / 104px。7 列列表用 `w-l` + `w-dt` + `w-m` 最稳 |
 | `.px-tags` / `.px-tag` / `.px-more` | 多值字段：平铺 + `+N` |
 | `.px-tips` + `.px-tip` | 悬停浮层（表格里也能用，`td:has(.px-tips)` 已放开 overflow） |
@@ -328,7 +328,7 @@ python build_module_prd.py --data modules/<key>.json --out out/<key>.html
 
 ## 六、提示分级：颜色不能比约束更强
 
-业务方两次指出同一件事：单据工作台里有人收款字段缺失，页面上要是**红色报错**，客户会以为「这单付不出去了」；
+业务方两次指出同一件事：单据工作台里有人收款字段缺失，页面上要是**红色报错**，机构会以为「这单付不出去了」；
 实际系统允许带着缺失提交，只是提示他补齐。**用红色表达「不阻断」，是文案与视觉对不上。**
 
 | 档位 | 含义 | 视觉 | 组件 |
@@ -344,6 +344,6 @@ python build_module_prd.py --data modules/<key>.json --out out/<key>.html
 2. **同一句话要在三处口径一致**：抽屉/页面顶部的提示条、字段悬停浮层、二次确认弹窗里的说明。
    只在一处写「不影响提交」，另两处仍是红字，读的人只会记住红色的那处。
 3. **提示要有「为什么可以不管」**。只写「字段缺失」是通知；写「该网络必填字段以后台配置为准，缺了也能提交，
-   出款时若被通道退回再来补」才是让人敢继续点的理由。
+   打款时若被通道退回再来补」才是让人敢继续点的理由。
 
 > 反过来说：如果一个提示你无法解释「为什么可以不管」，那它大概率是阻断，别硬做成黄色。

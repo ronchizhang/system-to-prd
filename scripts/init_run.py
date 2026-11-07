@@ -4,12 +4,12 @@
 
     # 一个人负责一个模块（最常见）
     python3 init_run.py --root ./prd-run --project "Demo Brand" \
-        --module "管理后台|人员管理 / 人员字段配置|ops-person-field|张三"
+        --module "管理后台|学员管理 / 学员档案字段|ops-person-field|张三"
 
     # 一次给整个团队铺开
     python3 init_run.py --root ./prd-run --project "Demo Brand" \
-        --module "管理后台|人员管理 / 人员字段配置|ops-person-field|张三" \
-        --module "管理后台|客户中心 / 客户列表|ops-customer|李四"
+        --module "管理后台|学员管理 / 学员档案字段|ops-person-field|张三" \
+        --module "管理后台|机构中心 / 机构列表|ops-customer|李四"
 
     # 看现有工作台里谁交了、谁没交
     python3 init_run.py --root ./prd-run --list
@@ -82,7 +82,7 @@ def skeleton_module(sysname, menu, key, owner, project):
             "system": sysname,
             "module": module,
             "menu": " / ".join(x.strip() for x in parts),
-            "route": "TODO 填真实路由，如 /personManage/xxx/list",
+            "route": "TODO 填真实路由，如 /studentManage/xxx/list",
             "env": "TODO 测试环境域名，如 测试环境 test1admin",
             "customer": "",
             "date": dt.date.today().isoformat(),

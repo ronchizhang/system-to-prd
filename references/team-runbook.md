@@ -22,7 +22,7 @@
 |:--|:--|
 | **用例库已连接** | 能搜到 `全功能用例` 这个知识库 |
 | **代码仓库已连接** | 能读到仓库 `yourgroup/yourproject/demo/demo-backstage` |
-| **测试环境账号** | 后台 / 企业端 / 人员端 三套。**只给测试环境的，生产的一律不要** |
+| **测试环境账号** | 后台 / 机构端 / 学员端 三套。**只给测试环境的，生产的一律不要** |
 
 确认测试环境（脚本看域名里有没有环境词：test / uat / sit / dev / staging / pre / qa。**它只是提示，不是门禁**，但看错环境的代价是拿真实数据在跑——地址拿不准就直接问对方）：
 
@@ -53,7 +53,7 @@ python <skill>/scripts/login.py --url <登录页> --api <网关> \
 
 做迭代 PRD，开工前必须拿到四个答案，**缺一个就停下来问**：
 
-1. 改哪个终端（管理后台 / 企业端 / 员工端）
+1. 改哪个终端（管理后台 / 机构端 / 学员端）
 2. 这一版的产品版本号（如 `管理后台 V5.0`）
 3. 基线是上一稿的哪一份
 4. 本次改动范围（哪几个模块、新增还是修改、一句话）
@@ -75,11 +75,11 @@ python <skill>/scripts/plan_iteration.py --root <工作台> \
 
 ## 第 1 步 · 圈定模块边界
 
-你拿到的可能只是"人员字段配置"这四个字。要把它翻译成：
+你拿到的可能只是"学员档案字段"这四个字。要把它翻译成：
 
-1. **菜单路径**：`人员管理 / 人员字段配置`（写清层级）
-2. **路由**：`/personManage/fieldSetting/list`
-3. **依赖参数**：要不要先选客户/项目/服务方？没有参数会不会白屏？
+1. **菜单路径**：`学员管理 / 学员档案字段`（写清层级）
+2. **路由**：`/studentManage/fieldSetting/list`
+3. **依赖参数**：要不要先选机构/项目/授课方？没有参数会不会白屏？
 4. **本模块下的二级页与弹窗清单** —— 最容易漏，见下表
 
 **四个地方找，少一个就会漏：**
@@ -135,7 +135,7 @@ python <skill>/scripts/harvest.py be --repo yourgroup/yourproject/demo/demo-back
 - **长页面一页一帧**，别拆成几个「页签帧」；超长用「同页 1/2」，`from` 写同一个页号
 - **能提交就提交**：新增 / 编辑 / 删除 / 提交 / 审批 / 退回都真跑一遍，把提示文案**照抄**下来。校验原文、二次确认、失败路径、状态流转，只有真做才拿得到
 - 先记原值、自己造的数据自己清理、一次只改一个变量
-- 不碰：真实打款、真实发邮件、真实请款、删别人的数据、改权限。必须做才能验证的，**标「未实做 + 原因」**，不许写「应该会」
+- 不碰：真实打款、真实发邮件、真实结算申请、删别人的数据、改权限。必须做才能验证的，**标「未实做 + 原因」**，不许写「应该会」
 - **弹窗 / 抽屉 / 页签 / 二级页尽量都拿到**，页签要确认真的切过去了（抽出来一模一样就是没切）
 
 细则：`references/interaction.md`。
@@ -181,7 +181,7 @@ python <skill>/scripts/gate.py facts --root <工作台> --module <key> \
 
 ```bash
 python <skill>/scripts/gate.py scope --root <工作台> --module <key> --by <姓名> \
-  --what "8 段 / 22 条规则 / 7 态 9 条迁移 / 不写供应商单据"
+  --what "8 段 / 22 条规则 / 7 态 9 条迁移 / 不写合作校单据"
 ```
 
 `--what` 写具体数字。只写「已确认」等于没确认。
@@ -224,11 +224,11 @@ python <skill>/scripts/gate.py scope --root <工作台> --module <key> --by <姓
   "type": "validation",
   "confidence": "互证",
   "src": ["be", "ima"],
-  "statement": "字段名称（中英文）与特殊命名（中英文）四者之间，在当前客户维度不能互相重复",
+  "statement": "字段名称（中英文）与特殊命名（中英文）四者之间，在当前机构维度不能互相重复",
   "evidence": "be: checkFieldExistsName() 按 custId 查重；ima: 新增字段 step3 提交校验段",
   "cases": [
     {"k": "negative", "g": "已有字段「姓名」", "w": "新建同名字段并提交", "t": "报「字段名称：姓名已存在」，不落库"},
-    {"k": "positive", "g": "不同客户都有「姓名」", "w": "各自提交", "t": "都通过——校验是客户维度"},
+    {"k": "positive", "g": "不同机构都有「姓名」", "w": "各自提交", "t": "都通过——校验是机构维度"},
     {"k": "edge", "g": "两个草稿字段同名", "w": "存草稿", "t": "允许；转正式时才校验"}
   ],
   "note": "可选。写这里没有证据但值得记的推断"
@@ -272,11 +272,11 @@ python <skill>/scripts/launch_chrome.py --headed
 
 # 1. 实拍：真实页面 → 快照（同时存截图，作为「这帧确实来自实拍」的旁证）
 python <skill>/scripts/snapshot_page.py --base https://test1x.example.com \
-    --url /personManage/fieldSetting/list --key <key> --page p1 --name 字段列表
+    --url /studentManage/fieldSetting/list --key <key> --page p1 --name 字段列表
 
 # 2. 点开弹窗再抓一帧（--open 后面是按钮上的字）
 python <skill>/scripts/snapshot_page.py --base https://test1x.example.com \
-    --url /personManage/fieldSetting/list --key <key> --page p2 --name 管理分组 --open 管理分组
+    --url /studentManage/fieldSetting/list --key <key> --page p2 --name 管理分组 --open 管理分组
 
 # 3. 快照 → 原型帧，直接写进模块数据
 python <skill>/scripts/proto_from_snapshot.py --snapshot snapshot/<key>.json \
@@ -284,13 +284,13 @@ python <skill>/scripts/proto_from_snapshot.py --snapshot snapshot/<key>.json \
 ```
 
 **抓不到多半是没登录**——`launch_chrome.py` 起的是全新配置目录，第一次必须手动登。
-看到「什么都没抽到」就按这个顺序查：没登录 → 页面没加载完（慢网 / 要先选客户）→
+看到「什么都没抽到」就按这个顺序查：没登录 → 页面没加载完（慢网 / 要先选机构）→
 这页确实没有表格和表单。
 
 每步都会打印抽到了什么：
 
 ```
-[1/1] p1  /personManage/fieldSetting/list
+[1/1] p1  /studentManage/fieldSetting/list
         → 6 张表 / 48 列、8 个按钮
 ```
 
@@ -307,7 +307,7 @@ python <skill>/scripts/proto_from_snapshot.py --snapshot snapshot/<key>.json \
 "prototype": {
   "viewport": "1440x900",
   "frames": [
-    {"id": "P1", "name": "字段列表", "state": "默认态", "route": "/personManage/fieldSetting",
+    {"id": "P1", "name": "字段列表", "state": "默认态", "route": "/studentManage/fieldSetting",
      "from": "<key>.json#p1",
      "note": "哪些是示例数据、哪里被裁掉了", "html": "<div class=\"px\">…</div>"}
   ]
@@ -450,17 +450,17 @@ HTML 长什么样由引擎决定。你觉得哪里不好看，说一声，别自
 | 图上标签叠在一起 | `label` 太长 | 压到 8 字以内 |
 | 验收报「产物不一致」 | 改完 json 没重新构建 | 重跑 build |
 | 验收报「TODO 残留」 | 骨架没填完 | 搜 `__TODO__` 逐个填 |
-| 接口 `field/list` 报 must not be null | 缺 `customerId` | 先从客户列表拿 id |
+| 接口 `field/list` 报 must not be null | 缺 `customerId` | 先从机构列表拿 id |
 | 新增页「所属分组」显示一串 ID | 数据还没返回 | 等 2 秒自动好，不是 bug |
 | chunk 抽出几百个接口 | chunk 打包了整个 app 的接口表 | 加 `--prefix` 过滤 |
 | 改了说法，被问「你这里怎么还写着旧的」 | 口径散在六个地方，只改了正文 | `scan_wording.py --path modules/<key>.json --term "旧=新"` 扫干净（W6） |
-| 缺字段的提示画成红色，客户问「是不是付不出去」 | 能提交的用红 = 颜色比约束强 | 改成琥珀 `.px-alert.warn` / `.px-fctrl.warnf`；红只给阻断 |
+| 缺字段的提示画成红色，机构问「是不是付不出去」 | 能提交的用红 = 颜色比约束强 | 改成琥珀 `.px-alert.warn` / `.px-fctrl.warnf`；红只给阻断 |
 
 ---
 
 ## 卡住了
 
-- 页面进不去 / 白屏 → 多半缺上级参数（客户/项目/服务方 id）
+- 页面进不去 / 白屏 → 多半缺上级参数（机构/项目/授课方 id）
 - 账号权限不够 → **找模块负责人开权限**，不要借别人的账号
 - 用例库 / 代码仓库 连不上 → 先检查连接，别用手工猜代替
 - 同一件事三个源说法不一样 → 这是**最有价值的发现**，不是麻烦。写进事实清单的 `conflict` 类，让对方裁定

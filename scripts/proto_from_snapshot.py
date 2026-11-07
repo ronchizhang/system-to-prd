@@ -26,9 +26,9 @@
 
 --shell 文件形如：
     {"logo": "Demo <i>Brand</i>",
-     "tmenu": [{"t": "客户"}, {"t": "人员", "on": true}],
-     "side": [{"t": "人员管理"}, {"t": "人员字段配置", "sub": true, "on": true}],
-     "user": "运", "tenant": "示例客户"}
+     "tmenu": [{"t": "机构"}, {"t": "学员", "on": true}],
+     "side": [{"t": "学员管理"}, {"t": "学员档案字段", "sub": true, "on": true}],
+     "user": "运", "tenant": "示例机构"}
 
 退出码：0 成功 / 2 参数错误 / 3 快照没有可用帧
 """
@@ -232,7 +232,7 @@ def col_widths(th, rows):
         out = ["" for _ in th]
         # 列一多，均分宽度就两头不够用，各给一档：
         # 首列是单据编号（CBSQK2026… 这种 18 位），截断了就认不出是哪张单；
-        # 末列是行操作，真实后台这里有「查看请款单 / 查看业务审批」两个链接，
+        # 末列是行操作，真实后台这里有「查看结算申请单 / 查看业务审批」两个链接，
         # 挤掉一个等于把入口画没了。
         if th:
             out[0] = "w-n"
@@ -272,9 +272,9 @@ def col_widths(th, rows):
 # 状态词的关键词 → 颜色。真实系统的状态是「业务审批中」这种复合词，
 # 精确匹配对不上，只能按关键词归类
 TAG_RULES = [
-    (("已出款", "已完成", "已通过", "成功", "已生效", "启用", "通过"), "green"),
+    (("已打款", "已完成", "已通过", "成功", "已生效", "启用", "通过"), "green"),
     (("退回", "驳回", "失败", "拒绝", "终止", "禁用", "停用", "异常"), "red"),
-    (("审批中", "待审核", "待处理", "处理中", "待出款", "待确认"), "amber"),
+    (("审批中", "待审核", "待处理", "处理中", "待打款", "待确认"), "amber"),
     (("草稿", "待提交", "未开始"), "amber"),
     (("进行中", "部分", "发放中"), "blue"),
 ]
@@ -312,7 +312,7 @@ def _split_selection(th, rows):
 
     带行选择的表格，表头那一格是个空的 selection th（抓表头时因为没文字被过滤掉），
     但行里那一格还在。结果就是「行比表头多一格」：原型第一列画成空，后面所有数据
-    整体左移一格——单据工作台列表就成了「费用类型那格写着请款编号」这种鬼样子。
+    整体左移一格——单据工作台列表就成了「费用类型那格写着结算申请编号」这种鬼样子。
 
     这里不是把多出来的那格丢掉，而是把选择列补回来（表头补一个空 th、行首补一个勾选框），
     因为真实页面那一列确实在。
@@ -352,7 +352,7 @@ def render_table(th, rows, row_btns=None):
         for i, c in enumerate(r[:n]):
             nm = th[i] if i < n else ""
             if "操作" in str(nm) or "动作" in str(nm):
-                # 优先拆实拍到的操作文案（如「查看请款单 查看业务审批」），
+                # 优先拆实拍到的操作文案（如「查看结算申请单 查看业务审批」），
                 # 抓不到才退回通用按钮
                 raw = (isinstance(c, dict) and c.get("text")) or ""
                 parts = [x for x in str(raw).split() if x] or \
@@ -396,8 +396,8 @@ def render_toolbar(fields, buttons):
     for b in buttons or []:
         if b.get("link") or b.get("disabled"):
             continue
-        # 筛选栏只放筛选语义的按钮。页面级主操作（批量出款、新建…）不属于这里，
-        # 它们画在列表底栏左边；两处都放，页面上就会出现两个「批量出款」。
+        # 筛选栏只放筛选语义的按钮。页面级主操作（批量打款、新建…）不属于这里，
+        # 它们画在列表底栏左边；两处都放，页面上就会出现两个「批量打款」。
         if (b.get("text") or "").strip() not in BTN_WORDS:
             continue
         if used >= 3:
@@ -622,14 +622,14 @@ def _is_fcard_head(row):
 
 
 def _parse_fcard(events, i, right_edge=1400):
-    """解析一块「流程卡片」（财务请款申请那种一格一格的豆腐块）。
+    """解析一块「流程卡片」（财务结算申请申请那种一格一格的豆腐块）。
 
     真实形态：
         ● 流程编号：HWZF20260401150001                      [审批中]
-          申请类型  海外支付请款   发起时间  2026.04.01 15:28   审批结束时间  -
+          申请类型  海外支付结算申请   发起时间  2026.04.01 15:28   审批结束时间  -
           申请金额  31.00 CNY
 
-    一张卡 = 一条财务请款。一个业务请款被财务拆成 N 条，这里就有 N 张，
+    一张卡 = 一条财务结算申请。一个业务结算申请被财务拆成 N 条，这里就有 N 张，
     所以切分规则是「再遇到流程编号就另起一张」，不是「只抓一张」。
 
     这些行既不是 ant-form-item 也没有冒号，按普通字段解析只会把三列的
@@ -833,7 +833,7 @@ def _parse_column(items, tables, right_edge=1400):
             i += 1
             continue
 
-        # ⑤-c 流程卡片（豆腐块）：一张卡 = 一条财务请款，可能有多张
+        # ⑤-c 流程卡片（豆腐块）：一张卡 = 一条财务结算申请，可能有多张
         if _is_fcard_head(row):
             card = _parse_fcard(events, i, right_edge)
             if card:
@@ -906,7 +906,7 @@ def _parse_column(items, tables, right_edge=1400):
 def _build_body(items, tables, right_edge=1400):
     """一个分块内的内容。
 
-    真实详情页里，「发起人信息 / 流程状态信息 / 请款信息」是三个**独立的带框小卡片**，
+    真实详情页里，「发起人信息 / 流程状态信息 / 结算申请信息」是三个**独立的带框小卡片**，
     左窄右宽并排。所以这里按 x 把整块内容分到左右两栏，每栏里的小标题画成子卡片。
     """
     if not items:
@@ -985,7 +985,7 @@ def build_blocks(d):
             continue
         if it["x"] > left + 45:
             # 例外：和已识别的标题同一行、且明显靠右的，是并排的第二张卡
-            # （打款信息 | 人员收款账户信息（银行卡））。
+            # （结算信息 | 学员收款账户信息（银行卡））。
             # 但要真是一张卡的标题——它下面得有自己的内容，
             # 否则「业务审批中」这种右上角状态标签会被误判成分块。
             twin = any(abs(sec["y"] - it["y"]) <= 12 and it["x"] - sec["x"] > 300
@@ -1012,7 +1012,7 @@ def build_blocks(d):
         if any((t.get("rowCount") or 0) > 3 for t in tables) or d.get("pager"):
             return []
 
-        # 剩下的才是「没有分块标题的详情/页签内容」（页签里的「财务请款申请」：
+        # 剩下的才是「没有分块标题的详情/页签内容」（页签里的「财务结算申请申请」：
         # 整屏只有几块流程卡片）。以前这里直接返回空，于是退回通用的
         # 「字段 / 值」两列表，卡片结构就没了。有内容就按一个隐形体走。
         #
@@ -1065,7 +1065,7 @@ def build_blocks(d):
         s = owner(it["y"], it["x"])
         if not s:
             continue
-        # 标题同一行：靠右的是块头状态（请款状态：审批中），靠左的是紧随标题的说明
+        # 标题同一行：靠右的是块头状态（结算申请状态：审批中），靠左的是紧随标题的说明
         # （审批信息 流程编号：(CBSQK...)）——真实页面这两者都在标题同一行
         if abs(it["y"] - s["y"]) <= 10:
             if it["x"] > s["x"] + 600:
@@ -1195,7 +1195,7 @@ def _render_one(b):
         h.append("</div>")
         return "".join(h)
     if t == "fcard":
-        # 流程卡片：一条财务请款一格。拆单后会有多格，所以这张卡要能被复用。
+        # 流程卡片：一条财务结算申请一格。拆单后会有多格，所以这张卡要能被复用。
         h = ['<div class="px-fcard"><div class="px-fc-hd">'
              '<i class="px-fc-dot"></i>'
              '<span class="px-fc-k">流程编号：</span>'
@@ -1344,8 +1344,8 @@ def frame_html(d, shell, as_dialog=None):
     if blocks:
         big = [t for t in (d.get("tables") or []) if (t.get("rowCount") or 0) > 3]
         # 有 2 个以上分块 = 详情/抽屉页，一律按坐标块渲染。
-        # 不能因为「抽到了表单字段」就退回通用表单——出款抽屉就是编辑态表单，
-        # 一退回就丢了出款状态单选和上传区。
+        # 不能因为「抽到了表单字段」就退回通用表单——打款抽屉就是编辑态表单，
+        # 一退回就丢了打款状态单选和上传区。
         is_detail = len(blocks) >= 2 or (not big and not all_fields)
     if is_detail:
         body.append(render_blocks(blocks))
@@ -1370,7 +1370,7 @@ def frame_html(d, shell, as_dialog=None):
                         % (hd, render_table(tb.get("th"), tb.get("rows"), row_btns)))
         tot = d.get("total") or ""
         pager = d.get("pager") or ["1"]
-        # 列表页底栏左边常有一个批量动作（单据工作台的「批量出款」），
+        # 列表页底栏左边常有一个批量动作（单据工作台的「批量打款」），
         # 它既不是筛选按钮也不是行内操作，容易被漏掉
         bulk = [b["text"] for b in (d.get("buttons") or [])
                 if b.get("primary") and not b.get("link")

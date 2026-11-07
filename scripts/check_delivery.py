@@ -432,13 +432,13 @@ def check_one(root, key, want_audit=True, hard=False):
     # ---------------- 文与图一致 ----------------
     # 正文写「17 列宽表」「9 列结构不变」，图上是另一张表，此前出过「正文 9 列、图上 7 列」。
     # 精度优先，分两条：列名比对（主判据，误报低）、列数比对（只查明确句式）。
-    # 不做对象识别就比对会大量误报——一个模块里有列表 7 列、人员明细 17 列、日志 19 列，
+    # 不做对象识别就比对会大量误报——一个模块里有列表 7 列、学员明细 17 列、日志 19 列，
     # 正文的「N 列」不都指向主列表，所以只认「列数不变 N 列」「N 列结构」这两种说法。
     _th_of = {}
     for f in drawn:
         ths = [re.sub(r"<[^>]+>", "", x).replace("&nbsp;", " ").strip()
                for x in re.findall(r"<th[^>]*>(.*?)</th>", f.get("html") or "", re.S)]
-        # 表头里常嵌改动编号（改①打款账户、改⑥改⑥请款金额），不去掉的话
+        # 表头里常嵌改动编号（改①打款账户、改⑥改⑥结算申请金额），不去掉的话
         # 正文引用「打款账户」永远匹配不上，四条误报全出在这儿。
         ths = [re.sub(r"^(?:改[\u2460-\u24FF\u3251-\u325F\u32B1-\u32BF]+)+", "", t).strip()
                for t in ths]
@@ -462,7 +462,7 @@ def check_one(root, key, want_audit=True, hard=False):
             continue
         if name in ("—", "无", "-", "／", "/", "不变", "同前", "这一", "该"):
             continue
-        # 合并表头很常见（「请款状态和费用所属月」一格管两列），正文只引其中一段是对的
+        # 合并表头很常见（「结算申请状态和费用所属月」一格管两列），正文只引其中一段是对的
         if name not in _all_th and not any(name in t for t in _all_th):
             _bad_name.append(name)
     _bad_name = sorted(set(_bad_name))
@@ -764,7 +764,7 @@ def check_one(root, key, want_audit=True, hard=False):
 
     frames = (d.get("prototype") or {}).get("frames") or []
     labels = " ".join(((f.get("name") or "") + " " + (f.get("note") or "")) for f in frames)
-    # 二级页常常整块拆到独立模块（如「合作方请款审批」自己就是一个模块），
+    # 二级页常常整块拆到独立模块（如「合作校区结算申请审批」自己就是一个模块），
     # 只查本模块会把「已经画了、只是画在隔壁」判成漏画。所以本模块找不到时，
     # 再到工程里其他模块的帧名里找一遍——找到了就是覆盖了，只是不在这份文件里。
     other = ""
@@ -781,8 +781,8 @@ def check_one(root, key, want_audit=True, hard=False):
             for f in ((od.get("prototype") or {}).get("frames") or []):
                 other += " " + (f.get("name") or "") + " " + (f.get("note") or "")
     def _hit(name):
-        """名字带括号补充说明时要宽松匹配：「合作方请款详情（三个页签）」对不上帧名，
-        但「合作方请款详情」能对上。只取括号前那一段做子串比较，别退化成任意词命中。"""
+        """名字带括号补充说明时要宽松匹配：「合作校区结算申请详情（三个页签）」对不上帧名，
+        但「合作校区结算申请详情」能对上。只取括号前那一段做子串比较，别退化成任意词命中。"""
         if name in labels or name in other:
             return True
         for seg in re.split(r"[（(]", name):

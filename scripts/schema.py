@@ -62,9 +62,9 @@ SCHEMA = {
             "properties": {
                 "key": {"type": "string", "pattern": r"^[a-z][a-z0-9\-]{2,40}$",
                         "hint": "全局唯一模块 key，如 ops-person-field。合并时用它排序与去重"},
-                "system": {"type": "string", "enum": ["管理后台", "企业端", "员工端"]},
-                "module": {"type": "string", "minLength": 2, "hint": "模块名，如 人员字段配置"},
-                "menu": {"type": "string", "minLength": 2, "hint": "三级菜单全路径，如 人员管理 / 人员字段配置"},
+                "system": {"type": "string", "enum": ["管理后台", "机构端", "学员端"]},
+                "module": {"type": "string", "minLength": 2, "hint": "模块名，如 学员档案字段"},
+                "menu": {"type": "string", "minLength": 2, "hint": "三级菜单全路径，如 学员管理 / 学员档案字段"},
                 "route": {"type": "string", "minLength": 3},
                 "env": {"type": "string", "minLength": 3, "hint": "必须写明是测试环境"},
                 "customer": {"type": "string"},

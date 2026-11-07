@@ -54,19 +54,19 @@
           "type": "string",
           "enum": [
             "管理后台",
-            "企业端",
-            "员工端"
+            "机构端",
+            "学员端"
           ]
         },
         "module": {
           "type": "string",
           "minLength": 2,
-          "hint": "模块名，如 人员字段配置"
+          "hint": "模块名，如 学员档案字段"
         },
         "menu": {
           "type": "string",
           "minLength": 2,
-          "hint": "三级菜单全路径，如 人员管理 / 人员字段配置"
+          "hint": "三级菜单全路径，如 学员管理 / 学员档案字段"
         },
         "route": {
           "type": "string",

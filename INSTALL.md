@@ -85,7 +85,7 @@ python ~/.workbuddy/skills/system-to-prd/scripts/doctor.py
 ```
  ✓ Python           3.13.12（需要 ≥ 3.8）
  ✓ 文件完整性          21 项齐全
- ✓ CDP 客户端         包内 vendor_cdp
+ ✓ CDP 机构端         包内 vendor_cdp
  ✓ Chrome 调试端口     9222 已就绪
  ✓ Chrome 可执行文件    /Applications/Google Chrome.app/...
  ✓ 代码仓库命令行         1.18.25
@@ -110,7 +110,7 @@ python ~/.workbuddy/skills/system-to-prd/scripts/launch_chrome.py
 | **用例库连接器** | 搜用例库，核对「用例是不是这么说的」 | 少一个源，`sources` 里 用例库 只能标未核 |
 | **代码仓库连接器** | 读后端代码，拿枚举真值和校验逻辑 | 少一个源，读码那段只能跳过 |
 | **浏览器控制** | 进测试环境点页面、实拍页面骨架 | 原型只能凭印象画、接口调不了 |
-| **测试环境三端账号** | 登录后台 / 企业端 / 员工端 | 什么都做不了 |
+| **测试环境三端账号** | 登录后台 / 机构端 / 学员端 | 什么都做不了 |
 
 三样在 WorkBuddy 的「连接器」里连；浏览器控制在「设置 → Agent → 浏览器控制」。
 账号密码**每次开工现要**，skill 不会存。
@@ -221,7 +221,7 @@ python scripts/gate.py doc --root . --by 你的名字 --note "整份看过，可
 
 ## 四、第一次用：直接说这句话
 
-> 用 system-to-prd 给「人员管理 / 人员字段配置」跑一份 PRD，测试环境地址 xxx，账号 xxx
+> 用 system-to-prd 给「学员管理 / 学员档案字段」跑一份 PRD，测试环境地址 xxx，账号 xxx
 
 它会走七步：环境自检 → 圈边界 → 五源采集 → 闸门 1 事实清单 → 闸门 2 骨架确认 → 填数据 → 构建实拍 → 验收。
 
@@ -243,7 +243,7 @@ python scripts/gate.py doc --root . --by 你的名字 --note "整份看过，可
 ```bash
 python ~/.workbuddy/skills/system-to-prd/scripts/init_run.py \
   --root ./prd-run --project "Demo Brand 全量 PRD" \
-  --module "管理后台|人员管理 / 人员字段配置|ops-person-field|你的名字"
+  --module "管理后台|学员管理 / 学员档案字段|ops-person-field|你的名字"
 ```
 
 `--module` 格式：`系统|一级 / 二级 / 三级|全局唯一 key|负责人`。
@@ -316,7 +316,7 @@ system-to-prd/
     ├── gate.py                   闸门：模块级签名 / 文档级确认
     ├── merge_modules.py          多模块 → 全量 PRD
     ├── shot_verify.py            实拍核对 + 结构诊断
-    └── vendor_cdp.py             内嵌的 CDP 客户端（所以不装别的 skill 也能截图）
+    └── vendor_cdp.py             内嵌的 CDP 机构端（所以不装别的 skill 也能截图）
 ```
 
 零第三方依赖，只要 Python ≥ 3.8。

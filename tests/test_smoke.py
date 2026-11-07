@@ -104,7 +104,7 @@ class ContractHolds(unittest.TestCase):
                           "帧「%s」的 kind 不认识" % f.get("name"))
 
     def test_sample_has_no_real_looking_identifiers(self):
-        """示例里不该出现真实形态的标识：长数字客户 ID、具体域名、真实单据号。
+        """示例里不该出现真实形态的标识：长数字机构 ID、具体域名、真实单据号。
 
         这里故意**不列禁用词**。早先那版是照着词表逐个 assertNotIn 的，
         结果等于把「哪些词是敏感的」明明白白写进了公开仓库——为了防泄露，
@@ -112,9 +112,9 @@ class ContractHolds(unittest.TestCase):
         公开仓库里的测试只该检查形态，不该复述清单。
         """
         raw = read(EXAMPLE)
-        self.assertNotRegex(raw, r"\b\d{15,}\b", "示例里有像真实客户 ID 的长数字串")
+        self.assertNotRegex(raw, r"\b\d{15,}\b", "示例里有像真实机构 ID 的长数字串")
         self.assertNotRegex(raw, r"\bCK\d{8,}\b", "示例里有像真实单据号的编号")
-        self.assertIn(self.data["meta"]["system"], ("管理后台", "企业端", "员工端"))
+        self.assertIn(self.data["meta"]["system"], ("管理后台", "机构端", "学员端"))
 
 
 class GatesActuallyBite(unittest.TestCase):
