@@ -9,7 +9,7 @@
 
 **[中文](#zh) ｜ [English](#en)**　·　[▸ 在线看](https://ronchizhang.github.io/system-to-prd/)
 
-[![Version](https://img.shields.io/badge/version-6.8-blue)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-6.8.1-blue)](./CHANGELOG.md)
 [![Python](https://img.shields.io/badge/python-%E2%89%A53.8-blue)](https://www.python.org/)
 [![Dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen)](./scripts)
 [![License](https://img.shields.io/badge/license-MIT-black)](./LICENSE)
