@@ -85,7 +85,7 @@ python ~/.workbuddy/skills/system-to-prd/scripts/doctor.py
 ```
  ✓ Python           3.13.12（需要 ≥ 3.8）
  ✓ 文件完整性          21 项齐全
- ✓ CDP 机构端         包内 vendor_cdp
+ ✓ CDP 客户端         包内 vendor_cdp
  ✓ Chrome 调试端口     9222 已就绪
  ✓ Chrome 可执行文件    /Applications/Google Chrome.app/...
  ✓ 代码仓库命令行         1.18.25
@@ -316,7 +316,7 @@ system-to-prd/
     ├── gate.py                   闸门：模块级签名 / 文档级确认
     ├── merge_modules.py          多模块 → 全量 PRD
     ├── shot_verify.py            实拍核对 + 结构诊断
-    └── vendor_cdp.py             内嵌的 CDP 机构端（所以不装别的 skill 也能截图）
+    └── vendor_cdp.py             内嵌的 CDP 客户端（所以不装别的 skill 也能截图）
 ```
 
 零第三方依赖，只要 Python ≥ 3.8。

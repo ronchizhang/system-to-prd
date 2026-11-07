@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""按顺序找一个能用的 CDP 机构端，找到哪个用哪个。
+"""按顺序找一个能用的 CDP 客户端，找到哪个用哪个。
 
 查找顺序：
   1. 包内 vendor_cdp.py   —— 打包自带，装到干净机器也能跑（推荐）
@@ -29,7 +29,7 @@ def load():
         return importlib.import_module("cdp")
 
     raise ImportError(
-        "找不到 CDP 机构端：包内缺 vendor_cdp.py，也没有装 browser-automation-cdp skill。\n"
+        "找不到 CDP 客户端：包内缺 vendor_cdp.py，也没有装 browser-automation-cdp skill。\n"
         "  修法：把 vendor_cdp.py 放回 scripts/ 目录，或安装 browser-automation-cdp skill。"
     )
 

@@ -217,7 +217,7 @@ def cdp_dir():
         for d in glob.glob(pat, recursive=True):
             if os.path.isfile(os.path.join(d, "cdp.py")):
                 return d
-    sys.exit("找不到 CDP 机构端：包内少了 vendor_cdp.py，也没装 browser-automation-cdp skill")
+    sys.exit("找不到 CDP 客户端：包内少了 vendor_cdp.py，也没装 browser-automation-cdp skill")
 
 
 EXTRACT_JS = r"""
