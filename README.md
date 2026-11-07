@@ -77,6 +77,12 @@
 - 编号跨稿累积，稿次绑在每一处标注上——**后面再改，前面那次签字自动失效**，而不是悄悄继续有效
 - 没提到的部分一个字不动，所以 diff 是干净的
 
+![iteration](docs/shots/iteration.png)
+
+*迭代态，和上面那张是同一份文档。左侧原型里，改动是一块粉底 + 一个编号（`C1`）；右侧叙事里是同一编号的说明，写着「定位 P1」——点它跳到改动所在的那一帧，点原型的编号再跳回来。两栏之间不是靠人记，是靠编号对上的。*
+
+这一稿改了两处：列表加一个状态筛选（`C1`），停用确认里补一句影响面（`C2`）。顶部那行「本稿改动 2」是从标注里数出来的，不是手写的。
+
 ### ③ Merge：多人多模块，收成一份
 
 六个人各写一个模块，合并时最容易出的问题不是格式，是**有人拿着旧稿在改**。
@@ -238,6 +244,12 @@ That assumption decides everything about its shape. There is really only one sce
 **① Capture.** Log into the test environment, open every dialog, submit the form for real, screenshot the pages; then read the front-end and back-end code and cross-check the test-case library. Two or more sources agreeing makes a fact; a single guess gets an ID and goes to *pending confirmation*, never into the body. What comes out is an **as-is draft** — it says how the system works today, with no change marks.
 
 **② Iterate.** A full pass usually covers dozens of modules, but a given version touches three or five. Pick them, then **talk to the document**: *"this version adds a per-participant visibility column"* → Draft N+1, with the change marked in pink, anchored, numbered, and bound to the draft it belongs to. The modules you did not mention are not touched at all.
+
+![iteration](docs/shots/iteration.png)
+
+*The same document as the screenshot above, one draft further. In the prototype lane a change is a pink block with a number (`C1`); in the narrative lane the same number carries the explanation plus a "locate P1" link — click it to jump to the frame the change lives in, click the number in the prototype to come back. The two lanes are held together by numbering, not by memory.*
+
+This draft changes two things: a status filter on the list (`C1`), and an impact count in the deactivate dialog (`C2`). The "2 changes" badge at the top is counted from the annotations, not typed by hand.
 
 **③ Merge.** Fold the changed modules back into the full document — one numbering scheme, one source of truth. Before copying anything back it checks provenance: every time `merge_modules.py` writes a master, it also writes an `origin.json` recording which module versions that master was built from. Direct evidence. The older approach — fingerprinting the untouched modules — could only infer, and fell apart when the range covered every module.
 
