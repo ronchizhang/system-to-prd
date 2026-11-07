@@ -65,7 +65,7 @@ python scripts/check_test_env.py <URL>
 | **真做，不只看** | 新增 / 编辑 / 删除 / 提交 / 审批 / 退回都真跑一遍，记录 toast 原文与状态变化；先记原值、自造数据自清理、一次只改一个变量 | 校验文案、二次确认、失败路径、状态流转全部只能靠猜 |
 | **弹窗/抽屉/页签/二级页拿全** | 四路凑清单（路由表 / 按钮 / chunk / 用例），逐个开；页签核对 `aria-selected`；二级页优先 URL 直连；分步表单真走到最后一步 | `dialogs[]` 标了 `covered:true` 却没帧，`check_delivery` 直接 FAIL |
 
-**不碰**：真实打款、真实发邮件/短信、真实请款、删他人数据、改权限与配置中心。必须做才能验证的，**标「未实做 + 原因」进事实清单**，不许用「应该会」写成结论。
+**不碰**：真实打款、真实发邮件/短信、真实结算申请、删他人数据、改权限与配置中心。必须做才能验证的，**标「未实做 + 原因」进事实清单**，不许用「应该会」写成结论。
 
 细则（含操作纪律、记录格式、覆盖度自查）：`references/interaction.md`。
 
@@ -182,9 +182,9 @@ python scripts/login.py --url <登录页> --api <网关> \
 
 用户给的是**菜单名**，要先翻译成：
 
-1. **菜单路径**：`人员管理 → 字段配置`（写清层级）
-2. **路由与页面标题**：`/personManage/fieldSetting/list`。页面 h1 可能与菜单名不一致（实测过用例叫「人员信息设置」、线上叫「人员字段配置」）
-3. **依赖参数**：很多三级菜单要先选主体（客户/项目/服务方），没参数就白屏
+1. **菜单路径**：`学员管理 → 字段配置`（写清层级）
+2. **路由与页面标题**：`/studentManage/fieldSetting/list`。页面 h1 可能与菜单名不一致（实测过用例叫「学员档案设置」、线上叫「学员档案字段」）
+3. **依赖参数**：很多三级菜单要先选主体（机构/项目/授课方），没参数就白屏
 4. **本模块内的二级页与弹窗清单** —— 最容易漏
 
 **四个来源找，缺一会漏：**
@@ -226,18 +226,18 @@ python scripts/launch_chrome.py --headed
 # 抓主页面 + 点开弹窗各一帧，输出 snapshot/<key>.json 与实拍截图
 python scripts/snapshot_page.py \
     --base https://test1x.example.com \
-    --url /personManage/fieldSetting/list --key ops-field --page p1 --name 字段配置列表
+    --url /studentManage/fieldSetting/list --key ops-field --page p1 --name 字段配置列表
 
 # 弹窗：--open 给按钮文案；批量就写 plan.json（见脚本头）
 python scripts/snapshot_page.py --base https://test1x.example.com \
-    --url /personManage/fieldSetting/list --key ops-field --page p2 \
+    --url /studentManage/fieldSetting/list --key ops-field --page p2 \
     --name 管理分组 --open 管理分组
 ```
 
 抓完会打印每帧抽到了什么：
 
 ```
-[1/1] p1  /personManage/fieldSetting/list
+[1/1] p1  /studentManage/fieldSetting/list
         → 6 张表 / 48 列、8 个按钮
 ```
 
@@ -282,7 +282,7 @@ S6 构建时加 `--facts` 会自动同步进去并回写模块数据。
 
 ```bash
 python scripts/gate.py scope --root . --module <key> --by <姓名> \
-  --what "8 段 / 22 条规则 / 7 态 9 条迁移 / 不写供应商单据与自营单据"
+  --what "8 段 / 22 条规则 / 7 态 9 条迁移 / 不写合作校单据与自营单据"
 ```
 
 `--what` 必须写具体数字。只写「已确认」等于没确认——三个月后没人知道当时确认的范围。
@@ -368,8 +368,8 @@ python scripts/check_delivery.py --root <工作台> --module <key> --strict
 
 ```bash
 python scripts/init_run.py --root ./prd-run --project "项目名" \
-  --module "管理后台|人员管理 / 人员字段配置|ops-person-field|张三" \
-  --module "管理后台|客户中心 / 客户列表|ops-customer|李四"
+  --module "管理后台|学员管理 / 学员档案字段|ops-person-field|张三" \
+  --module "管理后台|机构中心 / 机构列表|ops-customer|李四"
 ```
 
 产出：
@@ -389,7 +389,7 @@ prd-run/
 - **一个三级菜单 = 一个模块 = 一个 key = 一个人**。不要让两个人碰同一个 json。
 - **复制工作台要整目录复制**，别只拷 `modules/`——`origin.json` 在根目录，它是合并时证明「这份副本基于哪一版」的唯一凭据。漏了它，合并前就只能靠推断。
 - `key` 全局唯一，命名 `{系统简写}-{模块简称}`，如 `ops-person-field`。**定了不许改**（合并靠它去重排序）。
-- 模块之间**有依赖的**（如「客户隐藏字段」影响 7 个页面），在 `context.yaml` 里写清跨模块影响，不要各自实现一遍。
+- 模块之间**有依赖的**（如「机构隐藏字段」影响 7 个页面），在 `context.yaml` 里写清跨模块影响，不要各自实现一遍。
 
 ### 看谁交了
 

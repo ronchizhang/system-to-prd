@@ -269,7 +269,7 @@ class Xref:
                     self.trans.add((k, t["id"]))
             if mt.get("module"):
                 self.mods[mt["module"]] = k
-        # 别名：报告和正文里不会总写全名（写「财务请款」而不是「财务请款管理」）。
+        # 别名：报告和正文里不会总写全名（写「财务结算申请」而不是「财务结算申请管理」）。
         # 只对「去掉『管理』后仍够长」的名字生成，且必须不撞真名、不撞多个模块，
         # 否则「付款账号」会把「付款账号审批」也吃掉。
         alias = collections.defaultdict(set)
@@ -279,7 +279,7 @@ class Xref:
                 if a not in self.mods:
                     alias[a].add(mk)
         self.alias = {a: next(iter(s)) for a, s in alias.items() if len(s) == 1}
-        # 长名优先：不这么做「客户账单」会先吃掉「客户账单认款」的前半截
+        # 长名优先：不这么做「机构账单」会先吃掉「机构账单对账确认」的前半截
         self.names = sorted(set(self.mods) | set(self.alias), key=len, reverse=True)
 
     def target(self, name):
@@ -316,7 +316,7 @@ def _linkify_text(t, mkey, xr, seen, hold, carry="", whole_only=False):
             if p >= 0 and p + len(name) > pos:
                 mk, pos = xr.target(name), p + len(name)
         # ② 紧邻的规则前缀，如「R-DEMO-SELF T17」。必须紧邻：
-        #    放宽到整句就会被更早的 R-XXX 带偏（「财务请款（T13）」曾被判给自营单据）。
+        #    放宽到整句就会被更早的 R-XXX 带偏（「财务结算申请（T13）」曾被判给自营单据）。
         tail = XREF_PREF.findall(head[-10:])
         for cand in reversed(tail):
             got = xr.pref.get(cand)
@@ -387,7 +387,7 @@ def _linkify_text(t, mkey, xr, seen, hold, carry="", whole_only=False):
     for name in xr.names:
         if name == own or name not in t:
             continue
-        # 表格里只认「整格就是模块名」：菜单路径那列写着「账单和请款 / 客户账单 / 客户账单」，
+        # 表格里只认「整格就是模块名」：菜单路径那列写着「账单和结算申请 / 机构账单 / 机构账单」，
         # 按子串链会把表格点成一片蓝。
         if whole_only and t.strip() != name:
             continue
@@ -1083,7 +1083,7 @@ function renderNav(q){
   /* 系统 → 一级菜单 → 模块。一级菜单（menu 的第一段）是可折叠的组标题，
      其余段落成模块按钮的副标题（menu 写三段时第三段并进副标题，不再嵌一层）。
      先按「系统 + 一级菜单」稳定分组再渲染：模块是按 key 排序读进来的，
-     同一菜单下的模块会被别的菜单隔开，不分组就会冒出两个「人员管理」。 */
+     同一菜单下的模块会被别的菜单隔开，不分组就会冒出两个「学员管理」。 */
   function closeG(){ if (inG) { html.push('</div>'); inG = false; } }
   var order = [], grp = {};
   ALL.modules.forEach(function(m, i){
@@ -1855,8 +1855,8 @@ def main():
             uniq.append(m)
     mods = uniq
 
-    # 排序：管理后台 → 企业端 → 员工端，组内按 run 顺序
-    order = {"管理后台": 0, "企业端": 1, "员工端": 2}
+    # 排序：管理后台 → 机构端 → 学员端，组内按 run 顺序
+    order = {"管理后台": 0, "机构端": 1, "学员端": 2}
     mods.sort(key=lambda m: order.get((m.get("meta") or {}).get("system"), 9))
 
     # 跨模块规则编号查重：id 是全量 PRD 里的全局引用锚点，撞号后「R-xx 说了什么」会有歧义

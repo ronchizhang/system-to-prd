@@ -52,7 +52,7 @@ def chg_drafts(blob):
         if m:
             out.setdefault(m.group(1), int(d.group(1)) if d else 0)
     return out
-TERMINALS = ("管理后台", "企业端", "员工端")
+TERMINALS = ("管理后台", "机构端", "学员端")
 KIND = ("新增", "修改", "删除")
 
 
@@ -264,7 +264,7 @@ def check(s):
     # ---- 终端与模块一致 ----
     if s["terminal"]:
         if s["terminal"] not in TERMINALS:
-            add("fail", "terminal=%r 不在 管理后台/企业端/员工端 里" % s["terminal"])
+            add("fail", "terminal=%r 不在 管理后台/机构端/学员端 里" % s["terminal"])
         wrong = [m["key"] for m in s["modules"] if m["system"] and m["system"] != s["terminal"]]
         if wrong:
             add("warn", "这些模块的 meta.system 与 terminal 不一致：%s（跨端迭代就分两个工作台）"
@@ -426,7 +426,7 @@ def main():
     ap.add_argument("--json", action="store_true", help="机器可读")
     ap.add_argument("--set", action="store_true", help="把 mode/terminal/product/draft/scope 写进 run.json")
     ap.add_argument("--mode", choices=("asis", "iterate"), help="交付 A 现状 / 交付 B 迭代")
-    ap.add_argument("--terminal", help="管理后台 / 企业端 / 员工端")
+    ap.add_argument("--terminal", help="管理后台 / 机构端 / 学员端")
     ap.add_argument("--product", help="产品版本，如「管理后台 V5.0」")
     ap.add_argument("--draft", type=int, help="第几稿；不填则按工作台最大值 +1")
     ap.add_argument("--rev", type=int,

@@ -463,8 +463,8 @@ body.proto .pane-hd .k{color:#1E6FD9}
 .px-table.wide{table-layout:auto;width:max-content;min-width:100%}
 .px-table.wide th,.px-table.wide td{overflow:visible;text-overflow:clip}
 /* 快照按协议分组：每组一张小表，表头只列该协议需要的字段。
-   为什么不用一张并集宽表：并集表里同一列名在不同协议下含义不同（银行编码在 清算网络A 是 Routing，
-   在本地清算是分行号），空着的格子读不出「不需要」还是「没填」 */
+   为什么不用一张并集宽表：并集表里同一列名在不同协议下含义不同（银行编码在 通道A 是 Routing，
+   在本地结算是分行号），空着的格子读不出「不需要」还是「没填」 */
 .px-grp{border:1px solid #E9EFF6;border-radius:8px;overflow:hidden;margin-top:9px;background:#fff}
 .px-grp-hd{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#F7FAFD;
   border-bottom:1px solid #E6EDF5;font-size:12.5px;color:#41566E}
@@ -483,7 +483,7 @@ body.proto .pane-hd .k{color:#1E6FD9}
 .px-table .pw5{width:15%}
 .px-table .pw6{width:18%}
 .px-table .pw7{width:22%}
-/* 向导型页面（新增人员这类两步流程）的步骤条。实拍是居中圆点 + 编号 + 连线 */
+/* 向导型页面（新增学员这类两步流程）的步骤条。实拍是居中圆点 + 编号 + 连线 */
 .px-steps{display:flex;align-items:center;justify-content:center;gap:12px;margin:2px 0 20px}
 .px-step{display:flex;align-items:center;gap:7px;font-size:13px;color:#8CA0B4}
 .px-step.on{color:#1E6FD9;font-weight:600}
@@ -617,9 +617,9 @@ body.proto .pane-hd .k{color:#1E6FD9}
 /* 状态格下面的一行小字：失败原因 / 未发起提示 */
 .px-fail{display:inline-block;margin-top:3px;font-size:10.5px;line-height:1.5;color:#B45309}
 .px-fail.red{color:#C62828}
-/* 协议分组：一张出款单里，不同的人可能走不同清算网络，字段各不相同。
+/* 协议分组：一张打款单里，不同的人可能走不同通道，字段各不相同。
    按协议拆成若干组，每组一张小表，列只保留该协议真正要的字段——
-   一张并集宽表会把「银行代码」在 清算网络A 是 routing number、在 清算网络E 是 银行代码 混成一列，诱导填错 */
+   一张并集宽表会把「银行代码」在 通道A 是 联行号、在 通道E 是 银行代码 混成一列，诱导填错 */
 .px-grp{border:1px solid #E3EAF3;border-radius:8px;margin:9px 0;overflow:hidden;background:#fff}
 .px-grp-hd{display:flex;align-items:center;gap:8px;padding:8px 11px;background:#F7FAFD;
   border-bottom:1px solid #E8EFF7;font-size:12px;color:#41566E}
@@ -628,7 +628,7 @@ body.proto .pane-hd .k{color:#1E6FD9}
 .px-grp-hd .px-sp{flex:1}
 .px-grp .px-table th{font-size:11px;padding:7px 9px;background:#FBFDFF}
 .px-grp .px-table td{font-size:11.5px;padding:8px 9px}
-/* 一次出款的批次汇总条：几人 / 多少钱 / 分几批 */
+/* 一次打款的批次汇总条：几人 / 多少钱 / 分几批 */
 .px-batch{display:flex;gap:16px;flex-wrap:wrap;align-items:center;background:#F3F8FD;
   border:1px solid #DCE8F5;border-radius:7px;padding:9px 12px;margin:2px 0 6px;font-size:12.5px;color:#1F2A37}
 .px-batch i{font-style:normal;color:#8FA3B8;margin-right:5px}
@@ -670,11 +670,11 @@ body.proto .pane-hd .k{color:#1E6FD9}
 .px-alert.info .ico{background:#4A8AD8}
 .px-alert.info b{color:#1E4E7C}
 /* 阻断态：只有「不解决就提交不了」才用红。缺字段但允许提交的用 .warn（琥珀），
-   用红色表达「不阻断」会让客户以为这单付不出去了——业务方为此纠正过两次 */
+   用红色表达「不阻断」会让机构以为这单付不出去了——业务方为此纠正过两次 */
 .px-alert.danger{background:#FEF3F2;border:1px solid #FDA29B;color:#912018}
 .px-alert.danger .ico{background:#D92D20}
 .px-alert.danger b{color:#7A271A}
-/* 表单只读 / 警示态：新增人员这类页面大量用「自动带出不可改」字段，样式统一在这里，
+/* 表单只读 / 警示态：新增学员这类页面大量用「自动带出不可改」字段，样式统一在这里，
    页面里不许再写内联 style（否则每个人画出来都不一样） */
 .px-fctrl.ro{background:#FAFBFD;color:#8FA3B8}
 .px-fctrl.pick{justify-content:space-between}
@@ -695,8 +695,8 @@ body.proto .pane-hd .k{color:#1E6FD9}
 .px-v{color:#1F2A37}
 /* 不可选那一格里的名字：看着像链接、其实是灰的，悬停给原因 */
 .px-dislink{color:#9AAABA;border-bottom:1px dashed #C9D6E4;cursor:help}
-/* 展开行：该人员按这个协议收到的全部字段。放在行下方而不是另起弹窗，
-   因为要跟同行的人对照——"他走 清算网络FA 只要四项，这个人走 清算网络S 要八项" */
+/* 展开行：该学员按这个协议收到的全部字段。放在行下方而不是另起弹窗，
+   因为要跟同行的人对照——"他走 通道FA 只要四项，这个人走 通道S 要八项" */
 .px-exprow td{background:#FBFDFF;border-top:1px dashed #DCE8F5}
 .px-exp-hd{display:flex;align-items:center;gap:8px;font-size:11.5px;color:#41566E;margin-bottom:8px}
 .px-flist{display:grid;grid-template-columns:repeat(4,1fr);gap:6px 14px}
@@ -715,7 +715,7 @@ body.proto .pane-hd .k{color:#1E6FD9}
 .px-table th.w-s{width:84px}
 .px-table th.w-n{width:178px}
 .px-table th.w-dt{width:104px}
-/* 允许换行的单元格：金额、人员名单这类「一条里有多段」的内容，宁可换行也不截断。
+/* 允许换行的单元格：金额、学员名单这类「一条里有多段」的内容，宁可换行也不截断。
    截断会让读的人以为只有一笔/一人。 */
 .px-table td.wrap{white-space:normal;word-break:break-word;text-overflow:clip;line-height:1.5}
 .px-table th.w-c{width:46px}
@@ -735,7 +735,7 @@ body.proto .pane-hd .k{color:#1E6FD9}
 .px-table th.w-m{width:216px}
 .px-table th.w-l{width:24%}
 .px-table th.w-xl{width:28%}
-/* 流程卡片：财务请款申请那种一格一格的豆腐块。一条业务请款拆成 N 条财务请款 = N 格 */
+/* 流程卡片：财务结算申请申请那种一格一格的豆腐块。一条业务结算申请拆成 N 条财务结算申请 = N 格 */
 .px-fcard{border:1px solid #EDF0F3;border-radius:8px;background:#fff;
   padding:16px 20px 14px;margin:0 0 12px}
 .px-fcard:last-child{margin-bottom:0}
@@ -867,7 +867,7 @@ body.proto .pane-hd .k{color:#1E6FD9}
    缩到 40% 就完全看不出——实测过，用户直接说「没有粉色提示」 */
 .px-table td.chg-col{box-shadow:inset 1.5px 0 0 rgba(240,98,146,.55),inset -1.5px 0 0 rgba(240,98,146,.55)}
 /* 改动列的单元格内容比普通列多（账户名 + 标签 + 协议），基础样式是 nowrap + 省略号，
-   硬撑着不换行就会把「雇佣服务某地区B-XPay」截成「…XPay…」。改动列一律允许换行 */
+   硬撑着不换行就会把「课程服务某地区B-XPay」截成「…XPay…」。改动列一律允许换行 */
 .px-table td.chg-col{white-space:normal;word-break:break-word;overflow-wrap:anywhere;
   text-overflow:clip;line-height:1.55}
 .px-table th.chg-col{position:relative;
@@ -1796,7 +1796,7 @@ function fillPChg(){
     var t = bd ? bd.textContent.trim() : "";
     var code = el.getAttribute("data-chg");
     var wip = el.classList.contains("px-wip");
-    // 徽标文字通常是「改⑩ 打款信息：补支付协议」，拆成编号 + 说明
+    // 徽标文字通常是「改⑩ 结算信息：补支付协议」，拆成编号 + 说明
     var m = t.match(/^(改[①-⑳0-9]+|新增|删[除]?)\s*[·：]?\s*(.*)$/);
     add(code, m ? (m[2] || m[1]) : (t || code), wip, el.getAttribute("data-draft"));
   });
