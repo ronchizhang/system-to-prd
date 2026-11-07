@@ -79,7 +79,7 @@
 
 ![iteration](docs/shots/iteration.png)
 
-*迭代态，和上面那张是同一份文档。左侧原型里，改动是一块粉底 + 一个编号（`C1`）；右侧叙事里是同一编号的说明，写着「定位 P1」——点它跳到改动所在的那一帧，点原型的编号再跳回来。两栏之间不是靠人记，是靠编号对上的。*
+*迭代态，和上面那张是同一份文档。左侧原型里改动是一块粉底 + 一个编号（`C1`）；**点它，一条红线牵到右侧同编号的说明**，对面那块同时亮起来，点「定位 P1」再跳回去。两栏不靠人记，靠编号对上。*
 
 这一稿改了两处：列表加一个状态筛选（`C1`），停用确认里补一句影响面（`C2`）。顶部那行「本稿改动 2」是从标注里数出来的，不是手写的。
 
@@ -247,7 +247,7 @@ That assumption decides everything about its shape. There is really only one sce
 
 ![iteration](docs/shots/iteration.png)
 
-*The same document as the screenshot above, one draft further. In the prototype lane a change is a pink block with a number (`C1`); in the narrative lane the same number carries the explanation plus a "locate P1" link — click it to jump to the frame the change lives in, click the number in the prototype to come back. The two lanes are held together by numbering, not by memory.*
+*The same document, one draft further. In the prototype lane a change is a pink block with a number (`C1`); **click it and a red line runs to the same number in the narrative lane**, which lights up as it lands. "locate P1" takes you back. The two lanes are held together by numbering, not by memory.*
 
 This draft changes two things: a status filter on the list (`C1`), and an impact count in the deactivate dialog (`C2`). The "2 changes" badge at the top is counted from the annotations, not typed by hand.
 
