@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-vendor_cdp.py —— 零依赖 Chrome DevTools Protocol（CDP）机构端 + 命令行工具。
+vendor_cdp.py —— 零依赖 Chrome DevTools Protocol（CDP）客户端 + 命令行工具。
 
 本文件是 browser-automation-cdp skill 里 cdp.py 的内嵌副本，目的：
 让 system-to-prd 装到没有那个 skill 的机器上也能跑实拍核对。
@@ -10,7 +10,7 @@ vendor_cdp.py —— 零依赖 Chrome DevTools Protocol（CDP）机构端 + 命�
 设计目标：
 1. 只用 Python 标准库（自带精简 WebSocket 实现），任何装了 Python 的机器都能直接跑，无需 pip。
 2. 命令行子命令固定、输出可机读，方便能力较弱的模型按步执行。
-3. 已规避自写 CDP 机构端的三个经典 bug：
+3. 已规避自写 CDP 客户端的三个经典 bug：
    - navigate() 加载超时必须返回 False（不是 True），否则下游静默失败；
    - send() 响应循环必须跳过 event 消息，否则事件会被误当成下一条命令的响应；
    - 建立连接前必须校验 WebSocket URL 格式（含 ws:// 与目标端口）。
@@ -61,10 +61,10 @@ class CDPError(Exception):
 
 
 # --------------------------------------------------------------------------
-# 精简 WebSocket 机构端（RFC 6455 机构端子集，纯标准库）
+# 精简 WebSocket 客户端（RFC 6455 客户端子集，纯标准库）
 # --------------------------------------------------------------------------
 class WSClient:
-    """最小可用的 WebSocket 机构端：文本帧、分片接收、掩码发送。"""
+    """最小可用的 WebSocket 客户端：文本帧、分片接收、掩码发送。"""
 
     def __init__(self, url, timeout=10.0):
         if not isinstance(url, str) or not url.startswith(("ws://", "wss://")):
@@ -195,7 +195,7 @@ class WSClient:
 
 
 # --------------------------------------------------------------------------
-# CDP 机构端
+# CDP 客户端
 # --------------------------------------------------------------------------
 class CDPClient:
     def __init__(self, host=DEFAULT_HOST, port=DEFAULT_PORT, timeout=15.0):
@@ -528,7 +528,7 @@ def _print_json(obj):
 
 
 def build_parser():
-    p = argparse.ArgumentParser(prog="cdp.py", description="零依赖 Chrome CDP 命令行机构端")
+    p = argparse.ArgumentParser(prog="cdp.py", description="零依赖 Chrome CDP 命令行客户端")
     p.add_argument("--port", type=int, default=DEFAULT_PORT, help="CDP 端口，默认 %d" % DEFAULT_PORT)
     p.add_argument("--host", default=DEFAULT_HOST, help="CDP 主机，默认 %s" % DEFAULT_HOST)
     p.add_argument("--target", help="指定标签页 targetId")

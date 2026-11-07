@@ -87,9 +87,9 @@ def check_cdp():
         import cdp_boot
         m = cdp_boot.load()
         where = "包内 vendor_cdp" if m.__name__ == "vendor_cdp" else "外部 skill"
-        add(OK, "CDP 机构端", where)
+        add(OK, "CDP 客户端", where)
     except Exception as e:
-        add(BAD, "CDP 机构端", str(e).split("\n")[0])
+        add(BAD, "CDP 客户端", str(e).split("\n")[0])
         return
     if cdp_boot.port_open(9222):
         try:
