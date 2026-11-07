@@ -146,6 +146,102 @@ SINGLE_JS = r"""
 """
 
 
+# 截图前先等页面稳：字体、图片、连续两帧布局都不再变。
+# 固定 sleep 是要么截早了（半截渲染），要么白等——两种情况都真实发生过。
+SETTLE_JS = r"""
+new Promise(function(resolve){
+  var t0 = Date.now(), last = null, stable = 0, imgWait = 0;
+  function metrics(){
+    var d = document;
+    return [d.documentElement.scrollHeight, d.documentElement.scrollWidth,
+            document.body ? document.body.scrollHeight : 0].join("x");
+  }
+  function tick(){
+    var m = metrics();
+    if (m === last) stable++; else { stable = 0; last = m; }
+    // 连续两个 rAF 尺寸一致 = 布局不再动；2.6s 硬上限防止页面永远在动
+    if (stable >= 2 || Date.now() - t0 > 2600) { resolve(1); return; }
+    requestAnimationFrame(tick);
+  }
+  function afterFonts(){
+    var pending = Array.prototype.filter.call(document.images, function(im){ return !im.complete; });
+    if (pending.length && imgWait < 40) { imgWait++; setTimeout(afterFonts, 50); return; }
+    requestAnimationFrame(function(){ requestAnimationFrame(tick); });
+  }
+  if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
+    document.fonts.ready.then(afterFonts).catch(afterFonts);
+  } else { afterFonts(); }
+})
+"""
+
+
+def wait_settle(P, fallback=1.0):
+    """等渲染真的落定再截图。失败就退回固定等待，不让核对流程挂住。"""
+    try:
+        P.send("Runtime.evaluate",
+               {"expression": SETTLE_JS, "awaitPromise": True,
+                "returnByValue": True, "userGesture": True},
+               timeout=8)
+        return True
+    except Exception:
+        time.sleep(fallback)
+        return False
+
+
+# 内容被 overflow:hidden 切掉：模板里已算过一次，这里再兜底问一次
+CLIP_JS = r"""
+(function(){
+  try{
+    if (!window.clipScan) return '';
+    var c = window.clipScan();
+    if (!c.length) return '';
+    return c.slice(0, 4).map(function(x){
+      return x.cls + '(' + x.axis + '溢 ' + x.over + 'px)';
+    }).join(' / ') + (c.length > 4 ? ' 等 ' + c.length + ' 处' : '');
+  }catch(e){ return ''; }
+})()
+"""
+
+
+def clip_issue(ev):
+    try:
+        s = ev(CLIP_JS)
+    except Exception:
+        return None
+    return ('内容被裁切：' + s) if s else None
+
+
+# 只查当前这一帧是不够的：底部按钮被切往往只发生在某一个弹窗帧上
+# （2026-11-06 字段详情那帧就是这么漏掉的）。逐帧点一遍再量。
+FRAME_SWEEP_JS = r"""
+(function(){
+  var tabs = document.querySelectorAll('.ptab'), bad = [], first = null;
+  if (!tabs.length || !window.clipScan) return '';
+  first = tabs[0];
+  for (var i = 0; i < tabs.length; i++){
+    tabs[i].click();
+    try {
+      var c = window.clipScan();
+      if (c.length) {
+        bad.push(tabs[i].textContent.replace(/\s+/g,' ').trim() + ' → ' +
+          c.map(function(x){ return x.cls + ' ' + x.axis + '溢 ' + x.over + 'px'; }).join('、'));
+      }
+    } catch(e){}
+  }
+  if (first) first.click();
+  return bad.join(' ｜ ');
+})()
+"""
+
+
+def frame_sweep(ev):
+    try:
+        s = ev(FRAME_SWEEP_JS)
+    except Exception:
+        return None
+    return ('逐帧裁切：' + s) if s else None
+
+
 def verify_single(P, ev, args, out_dir):
     """单页模板（原型 / 叙事 / AI 读 / 核查 四视图）的核对。"""
     diag = {}
@@ -154,6 +250,12 @@ def verify_single(P, ev, args, out_dir):
     except Exception as e:
         print("  诊断失败：%s" % e)
     issues = diag.get("issues", [])
+    ci = clip_issue(ev)
+    if ci:
+        issues.append(ci)
+    fs = frame_sweep(ev)
+    if fs:
+        issues.append(fs)
     print("== 单页 PRD 核对：%s ==" % diag.get("title", "-"))
     print("  ① 原型 %d 帧（缩放 %s）· ② 叙事 %d 段 / %d 规则 / %d case / %d 状态图"
           % (diag.get("frames", 0), diag.get("zoom", "?"), diag.get("h2", 0),
@@ -169,7 +271,7 @@ def verify_single(P, ev, args, out_dir):
           if(!b) return 0; b.click(); return 1;})()""" % mode)
         if not ok:
             continue
-        time.sleep(1.0)
+        wait_settle(P)
         r = P.send("Page.captureScreenshot", {"format": "png"})
         path = os.path.join(out_dir, "prd_%s.png" % mode)
         open(path, "wb").write(base64.b64decode(r["data"]))
@@ -205,7 +307,7 @@ FULL_ONE_JS = r"""
   if (!res.rules) issues.push('没有规则卡');
   if (!res.svg) issues.push('没有状态机图');
   if (!res.jlines) issues.push('AI 层没有条目');
-  if (!res.frames) issues.push('① 原型没帧');
+  if (!res.frames) issues.push('① 原型没帧（定时任务、纯配置这类无界面模块可忽略）');
   if (!res.facts) issues.push('④ 事实清单为空');
   if (res.rules && !res.rlink) issues.push('规则没挂依据（点不回核查）');
   res.issues = issues;
@@ -227,12 +329,18 @@ def verify_full(P, ev, args, out_dir):
             print("  ✗ %-12s 侧栏点不到" % m.get("key"))
             bad += 1
             continue
-        time.sleep(1.0)
+        wait_settle(P)
         try:
             diag = json.loads(ev(FULL_ONE_JS) or "{}")
         except Exception:
             diag = {}
         issues = diag.get("issues", [])
+        ci = clip_issue(ev)
+        if ci:
+            issues.append(ci)
+        fs = frame_sweep(ev)
+        if fs:
+            issues.append(fs)
         print("  %s %-18s %d 段 · %d 规则 · %d case · 原型 %d 帧 · 事实 %d(P0 %d) · 依据 %d"
               % ("✗" if issues else "✓", diag.get("title", "-"), diag.get("h2", 0),
                  diag.get("rules", 0), diag.get("cases", 0), diag.get("frames", 0),
@@ -302,7 +410,8 @@ def main():
     # 必须带缓存破坏参数，否则截到的是旧页面
     import _compat
     P.navigate(_compat.file_url(html_abs, "v=%d" % int(time.time())))
-    time.sleep(2.5)
+    time.sleep(0.5)
+    wait_settle(P)                      # 首屏也要等：字体一换，整页高度都会变
 
     def ev(js):
         r = P.evaluate(js)
@@ -335,7 +444,7 @@ def main():
             print("  %-5s 跳转失败（goKey 不存在或 key 不匹配）" % k)
             bad.append((k, ["goKey 失败"]))
             continue
-        time.sleep(1.8)
+        wait_settle(P)
 
         diag = {}
         try:
@@ -343,6 +452,9 @@ def main():
         except Exception:
             pass
         issues = diag.get("issues", [])
+        ci = clip_issue(ev)
+        if ci:
+            issues.append(ci)
 
         if not args.skip_shot:
             r = P.send("Page.captureScreenshot", {"format": "png"})

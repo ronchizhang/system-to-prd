@@ -6,18 +6,18 @@
 
     # 源2 接口：拉枚举字典（key 从前端 hook 记录里抄，或先跑 probe 看 listEnums 的 body）
     python3 harvest.py enums --token-file <临时目录>/prd_token.json \\
-        --keys demo:fieldTextType,demo:fillParty -o enums.json
+        --keys demobackstage:fieldTextType,demobackstage:fillParty -o enums.json
 
     # 源2 接口：调任意接口
     python3 harvest.py probe --token-file <临时目录>/prd_token.json \\
-        --path /demo/form/group/list --body '{"id":"511..."}' -o groups.json
+        --path /demobackstage/field/group/list --body '{"id":"511..."}' -o groups.json
 
     # 源3 前端码：从本地 chunk 目录抽接口路径
     python3 harvest.py chunks --dir <chunk 目录> --match field -o fe_apis.json
 
     # 源4 后端码：读一个文件（代码仓库 或本地仓库都可）
-    python3 harvest.py be --repo acme/events/form-service \\
-        --path form-service/src/.../FormFieldController.java -o be_ctrl.txt
+    python3 harvest.py be --repo yourgroup/xxxx/demo/demo-backstage \\
+        --path demo-backstage-app/src/.../FieldController.java -o be_ctrl.txt
     python3 harvest.py be --local /path/to/repo --path <相对路径> -o be_ctrl.txt
     python3 harvest.py be-list --repo <完整路径> --path <目录>
 
@@ -200,7 +200,7 @@ def cmd_chunks(a):
     if len(apis) > 40 and not a.prefix:
         print("  ⚠ 太多了：chunk 会把整个 app 的 API 常量表一起打包进来，"
               "抽到的是「全集」不是「本模块用到的」。\n"
-              "    加 --prefix /demo/form,/demo/cust 缩小；"
+              "    加 --prefix /demobackstage/field,/demobackstage/cust 缩小；"
               "真正调用了哪些要看浏览器 hook 记录。")
     for u in sorted(apis)[:60]:
         print("  %-58s %s" % (u[:58], apis[u][0][:26]))
@@ -325,8 +325,8 @@ def main():
     p = sub.add_parser("enums", help="拉枚举字典真值")
     p.add_argument("--token-file", default=_compat.tmpfile("prd_token.json"))
     p.add_argument("--api", help="覆盖 token 文件里的网关地址")
-    p.add_argument("--path", default="/demo/enum/listEnums")
-    p.add_argument("--keys", required=True, help="逗号分隔，如 demo:fieldTextType,demo:fillParty")
+    p.add_argument("--path", default="/demobackstage/enum/listEnums")
+    p.add_argument("--keys", required=True, help="逗号分隔，如 demobackstage:fieldTextType,demobackstage:fillParty")
     p.add_argument("-o", "--out")
     p.set_defaults(func=cmd_enums)
 
@@ -342,7 +342,7 @@ def main():
     p = sub.add_parser("chunks", help="从本地前端 chunk 抽接口与文案")
     p.add_argument("--dir", default=_compat.tmpfile("chunks"))
     p.add_argument("--match", help="文件名关键词，如 field")
-    p.add_argument("--prefix", help="只保留这些路径前缀，逗号分隔，如 /demo/form")
+    p.add_argument("--prefix", help="只保留这些路径前缀，逗号分隔，如 /demobackstage/field")
     p.add_argument("--texts", action="store_true", help="同时抽中文文案字面量")
     p.add_argument("-o", "--out")
     p.set_defaults(func=cmd_chunks)

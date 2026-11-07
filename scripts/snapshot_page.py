@@ -14,11 +14,11 @@
 用法：
     # 抓一个页面（最常用）
     python3 snapshot_page.py --base https://test1x.example.com \\
-        --url /activity/formField?customerId=123 --key ops-field --page p1
+        --url /personManage/fieldSetting?customerId=123 --key ops-field --page p1
 
     # 抓一个页面 + 点开某个按钮后的弹窗，各出一份
     python3 snapshot_page.py --base https://test1x.example.com \\
-        --url /activity/formField --key ops-field --page p1 \\
+        --url /personManage/fieldSetting --key ops-field --page p1 \\
         --open "新增字段" --page p2
 
     # 批量：给一个清单文件
@@ -519,7 +519,7 @@ SNAP_JS = r"""
                   fw: parseInt(cs.fontWeight) || 400, box: boxed});
     });
     // 表单标签：antd 的 label 里常再包一层 span，不算叶子，会漏掉
-    // 「结算状态」「结算说明」这种只有标签没有值的字段
+    // 「出款状态」「出款说明」这种只有标签没有值的字段
     [].slice.call(document.querySelectorAll('.ant-form-item-label label, .ant-form-item-label')).forEach(function(e){
       if(!vis(e)) return;
       var t = T(e);

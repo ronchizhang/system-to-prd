@@ -12,13 +12,13 @@
 
 | 类型 | ❌ 正文里出现 | ✅ 正文这么写 | 去哪儿 |
 |:--|:--|:--|:--|
-| **接口地址** | `POST /demo/activity/refund/submit` | 「出纳点『确认结算』后，系统把这批单交给银行通道」 | 附录 B |
-| **返回字段** | `refundId`、`refund_amount`、`order_id` | 「这批单」「本单总金额」 | 附录 B |
-| **业务字段名** | `paymentMethod`、`refund_channel` | 界面上那一列的字：「打款方式」「支付协议」 | 附录 B |
-| **常量 / 枚举名** | `Constant.TICKET_GROUP`、`TICKET_SWITCH_LOCK_FORMAT` | 「企业内训票 项目」「同一个人在同一次结算里的锁」 | 附录 B |
-| **表名 / 状态码** | `payment_pending`、`in_progress`、`transitions` | 「待结算」「结算中」 | 附录 B |
+| **接口地址** | `POST /demobackstage/finance/payout/payout` | 「出纳点『确认出款』后，系统把这批单交给银行通道」 | 附录 B |
+| **返回字段** | `payoutId`、`total_amount`、`bill_id` | 「这批单」「本单总金额」 | 附录 B |
+| **业务字段名** | `paymentMethod`、`local_clearing_system` | 界面上那一列的字：「打款方式」「支付协议」 | 附录 B |
+| **常量 / 枚举名** | `Constant.DEMO_FLAG`、`DEMO_LOCK_FORMAT` | 「Demo PayLink 项目」「同一个人在同一次出款里的锁」 | 附录 B |
+| **表名 / 状态码** | `payout_waiting`、`in_progress`、`transitions` | 「待出款」「出款中」 | 附录 B |
 | **实现手段** | 落库、幂等、序列化、schema、轮询、回调 | 说**它保证了什么**：见下表 | 附录 B |
-| **页面路径** | `管理后台 → 财务管理 → 结算工作台` | 照写，**这个要留** | 正文 |
+| **页面路径** | `管理后台 → 财务管理 → 单据工作台` | 照写，**这个要留** | 正文 |
 
 **页面路径要留**：那是「人怎么走到这个页面」，是业务语言。要下沉的是**接口地址**，不是页面路径。
 两者长得很像（都是 `/xxx/yyy`），区别是：能在浏览器地址栏里敲出来的是页面，要靠程序调的是接口。
@@ -60,7 +60,7 @@
 
 满足任一条就配 case：
 
-- 规则里有 **≥2 个条件同时成立**（「协议是 跨行通道 **且** 币种是 EUR」）
+- 规则里有 **≥2 个条件同时成立**（「协议是 清算网络S **且** 币种是 EUR」）
 - 有**例外分支**（「一般这样，但金额超过 50,000 就不这样」）
 - 涉及**多人 / 多单 / 多币种**的合并与拆分
 - **两条规则会打架**，需要说清谁先
@@ -69,17 +69,17 @@
 ### 怎么写（五要素，不超过 5 行）
 
 ```
-例 2｜香港报名者退款，走本地清算
-张三是香港场次的合作方，收款账户是当地银行卡、币种 HKD。
-他退款 1,000 HKD，系统按「本地 · FPS」这条协议结算。
-银行回话成功 → 单据变「已结算」；本月这是第二笔，另扣 20 HKD 手续费。
+例 2｜某地区员工提现，走本地清算
+张三是某地区项目的合作方，收款账户是当地银行卡、币种 币种A。
+他提现 1,000 币种A，系统按「本地 · 清算网络U」这条协议出款。
+银行回话成功 → 单据变「已出款」；本月这是第二笔，另扣 20 USD 手续费。
 ```
 
 拆开就是：**谁**（有身份、有前提）→ **做什么**（具体动作、具体金额）→ **系统怎么反应**（判定 + 结果）→ **看的人据此做什么**（可选）。
 
 ### 三条禁忌
 
-1. **别用「例如某客户」**。写成「张三」「香港场次」——具体的名字才让人代入。
+1. **别用「例如某客户」**。写成「张三」「某地区项目」——具体的名字才让人代入。
 2. **别只写 happy path**。真正需要 case 的是拐弯的地方；只写顺利那条等于没写。
 3. **别把 case 写成测试用例**（点哪个按钮、断言什么）。case 是给**读需求的人**做判断用的。
 
@@ -102,8 +102,8 @@
   <thead><tr><th style="width:24%">正文里的说法</th><th style="width:20%">界面位置</th><th>实际对应</th></tr></thead>
   <tbody>
     <tr><td>打款方式</td><td>列表第 3 列</td><td><code>paymentMethod</code></td></tr>
-    <tr><td>支付协议</td><td>明细「打款信息」块</td><td><code>paymentScheme</code> + <code>refund_channel</code></td></tr>
-    <tr><td>「确认结算」</td><td>抽屉底部主按钮</td><td><code>POST /demo/activity/refund/submit</code></td></tr>
+    <tr><td>支付协议</td><td>明细「打款信息」块</td><td><code>paymentScheme</code> + <code>local_clearing_system</code></td></tr>
+    <tr><td>「确认出款」</td><td>抽屉底部主按钮</td><td><code>POST /demobackstage/finance/payout/payout</code></td></tr>
   </tbody>
 </table>
 ```

@@ -8,10 +8,10 @@
 token 写到 0600 的临时文件（默认在系统临时目录），**不写进项目目录**。
 
 用法：
-    export PRD_USER='13800000000' PRD_PASS='...'
+    export PRD_USER='138****0000' PRD_PASS='...'
     python3 login.py --url https://test1x.example.com/login \\
         --api https://test1x-gateway.example.com \\
-        --path /demo/login/loginUser
+        --path /demobackstage/login/loginUser
 
     # 密码走 MD5（多数老后台）
     python3 login.py ... --md5
@@ -20,7 +20,7 @@ token 写到 0600 的临时文件（默认在系统临时目录），**不写进
     python3 login.py ... --payload '{"account":"{user}","password":"{pass}","loginType":1}'
 
     # 登录后验证 token 并打印可用菜单数
-    python3 login.py ... --verify /demo/menu/action/menuTree
+    python3 login.py ... --verify /demobackstage/menu/action/menuTree
 
 退出码：0 成功 / 2 缺凭据 / 3 测试环境校验失败 / 4 登录失败 / 5 token 无效
 """
@@ -151,7 +151,7 @@ def main():
     ap = argparse.ArgumentParser(description="登录测试环境并保存 token")
     ap.add_argument("--url", required=True, help="登录页地址（用于域名守门）")
     ap.add_argument("--api", required=True, help="网关根地址，如 https://test1x-gateway.example.com")
-    ap.add_argument("--path", default="/demo/login/loginUser", help="登录接口路径")
+    ap.add_argument("--path", default="/demobackstage/login/loginUser", help="登录接口路径")
     ap.add_argument("--user", help="账号；不传则读 PRD_USER 或交互输入")
     ap.add_argument("--md5", action="store_true", help="密码按 MD5 提交")
     ap.add_argument("--payload", help="自定义 JSON 模板，可用 {user} {pass_} {passmd5}")

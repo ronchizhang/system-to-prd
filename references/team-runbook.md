@@ -20,21 +20,21 @@
 
 | 要什么 | 怎么确认 |
 |:--|:--|
-| **用例库已连接** | 能搜到 `报名全功能用例` 这个知识库 |
-| **代码仓库已连接** | 能读到仓库 `acme/events/form-service` |
-| **测试环境账号** | 后台 / 主办方端 / 报名者端 三套。**只给测试环境的，生产的一律不要** |
+| **用例库已连接** | 能搜到 `全功能用例` 这个知识库 |
+| **代码仓库已连接** | 能读到仓库 `yourgroup/yourproject/demo/demo-backstage` |
+| **测试环境账号** | 后台 / 企业端 / 人员端 三套。**只给测试环境的，生产的一律不要** |
 
-确认测试环境（**host 里必须有一段以 test 开头**，否则脚本会拒绝，别绕）：
+确认测试环境（脚本看域名里有没有环境词：test / uat / sit / dev / staging / pre / qa。**它只是提示，不是门禁**，但看错环境的代价是拿真实数据在跑——地址拿不准就直接问对方）：
 
 ```bash
-python <skill>/scripts/check_test_env.py https://test1demo.xxx.com
+python <skill>/scripts/check_test_env.py https://test1admin.xxx.com
 ```
 
 登录（账号密码每次现要，不要写进任何文件、不要复用别人的）：
 
 ```bash
 python <skill>/scripts/login.py --url <登录页> --api <网关> \
-  --path /demo/login/loginUser --user <账号> --out <临时目录>/prd_token.json
+  --path /demobackstage/login/loginUser --user <账号> --out <临时目录>/prd_token.json
 ```
 
 > 有验证码/短信就停，让自己的机器上登一次，再连 9222 复用会话。**别硬试，会触发风控。**
@@ -53,7 +53,7 @@ python <skill>/scripts/login.py --url <登录页> --api <网关> \
 
 做迭代 PRD，开工前必须拿到四个答案，**缺一个就停下来问**：
 
-1. 改哪个终端（管理后台 / 主办方端 / 报名者端）
+1. 改哪个终端（管理后台 / 企业端 / 员工端）
 2. 这一版的产品版本号（如 `管理后台 V5.0`）
 3. 基线是上一稿的哪一份
 4. 本次改动范围（哪几个模块、新增还是修改、一句话）
@@ -75,18 +75,18 @@ python <skill>/scripts/plan_iteration.py --root <工作台> \
 
 ## 第 1 步 · 圈定模块边界
 
-你拿到的可能只是"报名字段配置"这四个字。要把它翻译成：
+你拿到的可能只是"人员字段配置"这四个字。要把它翻译成：
 
-1. **菜单路径**：`报名管理 / 报名字段配置`（写清层级）
-2. **路由**：`/activity/formField/list`
-3. **依赖参数**：要不要先选客户/项目/服务商？没有参数会不会白屏？
+1. **菜单路径**：`人员管理 / 人员字段配置`（写清层级）
+2. **路由**：`/personManage/fieldSetting/list`
+3. **依赖参数**：要不要先选客户/项目/服务方？没有参数会不会白屏？
 4. **本模块下的二级页与弹窗清单** —— 最容易漏，见下表
 
 **四个地方找，少一个就会漏：**
 
 | 从哪找 | 怎么找 |
 |:--|:--|
-| 路由表 | 前端 `umi.*.js` 里同前缀的路由，如 `formField/add`、`formField/details/:id` |
+| 路由表 | 前端 `umi.*.js` 里同前缀的路由，如 `fieldSetting/add`、`fieldSetting/details/:id` |
 | 页面按钮 | 「新增 / 编辑 / 查看 / 引用模板」点了会开新页或弹窗 |
 | 前端 chunk | 组件名带 `modal` / `dialog` / `drawer` |
 | 用例库 | 用例里标了「弹窗」「xx 页面」的节点 |
@@ -113,19 +113,19 @@ python <skill>/scripts/plan_iteration.py --root <工作台> \
 ```bash
 # 字典真值（最硬的证据，别从界面猜枚举）
 python <skill>/scripts/harvest.py enums --token-file <临时目录>/prd_token.json \
-  --api <网关> --keys demo:fieldTextType,demo:fillParty
+  --api <网关> --keys demobackstage:fieldTextType,demobackstage:fillParty
 
 # 打单个接口
 python <skill>/scripts/harvest.py probe --token-file <临时目录>/prd_token.json \
-  --api <网关> --path /demo/form/group/list --body '{"id":"<customerId>"}'
+  --api <网关> --path /demobackstage/field/group/list --body '{"id":"<customerId>"}'
 
 # 从前端 chunk 抽接口（chunk 会把整个 app 的接口表打包进来，必须加 --prefix）
-python <skill>/scripts/harvest.py chunks --dir <chunk 目录> --match formField \
-  --prefix /demo/form
+python <skill>/scripts/harvest.py chunks --dir <chunk 目录> --match fieldSetting \
+  --prefix /demobackstage/field
 
 # 读后端代码（返回 base64，脚本会自动解码）
-python <skill>/scripts/harvest.py be --repo acme/events/form-service \
-  --path form-service/src/main/java/com/example/events/form/controller/FormFieldController.java
+python <skill>/scripts/harvest.py be --repo yourgroup/yourproject/demo/demo-backstage \
+  --path demo-backstage-app/src/main/java/com/example/geo/backstage/controller/filed/FieldController.java
 ```
 
 **后端代码这条最容易跳过，但最值钱。** 字段权限落库成哪五个值、状态什么时候被置位、唯一性校验有没有例外——这些界面上永远看不出来，只能读代码。
@@ -135,7 +135,7 @@ python <skill>/scripts/harvest.py be --repo acme/events/form-service \
 - **长页面一页一帧**，别拆成几个「页签帧」；超长用「同页 1/2」，`from` 写同一个页号
 - **能提交就提交**：新增 / 编辑 / 删除 / 提交 / 审批 / 退回都真跑一遍，把提示文案**照抄**下来。校验原文、二次确认、失败路径、状态流转，只有真做才拿得到
 - 先记原值、自己造的数据自己清理、一次只改一个变量
-- 不碰：真实打款、真实发邮件、真实用款申请、删别人的数据、改权限。必须做才能验证的，**标「未实做 + 原因」**，不许写「应该会」
+- 不碰：真实打款、真实发邮件、真实请款、删别人的数据、改权限。必须做才能验证的，**标「未实做 + 原因」**，不许写「应该会」
 - **弹窗 / 抽屉 / 页签 / 二级页尽量都拿到**，页签要确认真的切过去了（抽出来一模一样就是没切）
 
 细则：`references/interaction.md`。
@@ -181,7 +181,7 @@ python <skill>/scripts/gate.py facts --root <工作台> --module <key> \
 
 ```bash
 python <skill>/scripts/gate.py scope --root <工作台> --module <key> --by <姓名> \
-  --what "8 段 / 22 条规则 / 7 态 9 条迁移 / 不写合作方用款申请"
+  --what "8 段 / 22 条规则 / 7 态 9 条迁移 / 不写供应商单据"
 ```
 
 `--what` 写具体数字。只写「已确认」等于没确认。
@@ -272,11 +272,11 @@ python <skill>/scripts/launch_chrome.py --headed
 
 # 1. 实拍：真实页面 → 快照（同时存截图，作为「这帧确实来自实拍」的旁证）
 python <skill>/scripts/snapshot_page.py --base https://test1x.example.com \
-    --url /activity/formField/list --key <key> --page p1 --name 字段列表
+    --url /personManage/fieldSetting/list --key <key> --page p1 --name 字段列表
 
 # 2. 点开弹窗再抓一帧（--open 后面是按钮上的字）
 python <skill>/scripts/snapshot_page.py --base https://test1x.example.com \
-    --url /activity/formField/list --key <key> --page p2 --name 管理分组 --open 管理分组
+    --url /personManage/fieldSetting/list --key <key> --page p2 --name 管理分组 --open 管理分组
 
 # 3. 快照 → 原型帧，直接写进模块数据
 python <skill>/scripts/proto_from_snapshot.py --snapshot snapshot/<key>.json \
@@ -290,7 +290,7 @@ python <skill>/scripts/proto_from_snapshot.py --snapshot snapshot/<key>.json \
 每步都会打印抽到了什么：
 
 ```
-[1/1] p1  /activity/formField/list
+[1/1] p1  /personManage/fieldSetting/list
         → 6 张表 / 48 列、8 个按钮
 ```
 
@@ -307,7 +307,7 @@ python <skill>/scripts/proto_from_snapshot.py --snapshot snapshot/<key>.json \
 "prototype": {
   "viewport": "1440x900",
   "frames": [
-    {"id": "P1", "name": "字段列表", "state": "默认态", "route": "/activity/formField",
+    {"id": "P1", "name": "字段列表", "state": "默认态", "route": "/personManage/fieldSetting",
      "from": "<key>.json#p1",
      "note": "哪些是示例数据、哪里被裁掉了", "html": "<div class=\"px\">…</div>"}
   ]
@@ -380,16 +380,18 @@ python <skill>/scripts/gate.py status --root <工作台> --module <key>   # 先�
 python <skill>/scripts/check_delivery.py --root <工作台> --module <key> --strict
 ```
 
-**交付前必须双签**，两个人，别都写自己：
+**交付前封一次板**，你自己签就行（产品经理本人），不用找第二个人：
 
 ```bash
+# 整份封：一次盖住全部模块（推荐，最省事）
+python <skill>/scripts/gate.py doc --root <工作台> --by <你的名字> --note "整份看过，可以发"
+
+# 只封某一个模块（改了几个封几个，更精确）
 python <skill>/scripts/gate.py sign --root <工作台> --module <key> \
-  --role business --by <业务方姓名> --note "口径逐条过"
-python <skill>/scripts/gate.py sign --root <工作台> --module <key> \
-  --role tech --by <技术负责人姓名> --note "接口与契约已核"
+  --by <你的名字> --note "这一版可以往下走"
 ```
 
-改过稿要 `gate.py revoke --role tech` 重签，否则签的是上一版。
+**封板记的是内容，不是名字。** 封完之后再改这个模块，签会自动失效——`status` 和验收都会提示，重封一次即可，不用手动 `revoke`。所以顺序是：**先改完，最后封**。
 
 **全绿才算交了。** 它会查：
 
@@ -403,7 +405,7 @@ python <skill>/scripts/gate.py sign --root <工作台> --module <key> \
 - 有没有明文密码
 - **（做迭代才有）** 稿次与 run.json 一致 / 范围里的模块真标了改动 / 编号在原型和叙事两边同号 / 锚点目标存在
 - **反查（第二层）** 每条规则在产物里找得到 / 每条 P0 事实都被引用 / 已答的答案不是空话 / 标了 covered 的弹窗在帧里找得到
-- **签字（第二层）** 业务 + 技术双签、两个人不同、业务签字不是作者自己
+- **封板** 有人签过，且签的是当前内容（改了内容没重封会提示）
 
 交这四样：
 
@@ -458,7 +460,7 @@ HTML 长什么样由引擎决定。你觉得哪里不好看，说一声，别自
 
 ## 卡住了
 
-- 页面进不去 / 白屏 → 多半缺上级参数（客户/项目/服务商 id）
+- 页面进不去 / 白屏 → 多半缺上级参数（客户/项目/服务方 id）
 - 账号权限不够 → **找模块负责人开权限**，不要借别人的账号
 - 用例库 / 代码仓库 连不上 → 先检查连接，别用手工猜代替
 - 同一件事三个源说法不一样 → 这是**最有价值的发现**，不是麻烦。写进事实清单的 `conflict` 类，让对方裁定

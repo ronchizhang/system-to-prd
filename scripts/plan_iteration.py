@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 """迭代开工侦察与登记：这次改哪个终端、哪个产品版本、第几稿、改哪些模块。
 
-    python3 plan_iteration.py --root ./prd-demo              # 侦察报告（只读）
-    python3 plan_iteration.py --root ./prd-demo --check      # 一致性门禁，不过退出码 1
-    python3 plan_iteration.py --root ./prd-demo --set \
+    python3 plan_iteration.py --root ./prd-xpay              # 侦察报告（只读）
+    python3 plan_iteration.py --root ./prd-xpay --check      # 一致性门禁，不过退出码 1
+    python3 plan_iteration.py --root ./prd-xpay --set \
         --terminal 管理后台 --product "管理后台 V5.0" --draft 14 \
-        --scope "demo-settle-workbench|修改|缺字段只提示不阻断" \
+        --scope "demo-payout-workbench|修改|缺字段只提示不阻断" \
         --scope "demo-partner-request|修改|协议由单值改为集合"
 
 为什么要有这个脚本：
@@ -52,7 +52,7 @@ def chg_drafts(blob):
         if m:
             out.setdefault(m.group(1), int(d.group(1)) if d else 0)
     return out
-TERMINALS = ("管理后台", "主办方端", "报名者端")
+TERMINALS = ("管理后台", "企业端", "员工端")
 KIND = ("新增", "修改", "删除")
 
 
@@ -264,7 +264,7 @@ def check(s):
     # ---- 终端与模块一致 ----
     if s["terminal"]:
         if s["terminal"] not in TERMINALS:
-            add("fail", "terminal=%r 不在 管理后台/主办方端/报名者端 里" % s["terminal"])
+            add("fail", "terminal=%r 不在 管理后台/企业端/员工端 里" % s["terminal"])
         wrong = [m["key"] for m in s["modules"] if m["system"] and m["system"] != s["terminal"]]
         if wrong:
             add("warn", "这些模块的 meta.system 与 terminal 不一致：%s（跨端迭代就分两个工作台）"
@@ -426,7 +426,7 @@ def main():
     ap.add_argument("--json", action="store_true", help="机器可读")
     ap.add_argument("--set", action="store_true", help="把 mode/terminal/product/draft/scope 写进 run.json")
     ap.add_argument("--mode", choices=("asis", "iterate"), help="交付 A 现状 / 交付 B 迭代")
-    ap.add_argument("--terminal", help="管理后台 / 主办方端 / 报名者端")
+    ap.add_argument("--terminal", help="管理后台 / 企业端 / 员工端")
     ap.add_argument("--product", help="产品版本，如「管理后台 V5.0」")
     ap.add_argument("--draft", type=int, help="第几稿；不填则按工作台最大值 +1")
     ap.add_argument("--rev", type=int,

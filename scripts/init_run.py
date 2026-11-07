@@ -3,12 +3,12 @@
 """给一个模块初始化工作台。同事拿到目录后只做三件事：填 facts、回答问题、填 module。
 
     # 一个人负责一个模块（最常见）
-    python3 init_run.py --root ./prd-run --project "示例后台" \
-        --module "管理后台|报名管理 / 报名字段配置|ops-person-field|张三"
+    python3 init_run.py --root ./prd-run --project "Demo Brand" \
+        --module "管理后台|人员管理 / 人员字段配置|ops-person-field|张三"
 
     # 一次给整个团队铺开
-    python3 init_run.py --root ./prd-run --project "示例后台" \
-        --module "管理后台|报名管理 / 报名字段配置|ops-person-field|张三" \
+    python3 init_run.py --root ./prd-run --project "Demo Brand" \
+        --module "管理后台|人员管理 / 人员字段配置|ops-person-field|张三" \
         --module "管理后台|客户中心 / 客户列表|ops-customer|李四"
 
     # 看现有工作台里谁交了、谁没交
@@ -26,6 +26,7 @@
 
 import argparse
 import datetime as dt
+import hashlib
 import json
 import os
 import shutil
@@ -81,8 +82,8 @@ def skeleton_module(sysname, menu, key, owner, project):
             "system": sysname,
             "module": module,
             "menu": " / ".join(x.strip() for x in parts),
-            "route": "TODO 填真实路由，如 /activity/xxx/list",
-            "env": "TODO 测试环境域名，如 测试环境 test1demo",
+            "route": "TODO 填真实路由，如 /personManage/xxx/list",
+            "env": "TODO 测试环境域名，如 测试环境 test1admin",
             "customer": "",
             "date": dt.date.today().isoformat(),
             "version": "v0.1 草稿",
@@ -114,7 +115,7 @@ def skeleton_module(sysname, menu, key, owner, project):
             "confidence": "TODO 哪几条有实证、哪几条是推论",
             "note": "",
         },
-        "apis": [{"method": "POST", "path": "TODO /demo/xxx/list",
+        "apis": [{"method": "POST", "path": "TODO /demobackstage/xxx/list",
                   "purpose": "TODO", "auth": "TODO 要不要权限点", "evidence": "TODO"}],
         "questions": [{"id": "Q-01", "title": "TODO 第一个待确认问题",
                        "why": "TODO 为什么拿不准，冲突在哪", "ask": "TODO 要对方定什么",
@@ -135,7 +136,7 @@ def skeleton_module(sysname, menu, key, owner, project):
                 "from": "",
                 "note": TODO + "看图时必须说明的事 -->",
                 "html": '<div class="px">'
-                        '<div class="px-top"><div class="px-logo">DEMO <i>ADMIN</i></div>'
+                        '<div class="px-top"><div class="px-logo">Demo <i>Brand</i></div>'
                         '<div class="px-tmenu"><span class="on">' + module + '</span></div>'
                         '<div class="px-tright"><div class="px-av">运</div></div></div>'
                         '<div class="px-body"><div class="px-main">'
@@ -353,6 +354,36 @@ def main():
     run["engine"] = S.ENGINE
     run["updated"] = now()
     json.dump(run, open(runp, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+
+    # 建台就立一张身份证，但标 skeleton：这会儿模块文件还是骨架，
+    # 不能当成「一版可交付的全量」去做合并校验。第一次 merge_modules
+    # 出全量时会把它覆盖成 state=built。
+    # 好处是工作台从第一天起就有来源记录，不会等人合并时才发现缺东西。
+    #
+    # 只在**没有身份证时**才写。已有工作台加模块时不能碰它：那会把已经
+    # built 的正式证降级成 skeleton，把「基于哪一版」的答案直接抹掉。
+    _op = os.path.join(root, "origin.json")
+    if not os.path.exists(_op):
+        _digs = {}
+        for _m in run["modules"]:
+            _k = _m.get("key")
+            _mp = os.path.join(root, "modules", (_k or "") + ".json")
+            if _k and os.path.isfile(_mp):
+                with open(_mp, "rb") as _f:
+                    _digs[_k] = hashlib.sha256(_f.read()).hexdigest()
+        json.dump({
+            "engine": S.ENGINE,
+            "built_at": now(),
+            "draft": 0,
+            "rev": 0,
+            "state": "skeleton",
+            "modules": _digs,
+        }, open(_op, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    else:
+        print("  origin.json 已存在，保留不动（正式身份证不能被建台流程覆盖）")
+        if a.force and made:
+            print("  ⚠ 用了 --force 重写模块骨架，身份证记的指纹已经对不上；"
+                  "出一次全量会重新对齐。")
 
     # 操作卡：优先复制 skill 里的团队手册，拿不到就写简版
     rb_src = os.path.join(SKILL, "references", "team-runbook.md")

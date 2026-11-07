@@ -2,7 +2,7 @@
 
 **A PRD that can prove itself.** ｜ 一份能自证的 PRD。
 
-`Capture · 取证` ｜ `Evolve · 演进` ｜ `Merge · 收敛`
+`Capture · 采集现状` ｜ `Iterate · 迭代` ｜ `Merge · 合并`
 
 > **AI 来了，所有人都在问：新的产研协同到底长什么样。**
 > 卡点不在模型，在于产品、测试、技术的信息从来不在同一个地方——就算都在，也对不齐。产品文档尤其乱，图和文对不上号。
@@ -10,11 +10,9 @@
 >
 > *Most PRDs are written from memory. This one is written from evidence.*
 
-**[English](#en) ｜ [中文](#zh)**　·　[▸ 在线看](https://ronchizhang.github.io/system-to-prd/)　·　[as-is PRD](https://ronchizhang.github.io/system-to-prd/demo-prd.html)　·　[Draft 2 with change marks](https://ronchizhang.github.io/system-to-prd/demo-iteration.html)
+**[English](#en) ｜ [中文](#zh)**　·　[▸ 在线看](https://ronchizhang.github.io/system-to-prd/)
 
-[![Live demo](https://img.shields.io/badge/live%20demo-online-brightgreen)](https://ronchizhang.github.io/system-to-prd/)
-
-[![Version](https://img.shields.io/badge/version-6.2-blue)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-6.7-blue)](./CHANGELOG.md)
 [![Python](https://img.shields.io/badge/python-%E2%89%A53.8-blue)](https://www.python.org/)
 [![Dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen)](./scripts)
 [![License](https://img.shields.io/badge/license-MIT-black)](./LICENSE)
@@ -24,11 +22,6 @@
 
 *One file, four lanes — prototype + narrative · test cases · code logic · evidence.*
 *一份文件，四栏：原型 + 叙事 · 测试用例 · 代码逻辑 · 核查。*
-
-![draft 2 with change marks](docs/shots/iteration.png)
-
-*The same file, one draft later. Changes are pink, numbered and clickable, and every one carries a **before → after** card — so nobody has to ask "what did it look like before".*
-*还是这份文件，往后一稿。改动粉标、带编号可点，每一处都配一张 **改前 → 改后** 的对照卡——评审不用再问「原来是什么样」。*
 
 <a id="en"></a>
 
@@ -43,30 +36,27 @@ The truth about a working product is scattered across six places that never talk
 - the **front-end branch** nobody tested
 - the **back-end rule** nobody wrote down
 - what **QA actually verified** (versus what the case file claims)
-- what the **last PRD** said, two years ago, somewhere on Confluence
+- what the **business side** confirms, and what nobody has confirmed yet
 
 No single document has ever held all of that. A human cannot hold six sources in their head at once, so every PRD ends up being a partial memory of the system — written by whoever happened to be looking that day.
 
 Models are only now strong enough to read all six and reconcile them. This project exists to do that one job properly, and then to keep doing it, draft after draft.
 
-## The scenario, in four steps
+## Three kinds of work
 
 ```
-① Capture    live system + test cases + code repo  →  six-source fact ledger
-② Render     one master PRD: prototypes, narrative, cases, code, evidence
-③ Evolve     talk to it: "add a column for X"      →  Draft 2, changes in pink
-④ Merge      six people, six modules               →  one consolidated PRD
+① Capture   live system + test cases + code repo  →  six-source fact ledger
+② Iterate   on top of the last draft: change these pages, mark them   →  Draft N+1
+③ Merge     many modules, one per person  →  one consolidated master PRD
 ```
 
-**① Capture.** Point it at your test environment. It logs in, clicks every dialog, submits the form for real, screenshots the pages — then reads the front-end and back-end code and cross-checks the test-case library. Anything backed by two or more sources becomes a fact; anything from a single guess gets an ID and goes into *pending confirmation*, never into the body text.
+**① Capture.** Point it at your test environment. It logs in, clicks every dialog, submits the form for real, screenshots the pages — then reads the front-end and back-end code and cross-checks the test-case library. Anything backed by two or more sources becomes a fact; anything from a single guess gets an ID and goes into *pending confirmation*, never into the body text. Output is an **as-is PRD**: how the system works today, with no change marks.
 
-**② Render.** One self-contained HTML file: reconstructed prototypes, an 8-section narrative, test cases, code logic, and the fact ledger. See the six figures below.
+**② Iterate.** You stop writing PRDs. You **talk to this one**: *"this version adds a per-participant visibility column"* → it produces Draft N+1 with the change marked in pink, anchored, numbered, and carrying the draft it belongs to. The change number is cumulative across drafts; the draft number is bound to it, so a later edit invalidates the earlier sign-off instead of silently keeping it.
 
-**③ Evolve.** You stop writing PRDs. You **talk to this one**: *"this version adds a per-participant visibility column"* → it produces Draft 2 with the change marked in pink, anchored, numbered. The draft number is bound to the change, so an edit invalidates the sign-off automatically.
+**③ Merge.** Six people, six modules, then one consolidated PRD — one numbering scheme, one source of truth. Before copying anything back it checks the iteration copy really came from the **current** master, not an older one: every time `merge_modules.py` writes a master, it also writes an `origin.json` recording which module versions that master was built from. That is direct evidence; the older approach (fingerprinting the untouched modules) could only infer.
 
-**④ Merge.** Six people each take one module, then merge into a single consolidated PRD — one numbering scheme, one source of truth.
-
-## What you get — one file, four lanes, plus a second draft
+## What you get — one file, four lanes
 
 ### 1 · Prototype + narrative — the lane business stakeholders read
 *原型 + 文档：左边是系统长什么样，右边是它为什么这样、要改成什么样。技术细节在这一栏不出现。*
@@ -77,6 +67,8 @@ Models are only now strong enough to read all six and reconcile them. This proje
 *原型单栏：9 个页面态（含全部弹窗、二级页）各一帧。这些帧不是画的，是从真实页面抓的快照转出来的，每帧带 `from` 指回快照，验收会查那个文件在不在——编不出来。*
 
 ![prototype frames](docs/shots/proto.png)
+
+A frame is not necessarily a UI. Each one declares a `kind`: `ui` (a real screen, must be backed by a snapshot), `flow` (a state machine or sequence), `diagram` (why the logic works that way), `explain` (a reading page for a rule too tangled to say in prose). Complex logic gets drawn instead of piling up paragraphs — and the checks know the difference, so a diagram is not held to "must be a screenshot".
 
 ### 3 · Test cases — grouped by feature, each pinned to the rule it guards
 *测试用例栏：用例库里的条目按功能点归并，每条挂到它守的那条规则上；规则一改，能反查出要重写哪几条用例。*
@@ -93,16 +85,17 @@ Models are only now strong enough to read all six and reconcile them. This proje
 
 ![fact ledger](docs/shots/facts.png)
 
-### 6 · Draft 2 — changes in pink, each with a before/after card
-*迭代态：第二稿。粉色虚线框 + 徽标 = 本稿改动，编号可点、可跳转、可发链接指到具体一处。*
+## A claim has to survive three checks
 
-![iteration draft](docs/shots/iteration.png)
+Writing a sentence is easy. The hard part is making sure it stays true, and that nobody can quietly change it afterwards.
 
-*右边那两块是 **改前 / 改后**。原型里的粉色只能说明「这里改了」，答不了「原来是什么」——而评审第一个问的恰恰是这个。所以每一处改动配一张对照卡：点原型里那块粉，卡片会亮起来；点卡片，原型会滚回去。*
+| Layer | What holds | Where it fails |
+|:--|:--|:--|
+| **Fact** | every rule cites fact IDs that exist; a source marked "verified" must say what was verified | a rule pointing at `F-999` stops the build |
+| **Draft** | every change mark carries the draft it belongs to, and `meta.draft` matches the draft number in the title | a mark without `data-draft`, or two drafts for one change, stops the build |
+| **Sign-off** | signing records a **content fingerprint**, not just a name — edit anything afterwards and the signature expires | the gate shows a stale ✓ until it is re-signed |
 
-*The pink block tells you **that** something changed. It cannot tell you what it was before — which is the first thing anyone asks. So every change carries a before / after card, and the two ends are wired together.*
-
-![before and after](docs/shots/changecase.png)
+One document-level signature, not two. Small teams do not double-sign; requiring it just produced a permanent red X that stopped carrying information. The signer is the product owner, and what they sign is "this draft is closed, it can go to engineering".
 
 ## Why it's different
 
@@ -114,7 +107,7 @@ GitHub already has hundreds of PRD tools. Almost all of them take an **idea** as
 | Prototype | drawn by the model | captured, with a pointer proving it |
 | Technical detail | mixed into the body | moved to its own lane |
 | A wrong claim | undetectable | fails the gate |
-| Second version | regenerate from scratch | Draft 2, change-marked, anchored |
+| Second version | regenerate from scratch | the same document, one draft further |
 | Six modules | six documents | one consolidated PRD |
 
 ## Bring your own sources
@@ -128,9 +121,7 @@ The reference workflow reads test cases from a knowledge base and code from a co
 | GitHub · GitLab · self-hosted Git · a local clone | code-host CLI, or `harvest.py be --local <path>` |
 | nothing but a browser and a person who remembers | ask them, and label the source as verbal |
 
-What it will **not** do is pretend. A source it could not read is marked with a status and a reason, and the deliverable states how many sources it actually verified: **≥4 is normal, 2–3 gets flagged at the top, 1 produces a single-source draft, 0 refuses to start.**
-
-Recipe for wiring a new connector in 30 minutes — three hard requirements (read-only, idempotent, never stores credentials), a three-step acceptance test, and three integration levels — in [`references/sources-adapters.md`](./references/sources-adapters.md).
+What it will **not** do is pretend. A source it could not read is marked with a status and a reason, and the deliverable states how many sources it actually verified: **≥4 is normal, 2–3 gets flagged at the top, 1 produces a single-source draft, 0 refuses to start.** Three rules behind that: never claim a source was read without saying what was read; never write "not connected" as "does not exist" (the first is an environment problem, the second makes readers think the tests were never written); degrading beats blocking.
 
 ## Recommended setup
 
@@ -153,7 +144,7 @@ python3 ~/.claude/skills/system-to-prd/scripts/doctor.py
 
 Then, in a conversation:
 
-> Run a PRD for "event registration / custom field configuration". Test env: `https://test1.example.com`, account: …
+> Run a PRD for "participant field configuration". Test env: `https://test1.example.com`, account: …
 
 It stops and asks you **twice** — once with the fact ledger (approve line by line), once with the outline (section count, rule count, state count, what will *not* be covered). Skipping those two stops is how you get a rewrite.
 
@@ -163,7 +154,8 @@ It stops and asks you **twice** — once with the fact ledger (approve line by l
 - **Never persists credentials** — asked on every run, written only to a `0600` temp file, audited before delivery.
 - **Writes "unknown" instead of guessing.** The pending-confirmation list is part of the deliverable, not a defect.
 - **No irreversible actions** — real transfers, real emails, deleting other people's data. If verification needs it, the row is marked *not performed + why*.
-- **Refuses explanatory text drawn onto the prototype.** Test: *would this sentence appear in a screenshot of the product?* If not, it belongs in the narrative.
+- **Refuses explanatory text drawn onto a UI prototype.** Test: *would this sentence appear in a screenshot of the product?* If not, it belongs in the narrative — or in a `diagram` / `explain` frame that is openly not a screenshot.
+- **Refuses one-sentence-three-clauses.** Explanatory copy gets split: one clause per line, the predicate before the colon. Cramming is how a document gets read as a wall.
 
 ## Repository layout
 
@@ -173,10 +165,9 @@ INSTALL.md                install, self-check, team workflow
 assets/
   module_prd.html         four-lane renderer (data-driven, do not edit)
   module.schema.json      data contract, human-readable
-  example_module.json     complete fictional sample — as-is PRD
-  example_iteration.json  the same module as Draft 2, with change marks
-references/               18 deep-dive docs
-scripts/                  24 zero-dependency Python tools
+  example_module.json     a complete sample — an as-is PRD, fictional domain
+references/               21 deep-dive docs
+scripts/                  25 zero-dependency Python tools
 docs/shots/               the screenshots above
 tests/                    smoke tests, including "the gate must go red"
 ```
@@ -202,23 +193,27 @@ Zero third-party dependencies. Python ≥ 3.8.
 - **前端那条没人测过**的分支
 - **后端那条没人记下**的规则
 - **测试当初实际验的**是什么（用例文件上写的未必是）
-- **两年前那份旧 PRD** 说过什么（在 Confluence 某个角落）
+- **业务方确认过**什么，以及还有什么是没人认过的
 
 没有哪一份文档同时装得下这些东西。一个人也不可能同时把六个来源放在脑子里——所以每一份 PRD 都只是系统的**部分记忆**，由那天恰好在场的人写下。
 
 直到现在，模型才第一次有能力把这六个来源全部读完并对齐。这个项目就是为了把这一件事做对，然后**一稿一稿地做下去**。
 
-### 场景：四步
+### 三种活
 
-**① 取证** —— 把现有系统的测试环境、测试用例、代码仓库三处一起读，六源互证，出一份事实清单。两条以上证据支持的才写成事实；单源猜测进「待确认」，挂编号，不进正文。
+```text
+① 采集现状   现有系统 + 用例库 + 代码仓  →  六源互证的事实清单 → 一份现状 PRD
+② 迭代       在上一稿上挑几页改，改动必须能指认 →  第 N+1 稿
+③ 合并       多人各管一个模块  →  一份口径统一的全量 PRD
+```
 
-**② 成稿** —— 产出一份全量的、最新的 PRD：原型 + 叙事 + 用例 + 代码栏 + 核查，一个单文件 HTML。原型不是画的，是从真实页面抓出来的。
+**① 采集现状。** 进测试环境，把每个弹窗点一遍、真的提交一次、截图；再读前后端代码、比对用例库。两条以上证据支持的才写成事实；单源猜测挂编号进「待确认」，不进正文。产出**不标改动**——它写的是系统现在怎么跑。
 
-**③ 迭代** —— 你不再「写」PRD，而是**对着这份 PRD 跟 AI 对话**：「这一版加一列报名者端可见」→ 它出第 2 稿，改动粉色标注、带编号、可锚点跳转，稿次跟改动绑死，改稿即失效。
+**② 迭代。** 你不再「写」PRD，而是**对着这份 PRD 跟 AI 对话**：「这一版加一列报名者端可见」→ 它出第 N+1 稿，改动粉色标注、带编号、可锚点跳转。编号是跨稿累积的，稿次绑在每一处标注上，所以后面再改，前面那次签字会自动失效，而不是悄悄继续有效。
 
-**④ 收敛** —— 六个人各写一个模块，最后合成一份全量 PRD：一套编号、一份事实源。
+**③ 合并。** 六个人各写一个模块，最后合成一份全量：一套编号、一份事实源。拷回之前先验**来源**——每次 `merge_modules.py` 出一版全量，都会在根目录写一份 `origin.json`，记下这一版由哪几个模块、各自什么指纹构成。这是直接证据；早先那套「拿没改过的模块当指纹去推断」只能算间接证据，遇到范围覆盖全部模块就答不出来。
 
-### 上方六张图分别是什么
+### 上方五张图分别是什么
 
 | 图 | 是什么 | 给谁看 |
 |:--|:--|:--|
@@ -227,7 +222,20 @@ Zero third-party dependencies. Python ≥ 3.8.
 | **测试用例** | 按功能点归并，每条挂到它守的规则上 | 测试 |
 | **代码逻辑** | 上半段大白话，下半段前后端对照 | 研发（上半段业务也能看） |
 | **核查** | 33 条事实，每条追得到来源 | 所有人，尤其不想背锅的人 |
-| **迭代态** | 第 2 稿，粉色 = 本稿改动 | 评审时所有人 |
+
+原型帧不一定都是界面。每帧声明一个 `kind`：`ui`（真实页面，必须有快照撑着）、`flow`（状态机或时序）、`diagram`（这段逻辑为什么这么算）、`explain`（一条绕不开的规则单独做一页讲解）。复杂逻辑画出来，而不是堆成一段话——检查也知道区别对待，不会拿「必须有截图」去卡一张流程图。
+
+### 一句话要过三道检查
+
+写一句结论不难，难的是它一直是真的，而且事后没人能悄悄改掉它。
+
+| 层 | 管什么 | 什么时候红 |
+|:--|:--|:--|
+| **事实** | 每条规则引的事实编号必须存在；标了「已核」的来源必须写清核到了什么 | 规则引了 `F-999` 这种不存在的编号，构建直接失败 |
+| **稿次** | 每处改动都带「它在第几稿引入」，`meta.draft` 要跟标题里的稿次对上 | 标注漏了稿次、或同一处标了两个稿次，构建失败 |
+| **签字** | 签字记的是**内容指纹**，不只是名字——之后动一个字，签字就失效 | 验收时发现签名还在、内容已经变了 |
+
+签字只有一道，不是两道。小团队不会真的双签；强求双签的结果不是更严谨，是每轮检查都挂红叉，挂久了就没人看，门等于不存在。签字的人是产品经理本人，签的意思是「这一版我认了，可以往研发走」。
 
 ### 用例库和代码仓不绑定任何产品
 
@@ -240,9 +248,7 @@ Zero third-party dependencies. Python ≥ 3.8.
 | GitHub / GitLab / 自建 Git / 本机 clone | 托管平台 CLI，或 `harvest.py be --local <路径>` |
 | 只有一个浏览器，和一个记得住的人 | 问他，并把这一源标成「口述」 |
 
-它**不会装作读过**。没读到的源会带状态和原因，交付里会写明这次到底核了几个源：**≥4 正常，2–3 顶部标出来，1 出单源稿，0 拒绝开工。**
-
-接一个新连接器的最短路径（只读 / 幂等 / 不落凭据 三条硬要求 + 三步验收 + 三种接入方式）见 [`references/sources-adapters.md`](./references/sources-adapters.md)。
+它**不会装作读过**。没读到的源会带状态和原因，交付里会写明这次到底核了几个源：**≥4 正常，2–3 顶部标出来，1 出单源稿，0 拒绝开工。** 背后三条铁律：不许空口说核过（标「已核」就必须写清核到什么）；不许把「没连上」写成「没有」（前者是环境问题，后者会让人以为测试压根没写用例）；降级比阻塞好。
 
 ### 跑通需要的组合
 
@@ -256,10 +262,10 @@ Zero third-party dependencies. Python ≥ 3.8.
 ### 三种用法
 
 ```text
-# 1 · 现状 PRD：这个模块现在到底怎么跑
-> 给「报名管理 / 报名字段配置」跑一份 PRD，测试环境 xxx，账号 xxx
+# 1 · 采集现状：这个模块现在到底怎么跑
+> 给「人员管理 / 人员字段配置」跑一份 PRD，测试环境 xxx，账号 xxx
 
-# 2 · 迭代 PRD：在上一稿基础上出下一版
+# 2 · 迭代：在上一稿基础上出下一版
 > 基于第 1 稿，这一版加「报名者端可见」列，改动标出来
 
 # 3 · 合并：分模块做完收成一份全量
@@ -268,7 +274,7 @@ Zero third-party dependencies. Python ≥ 3.8.
 
 ### 它拒绝做的事
 
-只碰测试环境（host 里必须有以 `test` 开头的标签，否则非 0 退出）；凭据每次现要、不落任何文件；不知道就写不知道；不可逆动作不做，标「未实做 + 原因」；原型上不许写解释——判据是「这句话会不会出现在系统截图上」。
+只碰测试环境（host 里必须有以 `test` 开头的标签，否则非 0 退出）；凭据每次现要、不落任何文件；不知道就写不知道；不可逆动作不做，标「未实做 + 原因」；界面原型上不许写解释——判据是「这句话会不会出现在系统截图上」，真需要解释就去画一张 openly 不是截图的讲解页；不许把一句话塞三个分句，说明文案一句一件事，能拆就拆。
 
 ### 安装
 
@@ -278,7 +284,9 @@ Zero third-party dependencies. Python ≥ 3.8.
 
 ## Credits & scope
 
-Built and battle-tested on real internal back-office systems. All company names, customer records, endpoints, product lines and logos in this repository have been replaced with fictional ones; `assets/example_module.json` and `assets/example_iteration.json` are a self-consistent fictional demo (an event-registration field-configuration module, Draft 1 and Draft 2).
+Built and battle-tested on a real internal back office — a cross-border employment platform's field-configuration module. All company names, customer records, endpoints, product codes and logos have been replaced with fictional ones; `assets/example_module.json` is a self-consistent fictional sample of that module, as an as-is (Draft 1) PRD.
+
+The industry is visible on purpose. Recognising that this is a cross-border employment back office does not tell you which company it is — names, customers and internal codes do, and those are gone. Pretending otherwise produced a worse artifact: half-substituted text that read like neither domain.
 
 Use it only on systems you are authorized to access.
 

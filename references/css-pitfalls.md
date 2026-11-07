@@ -261,7 +261,7 @@ print(im.getpixel((50, 300)), im.getpixel((1000, 300)))   # 暗色遮罩 vs 白�
 正文要强调一条硬约束，用 `.callout`（蓝）或 `.callout.warn`（黄）；`.warnbar` 留给生成器。
 
 **② `.doc code{white-space:nowrap}` 会在表格里溢出到邻列。**
-`table-layout:fixed` 下单元格宽度是死的，长标识符（`operateType=view`、`payment_account_config`）
+`table-layout:fixed` 下单元格宽度是死的，长标识符（`operateType=view`、`bill_payout_account_config`）
 不换行就会横着压到右边那一列，后半截被盖住，读起来像「operateType=vie«」。
 模板已加一条兜底规则（只作用于表格内）：
 

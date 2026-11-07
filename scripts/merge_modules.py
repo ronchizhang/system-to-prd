@@ -21,6 +21,8 @@ HTML 里的数据是渲染前的快照，样式一旦改版就对不齐；json �
 """
 
 import argparse
+import collections
+import copy
 import datetime as dt
 import glob
 import hashlib
@@ -92,6 +94,10 @@ def esc(s):
 
 CHG_TAG = re.compile(r"<[^>]*\bdata-chg=\"(C\d{1,3})\"[^>]*>")
 CHG_TAG_DRAFT = re.compile(r'data-draft="(\d{1,2})"')
+# 叙事里的改动块：取编号 + 块内到第一个 </div> 的内容（块内只有 span/b/p，不再嵌 div）
+DCHG_BLOCK = re.compile(r'<div class="dchg[^"]*"[^>]*\bdata-chg="(C\d{1,3})"[^>]*>(.*?)</div>', re.S)
+DCHG_B = re.compile(r"<b[^>]*>(.*?)</b>", re.S)
+DCHG_P = re.compile(r"<p[^>]*>(.*?)</p>", re.S)
 
 
 def rich(s):
@@ -112,6 +118,57 @@ def plain(s):
           .replace("&quot;", '"').replace("&#39;", "'").replace("&amp;", "&"))
     t = re.sub(r"<[^>]+>", "", t)
     return re.sub(r"\s+", " ", t).strip()
+
+
+def change_rows(mod, i):
+    """一个模块的改动清单：[{编号, 帧号, 改了什么, 为什么改}]。
+
+    编号来源是 chg_index（叙事 + 原型都扫），细节只从叙事 .dchg 块取：
+    原型上只有一条徽标，说不出「为什么改」——那是正文的活。
+    """
+    mt = mod.get("meta") or {}
+    where = {}
+    for f in ((mod.get("prototype") or {}).get("frames") or []):
+        for code in CHG_TAG.findall(f.get("html") or ""):
+            lst = where.setdefault(code, [])
+            if f.get("id") not in lst:
+                lst.append(f.get("id"))
+    detail = {}
+    for sec in (mod.get("sections") or []):
+        for m in DCHG_BLOCK.finditer(sec.get("html") or ""):
+            code = m.group(1)
+            if code in detail:
+                continue
+            body = m.group(2)
+            b = DCHG_B.findall(body)
+            p = DCHG_P.findall(body)
+            detail[code] = {
+                "what": plain(b[0]) if b else "",
+                "why": plain(p[0]) if p else "",
+            }
+    out = []
+    for code in chg_index(mod):
+        d = detail.get(code) or {}
+        out.append({
+            "code": code,
+            "n": int(code[1:]),
+            "mod": i,
+            "module": mt.get("module", "?"),
+            "frames": where.get(code) or [],
+            "what": d.get("what") or "",
+            "why": d.get("why") or "",
+        })
+    return out
+
+
+def _frame_positions(mod, fids):
+    """[{帧 id}] → [(下标, 帧 id)]。下标是 showFrame() 要的参数，id 给人看。"""
+    order = [f.get("id") for f in ((mod.get("prototype") or {}).get("frames") or [])]
+    out = []
+    for fid in fids:
+        if fid in order:
+            out.append((order.index(fid), fid))
+    return out
 
 
 def chg_index(mod):
@@ -136,7 +193,7 @@ def chg_index(mod):
 def short_ver(v):
     """总览格子里的版本：短串 + 完整串（当悬停提示）。
 
-    一列 112px 装「管理后台 V5.0 · 企业内训票 支持对接空中通道C · 第 13 稿」，
+    一列 112px 装「管理后台 V5.0 · Demo PayLink 支持对接XPay · 第 13 稿」，
     会被折成 5 行，整张表的行高全被它撑歪——这也是实拍才发现的。
     """
     v = (v or "").strip()
@@ -156,7 +213,371 @@ def short_ver(v):
     return v, v
 
 
-def build_overview(meta, mods, cur_draft=0, cur_rev=0, doc_sign=None, rev_note=""):
+# ------------------------------------------------- 交叉引用（所有编号都要能点）
+# 文档里写「R-DEMO-SELF-17」「T17」「F-03」「自营单据」时，读者得能点过去。
+# 三种编号的可见范围不一样，决定了能不能直接定位：
+#   规则号 R-XXX-nn → 合并前做过全局消歧，全库唯一，可以直接当锚点
+#   迁移号 T17      → 只在模块内唯一（几乎每个模块都有 T1…），跨模块引用必须带上下文
+#   事实号 F-03     → 同上，而且渲染成卡片（.fcard[data-id]）不是带 id 的元素
+# 所以索引里规则号是全局字典，另两种是 (模块, 编号) 复合键。
+XREF_RULE = re.compile(r"\bR-(?:[A-Z0-9]+(?:-[A-Z0-9]+)*-\d{1,3}|\d{1,3})\b")
+XREF_PREF = re.compile(r"\bR-[A-Z0-9]+(?:-[A-Z0-9]+)*\b(?!-\d)")
+XREF_TRANS = re.compile(r"\bT(\d{1,2})\b")
+XREF_FACT = re.compile(r"\bF-(\d{1,3})\b")
+XREF_A = re.compile(r"<a\b[^>]*>.*?</a>", re.I | re.S)
+XREF_TAG = re.compile(r"(<[^>]+>)")
+XREF_PH = "\x01%d\x01"
+
+
+class Xref:
+    """全量文档里的引用索引：编号 → 它属于哪个模块、落在哪个锚点。"""
+
+    def __init__(self, mods):
+        self.rule = {}        # R-DEMO-SELF-17 -> mkey
+        self.pref = {}        # R-DEMO-SELF -> (mkey, 该前缀第一条规则 id)
+        self.facts = set()    # (mkey, F-03)
+        self.trans = set()    # (mkey, T17)
+        self.mods = {}        # 模块名 -> mkey
+        self.self_name = {}   # mkey -> 模块名
+        # 简写索引：正文里常写「R-04」「R-FIN-04」这种省略前缀的号（尤其在待确认段）。
+        # 这两种只能在**本模块内**解释，所以按 (模块, 号) 建索引，唯一时才敢链。
+        self.suffix = {}      # (mkey, 4) -> [R-CBILL-EDIT-04, ...]
+        self.tail = {}        # (mkey, ('FIN','04')) -> [R-DEMO-FIN-04, ...]
+        for m in mods:
+            mt = m.get("meta") or {}
+            k = mt.get("key")
+            if not k:
+                continue
+            self.self_name[k] = mt.get("module") or ""
+            for r in (m.get("rules") or []):
+                rid = r.get("id") or ""
+                if not rid:
+                    continue
+                self.rule[rid] = k
+                mm = re.match(r"^(R-[A-Z0-9-]+?)-\d+$", rid)
+                if mm:
+                    self.pref.setdefault(mm.group(1), (k, rid))
+                parts = rid.split("-")
+                if len(parts) >= 2 and parts[-1].isdigit():
+                    self.suffix.setdefault((k, int(parts[-1])), []).append(rid)
+                    self.tail.setdefault((k, tuple(parts[-2:])), []).append(rid)
+            for f in (m.get("facts") or []):
+                if f.get("id"):
+                    self.facts.add((k, f["id"]))
+            for t in ((m.get("transitions") or {}).get("rows") or []):
+                if t.get("id"):
+                    self.trans.add((k, t["id"]))
+            if mt.get("module"):
+                self.mods[mt["module"]] = k
+        # 别名：报告和正文里不会总写全名（写「财务请款」而不是「财务请款管理」）。
+        # 只对「去掉『管理』后仍够长」的名字生成，且必须不撞真名、不撞多个模块，
+        # 否则「付款账号」会把「付款账号审批」也吃掉。
+        alias = collections.defaultdict(set)
+        for name, mk in self.mods.items():
+            if name.endswith("管理") and len(name) - 2 >= 4:
+                a = name[:-2]
+                if a not in self.mods:
+                    alias[a].add(mk)
+        self.alias = {a: next(iter(s)) for a, s in alias.items() if len(s) == 1}
+        # 长名优先：不这么做「客户账单」会先吃掉「客户账单认款」的前半截
+        self.names = sorted(set(self.mods) | set(self.alias), key=len, reverse=True)
+
+    def target(self, name):
+        return self.mods.get(name) or self.alias.get(name)
+
+
+def _xlink(cls, mk, xt, xa, text, tip=""):
+    return ('<a class="xref%s" data-xm="%s" data-xt="%s" data-xa="%s"%s>%s</a>'
+            % (cls, esc(mk), xt, esc(xa),
+               (' title="%s"' % esc(tip)) if tip else "", text))
+
+
+def _linkify_text(t, mkey, xr, seen, hold, carry="", whole_only=False):
+    """替换一段纯文本（不含标签）里的引用。hold() 把结果存起来换成占位符，
+    避免后一轮正则把刚生成的 <a> 属性又当成引用改写一遍。
+
+    carry 是前一个文本节点的尾巴：上下文常被标签切断——报告里写的是
+    `<code>R-DEMO-SELF</code> T17、T18`，只看本段的话 T17 前面什么都没有。"""
+    if not t or not t.strip():
+        return t
+    full = carry + t
+    off = len(carry)
+
+    # 迁移号必须先做：它要靠前面的 R-XXX 判断属于哪个模块，
+    # 而 R-XXX 一旦被替换成占位符，上下文就没了。
+    def sub_trans(m):
+        tid = "T" + m.group(1)
+        pos = off + m.start()
+        head = full[max(0, pos - 24):pos]
+        mk, pos = None, -1
+        # ① 前文提到的模块名（取最靠右的那个）：T 号通常跟在「自营单据（T17」这种括号里
+        for name in xr.names:
+            p = head.rfind(name)
+            if p >= 0 and p + len(name) > pos:
+                mk, pos = xr.target(name), p + len(name)
+        # ② 紧邻的规则前缀，如「R-DEMO-SELF T17」。必须紧邻：
+        #    放宽到整句就会被更早的 R-XXX 带偏（「财务请款（T13）」曾被判给自营单据）。
+        tail = XREF_PREF.findall(head[-10:])
+        for cand in reversed(tail):
+            got = xr.pref.get(cand)
+            if got:
+                mk = got[0]
+                break
+        # 两条路都定不了：模块正文里默认归本模块（要真有这个号才链），
+        # 报告是跨模块语境，没有默认值，宁可不动
+        if not mk:
+            mk = mkey
+        if not mk or (mk, tid) not in xr.trans:
+            return m.group(0)
+        return hold(_xlink("", mk, "trans", tid, m.group(0),
+                           "%s · 状态迁移 %s" % (xr.self_name.get(mk, ""), tid)))
+
+    t = XREF_TRANS.sub(sub_trans, t)
+
+    def sub_rule(m):
+        shown = m.group(0)
+        rid = shown
+        mk = xr.rule.get(rid)
+        if not mk:
+            # 完整编号查不到时，才按「本模块内的简写」再试一次：
+            #   纯序号 R-04      → 本模块里以 -04 结尾的规则
+            #   省略前缀 R-FIN-04 → 本模块里最后两段是 FIN-04 的规则
+            # 只有唯一命中才敢链；两条都叫 -04 时宁可不动，也别指错。
+            if not mkey:
+                return shown
+            cand = []
+            if re.match(r"^R-\d+$", rid):
+                cand = xr.suffix.get((mkey, int(rid[2:]))) or []
+            elif rid.count("-") >= 2:
+                cand = xr.tail.get((mkey, tuple(rid.split("-")[-2:]))) or []
+            if len(cand) != 1:
+                return shown
+            rid, mk = cand[0], mkey
+        # 正文怎么写的就怎么显示（可能只是 R-04），锚点用完整编号
+        return hold(_xlink("", mk, "rule", rid, shown,
+                           "%s · 规则 %s" % (xr.self_name.get(mk, ""), rid)))
+
+    t = XREF_RULE.sub(sub_rule, t)
+
+    def sub_pref(m):
+        pref = m.group(0)
+        got = xr.pref.get(pref)
+        if not got:
+            return pref
+        mk, rid = got
+        # 只写了前缀（如 R-DEMO-SELF）时定位到该前缀第一条规则，
+        # 用户至少能看到这套规则在哪、长什么样；比什么都不给强。
+        return hold(_xlink("", mk, "rule", rid, pref,
+                           "%s · %s 系列规则" % (xr.self_name.get(mk, ""), pref)))
+
+    t = XREF_PREF.sub(sub_pref, t)
+
+    def sub_fact(m):
+        fid = "F-" + m.group(1)
+        if (mkey, fid) not in xr.facts:
+            return m.group(0)
+        return hold(_xlink("", mkey, "fact", fid, m.group(0),
+                           "%s · 五源事实 %s" % (xr.self_name.get(mkey, ""), fid)))
+
+    t = XREF_FACT.sub(sub_fact, t)
+
+    # 模块名最后做：它没有边界符，只能整串匹配。
+    # seen 用来「每个目标只链第一次」；传 None 表示不限次（表格清单用）。
+    own = xr.self_name.get(mkey)
+    for name in xr.names:
+        if name == own or name not in t:
+            continue
+        # 表格里只认「整格就是模块名」：菜单路径那列写着「账单和请款 / 客户账单 / 客户账单」，
+        # 按子串链会把表格点成一片蓝。
+        if whole_only and t.strip() != name:
+            continue
+        mk = xr.target(name)
+        if seen is not None:
+            if mk in seen:
+                continue
+            seen.add(mk)
+        t = t.replace(name, hold(_xlink(" mod", mk, "module", mk, name,
+                                        "跳到「%s」" % name)), 1)
+    return t
+
+
+def linkify_html(html, mkey, xr, seen=None):
+    """把 HTML 里的引用包成可点锚点。只动文本节点，标签与属性原样保留。"""
+    if not html or not isinstance(html, str):
+        return html
+    keep = []
+
+    def hold(s):
+        keep.append(s)
+        return XREF_PH % (len(keep) - 1)
+
+    # 已有 <a>…</a> 整段保护：嵌 a 是非法 HTML，浏览器会把它拆开
+    txt = XREF_A.sub(lambda m: hold(m.group(0)), html)
+    out, carry = [], ""
+    in_cell = False
+    for p in XREF_TAG.split(txt):
+        if not p:
+            continue
+        if p.startswith("<"):
+            # 表格单元格里的模块名不限次数：一张表就是一份清单，每一行都该能点，
+            # 「只链第一次」在这里会让索引表半数模块点不了。
+            low = p.lower()
+            if re.match(r"<t[dh]\b", low):
+                in_cell = True
+            elif re.match(r"</t[dh]>", low):
+                in_cell = False
+            out.append(p)
+            continue
+        out.append(_linkify_text(p, mkey, xr, None if in_cell else seen, hold, carry,
+                                 whole_only=in_cell))
+        # 累计原始文本（不是替换后的）：下一段的推断要用「正文里写过什么」
+        carry = (carry + p)[-60:]
+    res = "".join(out)
+    for i, s in enumerate(keep):
+        res = res.replace(XREF_PH % i, s)
+    return res
+
+
+def linkify_mods(mods, xr):
+    """给每个模块的正文挂引用。返回副本——JSON 导出要继续保持纯文本，
+    否则下游拿到的数据里夹着 <a> 标签，再合并一次就套两层。"""
+    out = copy.deepcopy(mods)
+    for m in out:
+        k = (m.get("meta") or {}).get("key")
+        seen = set()      # 每个模块内，同一个目标只链第一次，避免满屏下划线
+        for s in (m.get("sections") or []):
+            s["html"] = linkify_html(s.get("html"), k, xr, seen)
+    return out
+
+
+# ------------------------------------------------- 核对报告（总览页签用）
+# 为什么自带一个极简 Markdown 转换：报告是给人写的（先有 md），页签要的是 HTML。
+# skill 不许引第三方库，而这份报告只用得上标题/段落/列表/表格/引用五种语法，
+# 引一个 pandoc 或 markdown 库只为了转 150 行，是把部署成本转给使用者。
+_MD_CODE = re.compile(r"`([^`]+)`")
+_MD_TABLE_SEP = re.compile(r"^:?-{2,}:?$")
+
+
+def _md_inline(s):
+    s = esc(s)
+    s = _MD_CODE.sub(lambda m: "<code>%s</code>" % m.group(1), s)
+    s = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", s)
+    return s
+
+
+def _md_table(lines):
+    rows = [[c.strip() for c in ln.strip().strip("|").split("|")] for ln in lines]
+    # 第二行是 |:--|:--| 对齐行，不是数据
+    if len(rows) > 1 and rows[1] and all(_MD_TABLE_SEP.match(c) for c in rows[1] if c):
+        rows.pop(1)
+    if not rows:
+        return ""
+    def tr(cells, tag):
+        return "<tr>%s</tr>" % "".join("<%s>%s</%s>" % (tag, _md_inline(c), tag)
+                                       for c in cells)
+    return ("<table><thead>%s</thead><tbody>%s</tbody></table>"
+            % (tr(rows[0], "th"), "".join(tr(r, "td") for r in rows[1:])))
+
+
+def md_report_html(md):
+    """Markdown → 页签里的 HTML 片段。只认这份报告实际用到的语法。"""
+    lines = md.splitlines()
+    out, i, n = [], 0, len(lines)
+    block = re.compile(r"^(#|\||>|[-*] |\d+\. )")
+    while i < n:
+        s = lines[i].strip()
+        if not s:
+            i += 1
+            continue
+        if re.match(r"^-{3,}$", s):
+            out.append("<hr>")
+            i += 1
+            continue
+        if s.startswith("# "):
+            i += 1                      # 报告标题由页签承担，正文不重复
+            continue
+        if s.startswith("### "):
+            out.append('<h4 class="rep-s2">%s</h4>' % _md_inline(s[4:]))
+            i += 1
+            continue
+        if s.startswith("## "):
+            out.append('<h3 class="rep-s">%s</h3>' % _md_inline(s[3:]))
+            i += 1
+            continue
+        if s.startswith(">"):
+            buf = []
+            while i < n and lines[i].strip().startswith(">"):
+                buf.append(lines[i].strip().lstrip(">").strip())
+                i += 1
+            # 引用块里一行一个 p：报告头部三行（对象/时机/复现）合成一段会糊成一团
+            out.append('<div class="rep-note">%s</div>'
+                       % "".join("<p>%s</p>" % _md_inline(x) for x in buf if x))
+            continue
+        if s.startswith("|"):
+            buf = []
+            while i < n and lines[i].strip().startswith("|"):
+                buf.append(lines[i].strip())
+                i += 1
+            out.append(_md_table(buf))
+            continue
+        if re.match(r"^[-*] ", s):
+            buf = []
+            while i < n and re.match(r"^[-*] ", lines[i].strip()):
+                buf.append(lines[i].strip()[2:])
+                i += 1
+            out.append("<ul>%s</ul>"
+                       % "".join("<li>%s</li>" % _md_inline(x) for x in buf))
+            continue
+        if re.match(r"^\d+\. ", s):
+            buf = []
+            while i < n and re.match(r"^\d+\. ", lines[i].strip()):
+                buf.append(re.sub(r"^\d+\.\s*", "", lines[i].strip()))
+                i += 1
+            out.append("<ol>%s</ol>"
+                       % "".join("<li>%s</li>" % _md_inline(x) for x in buf))
+            continue
+        buf = []
+        while i < n and lines[i].strip() and not block.match(lines[i].strip()):
+            buf.append(lines[i].strip())
+            i += 1
+        out.append("<p>%s</p>" % _md_inline(" ".join(buf)))
+    return "\n".join(out)
+
+
+def build_overview(meta, mods, cur_draft=0, cur_rev=0, doc_sign=None, rev_note="",
+                   report=None):
+    """总览。有跨模块核对报告时，第一屏改成「核对报告 / 模块索引」两个页签。
+
+    为什么要页签而不是把报告接在后面：全量 PRD 一打开就是总览，索引表有 89 行，
+    报告要是塞在索引后面，等于没人看得到——而它恰恰是「签名前该先读的那一页」。
+    """
+    body = _overview_body(meta, mods, cur_draft, cur_rev, doc_sign, rev_note)
+    if not report or not report.get("html"):
+        return body
+
+    # 切分点：标题之后、说明段之前。找不到就退回数字条之前；两处都没有就不切，
+    # 免得把整段总览塞进页签里导致页签空壳（宁可不出页签，也不要出一屏空白）。
+    cut = body.find('<p class="ov-lead">')
+    if cut < 0:
+        cut = body.find('<div class="ov-nums">')
+    if cut < 0:
+        return body
+    head, rest = body[:cut], body[cut:]
+
+    rt = esc(report.get("title") or "跨模块核对")
+    rs = report.get("summary") or ""
+    tabs = ('<div class="ov-tabs" id="ovTabs">'
+            '<button class="ov-tab on" data-ov="rep"><b>%s</b>%s</button>'
+            '<button class="ov-tab" data-ov="idx"><b>模块索引</b>'
+            '<em>%d 个模块 · 原总览</em></button></div>'
+            % (rt, ('<em>%s</em>' % esc(rs)) if rs else "", len(mods)))
+    pane_rep = ('<div class="ov-pane" data-ov="rep"><div class="ov-rep">%s</div></div>'
+                % report["html"])
+    pane_idx = '<div class="ov-pane" data-ov="idx" hidden>%s</div>' % rest
+    return head + tabs + pane_rep + pane_idx
+
+
+def _overview_body(meta, mods, cur_draft=0, cur_rev=0, doc_sign=None, rev_note=""):
     n_rules = sum(len(m.get("rules") or []) for m in mods)
     n_cases = sum(len(r.get("cases") or []) for m in mods
                   for r in (m.get("rules") or []))
@@ -179,7 +600,14 @@ def build_overview(meta, mods, cur_draft=0, cur_rev=0, doc_sign=None, rev_note="
         v = (m.get("meta") or {}).get("version")
         if v and v not in vers:
             vers.append(v)
-    if vers:
+    if vers and not chg_all:
+        # 现状 PRD（交付 A）：通篇没有一处 data-chg，就不能挂「迭代坐标 + 粉色改动」——
+        # 读者会以为这一版改了什么，实际一个结论都没动。改成中性的版本基线说明。
+        h.append('<div class="ov-ver base"><b>版本基线</b>'
+                 '<span>%s</span><em>这一版记录系统<b>现在怎么跑</b>，不标改动；'
+                 '每一条结论都能追到五源之一（点规则卡上的 F-xx 可跳到核查）。</em></div>'
+                 % esc(vers[0] if len(vers) == 1 else "、".join(vers)))
+    elif vers:
         pill = ""
         if cur_draft:
             # 修订版要在坐标条上讲明白：这是第 13 稿的修订 1，不是第 14 稿。
@@ -194,7 +622,7 @@ def build_overview(meta, mods, cur_draft=0, cur_rev=0, doc_sign=None, rev_note="
                         rm = mm.group(1)
                         break
             # 有 rev_note 的修订不新增改动点，pill 不能写「改动 N 处」（那个 N 是原稿那一批）。
-            pill = ('<span class="ov-cur">本稿 第 %d 稿%s · %s</span>'
+            pill = ('<span class="ov-cur">第 %d 稿%s · %s</span>'
                     % (cur_draft, "（修订 %s）" % rm if rm else "",
                        "不新增改动点" if rev_note else "改动 %d 处" % chg_cur))
         # 只重写叙事、不新增改动点的修订（run.json 写 rev_note）不能说「本稿新增 N 处」——
@@ -202,7 +630,7 @@ def build_overview(meta, mods, cur_draft=0, cur_rev=0, doc_sign=None, rev_note="
         if rev_note:
             _tail = "<br>%s" % esc(rev_note)
         else:
-            _tail = ("其中本稿新增/改动的 %d 处，其余是前几稿沉淀下来的。" % chg_cur)
+            _tail = "都相对 4.9 基线。"
         h.append('<div class="ov-ver"><b>迭代坐标</b>%s%s'
                  '<em>本次所有需求都挂在这条版本线上，模块逐个交付；'
                  '粉色是本条需求线的全部改动（累计 %d 处），'
@@ -249,12 +677,13 @@ def build_overview(meta, mods, cur_draft=0, cur_rev=0, doc_sign=None, rev_note="
     h.append('<h3 class="ov-t">模块索引</h3>')
     h.append('<div class="tw"><table><thead><tr>'
              '<th style="width:158px">模块</th><th style="width:88px">系统</th>'
-             '<th style="width:118px">所属迭代</th>'
+             '<th style="width:118px">%s</th>'
              '<th>菜单路径</th><th style="width:52px">规则</th>'
              '<th style="width:52px">case</th><th style="width:84px">状态机</th>'
              '<th style="width:92px">本次改动</th>'
              '<th style="width:76px">五源</th><th style="width:48px">缺口</th>'
-             '<th style="width:60px">负责人</th></tr></thead><tbody>')
+             '<th style="width:68px">负责人</th></tr></thead><tbody>'
+             % ("所属迭代" if chg_all else "版本"))
     for i, m in enumerate(mods):
         mt = m.get("meta") or {}
         tr = m.get("transitions") or {}
@@ -265,7 +694,7 @@ def build_overview(meta, mods, cur_draft=0, cur_rev=0, doc_sign=None, rev_note="
         sm = "%d 态 / %d 迁" % (len(tr.get("states") or []), len(tr.get("rows") or []))
         # 本次改动数：按**唯一改动编号**算，不是按标注块数。
         # 同一个改动常在多段里重复标注（第 4 段讲怎么做、第 7 段讲边界），
-        # 数块会得到「报名者退款记录 6 处」，读者以为改了六件事，实际只改了四个编号。
+        # 数块会得到「提现单据记录 6 处」，读者以为改了六件事，实际只改了四个编号。
         idx = CHG[i]
         n_all = len(idx)
         n_cur = sum(1 for d in idx.values() if cur_draft and d == cur_draft)
@@ -274,8 +703,7 @@ def build_overview(meta, mods, cur_draft=0, cur_rev=0, doc_sign=None, rev_note="
         elif not cur_draft:
             cell = '<span class="ov-cnt">%d 处</span>' % n_all
         elif n_cur:
-            cell = ('<span class="ov-cnt">%d 处<b>本稿</b></span>'
-                    '<br><span class="ov-k">累计 %d</span>' % (n_cur, n_all))
+            cell = '<span class="ov-cnt">%d 处</span>' % n_all
         else:
             # 「本稿无」两行跟上面「2 处 本稿 / 累计 6」的字数差太多，列里看着一高一低；
             # 统一成「本稿 0 处」，两张卡的骨架一样，读的人不用重新对位。
@@ -295,6 +723,40 @@ def build_overview(meta, mods, cur_draft=0, cur_rev=0, doc_sign=None, rev_note="
                     ('<span class="ov-bad">%d</span>' % unc) if unc else "—",
                     esc(mt.get("owner") or "—")))
     h.append('</tbody></table></div>')
+
+    # 改动总览：迭代版才有。改动原本散在各模块里（帧改动条、段内 dchg、索引表一列数字），
+    # 跨五六个模块时读者没有一页能通读「这次到底改了什么」，这一节就是那一页。
+    if chg_all:
+        rows = []
+        for i, m in enumerate(mods):
+            rows.extend(change_rows(m, i))
+        rows.sort(key=lambda r: (r["n"], r["mod"]))
+        n_why = sum(1 for r in rows if r["why"])
+        h.append('<h3 class="ov-t">改动总览<em>%d 处，按编号排序'
+                 '%s</em></h3>' % (len(rows),
+                                   "；%d 处写了为什么改" % n_why if n_why else "；都还没写为什么改"))
+        h.append('<div class="tw"><table class="ovchg"><thead><tr>'
+                 '<th style="width:56px">编号</th><th style="width:120px">模块</th>'
+                 '<th style="width:72px">落在帧</th><th style="width:240px">改了什么</th>'
+                 '<th>为什么改</th><th style="width:88px">回原型</th>'
+                 '</tr></thead><tbody>')
+        for r in rows:
+            if r["frames"]:
+                fids = r["frames"]
+                jump = ''.join(
+                    '<a class="ov-jump" data-mod="%d" data-chg="%s" data-fi="%d" title="跳到原型 %s">%s</a>'
+                    % (r["mod"], esc(r["code"]), fi, esc(fid), esc(fid))
+                    for fi, fid in _frame_positions(mods[r["mod"]], fids))
+                frames_txt = '<span class="ov-k">%s</span>' % esc("、".join(fids))
+            else:
+                jump = '<span class="ov-k">未落图</span>'
+                frames_txt = '<span class="ov-k">—</span>'
+            h.append('<tr><td class="mono">%s</td><td>%s</td><td>%s</td>'
+                     '<td>%s</td><td>%s</td><td>%s</td></tr>'
+                     % (esc(r["code"]), esc(r["module"]), frames_txt,
+                        rich(r["what"]) or '<span class="ov-k">只有标注，正文没写</span>',
+                        rich(r["why"]) or '<span class="ov-k">—</span>', jump))
+        h.append('</tbody></table></div>')
 
     # 全局待确认
     qs = [(m.get("meta") or {}, q) for m in mods for q in (m.get("questions") or [])
@@ -387,6 +849,16 @@ body.full{display:flex;align-items:stretch}
 #sn{width:252px;flex:0 0 252px;height:100vh;position:sticky;top:0;display:flex;
   flex-direction:column;background:#FBFDFF;border-right:1px solid var(--line);z-index:30}
 body.navoff #sn{display:none}
+/* 展开按钮必须留在侧栏外面：收起按钮在 #sn 里，navoff 一把 #sn 整个 display:none，
+   按钮跟着消失，收起后就没有任何可见入口能打开（只剩 [ 快捷键，没人知道）。 */
+#navOpen{display:none;position:fixed;left:0;top:50%;transform:translateY(-50%);
+  width:26px;height:80px;padding:0;z-index:40;cursor:pointer;
+  border:1px solid #CFDEEE;border-left:0;border-radius:0 8px 8px 0;
+  background:#F2F7FD;color:#1E6FD9;font-family:inherit;font-size:14px;line-height:1;
+  box-shadow:2px 0 12px rgba(11,46,78,.12);
+  align-items:center;justify-content:center;transition:background .12s,color .12s}
+body.navoff #navOpen{display:flex}
+#navOpen:hover{background:#E4EEFA;color:#1558B0}
 #sn .nh{padding:13px 16px 11px;border-bottom:1px solid var(--line)}
 #sn .nh b{display:block;font-size:13.5px;color:var(--deep);letter-spacing:.2px}
 #sn .nh span{font-size:11px;color:var(--sub)}
@@ -397,6 +869,25 @@ body.navoff #sn{display:none}
 #sn .nl{flex:1;overflow-y:auto;padding:6px 0 20px}
 #sn .ng{padding:9px 15px 4px;font-size:10.5px;font-weight:700;color:#9AAABA;
   letter-spacing:.06em;text-transform:uppercase}
+/* 系统 → 一级菜单 → 模块 三级。一级菜单是可折叠的组标题：
+   89 个模块平铺时人只能靠搜索找页面，但没有折叠的标题又只是块装饰。 */
+#sn .ng2{display:flex;align-items:center;gap:5px;width:100%;text-align:left;
+  border:0;background:transparent;padding:10px 14px 4px 12px;cursor:pointer;
+  font-family:inherit;font-size:11px;font-weight:700;color:#5C6F84;
+  letter-spacing:0;border-top:1px solid #EDF2F8;margin-top:4px}
+#sn .ng2:first-child{border-top:0;margin-top:0}
+#sn .ng2:hover{color:#1E6FD9}
+#sn .ng2 .ga{font-size:9px;color:#9AAABA;display:inline-block;width:8px;
+  transition:transform .15s;transform-origin:50% 50%}
+#sn .ng2.closed .ga{transform:rotate(-90deg)}
+#sn .ng2 .gt{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sn .ng2 .gc{font-weight:400;font-size:10px;color:#9AAABA;background:#EEF4FA;
+  padding:0 5px;border-radius:8px;line-height:15px;flex:0 0 auto}
+#sn .ngb{display:block}
+#sn .ngb.hide{display:none}
+#sn .ngb .ni{padding-left:25px}
+#sn .ni.two b{font-size:12px}
+#sn .ni.two i{font-size:10px}
 #sn .ni{display:block;width:100%;text-align:left;border:0;background:transparent;
   padding:7px 15px 7px 16px;cursor:pointer;font-family:inherit;
   border-left:2px solid transparent;transition:background .12s}
@@ -435,6 +926,12 @@ body.ovview .pane.human{flex:1 1 100%}
   display:flex;align-items:baseline;gap:9px}
 .ov-t em{font-style:normal;font-size:11px;font-weight:500;color:#9AAABA}
 .ov-k{font-size:10px;color:#9AAABA;font-family:var(--mono)}
+/* 改动总览：编号是引用锚点，走等宽；「回原型」要能点，但别抢正文的注意力 */
+.ovchg td{vertical-align:top;line-height:1.65}
+.ov-jump{display:inline-block;margin:0 4px 4px 0;padding:2px 8px;border:1px solid #F3BFD2;
+  background:#fff;color:#BE185D;border-radius:9px;font:600 10.5px/1.4 inherit;
+  text-decoration:none;cursor:pointer}
+.ov-jump:hover{background:#EC407A;border-color:#EC407A;color:#fff}
 .ov-menu{font-size:11.5px;color:#5C6F84}
 .ov-ok{color:#1B7F45;font-weight:700}
 .ov-bad{color:#C62828;font-weight:700}
@@ -473,6 +970,11 @@ body.ovview .pane.human{flex:1 1 100%}
 .ov-ver em{font-style:normal;font-size:11.5px;color:#8A6470;flex:1 1 240px;min-width:0;line-height:1.7}
 /* 本稿 pill：实心，和版本号那几个白底 pill 分开，一眼能认出「这一稿」 */
 .ov-ver .ov-cur{background:#EC407A;color:#fff;border-color:#EC407A;font-weight:600}
+/* 现状基线（交付 A）：没有改动可标，配色换成中性蓝，别用粉色暗示「改过」 */
+.ov-ver.base{background:#F5F9FE;border-color:#DCE8F6;border-left-color:#1E6FD9}
+.ov-ver.base b{color:#1B4A7E}
+.ov-ver.base span{color:#1B4A7E;border-color:#C9DDF3}
+.ov-ver.base em{color:#5A7189}
 /* 文档级确认条：签了是绿的，没签是灰的。不写「待补充」——那句话听起来像还有活要干，
    实际只是「还没看」。放坐标条下面，是因为它管的是整份文档，不属于任何模块 */
 .ov-sign{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:-4px 0 14px;
@@ -494,9 +996,61 @@ body.ovview .pane.human{flex:1 1 100%}
 .ov-tips{background:#F7FAFD;border:1px solid #E6EEF7;border-radius:9px;padding:12px 15px}
 .ov-tips div{font-size:12.5px;color:#4A5C70;line-height:1.95}
 .ov-tips b{color:#1B3550;margin-right:5px}
+/* 总览页签：核对报告 / 模块索引。报告是「签名前该先读的那一页」，必须一打开就在 */
+.ov-tabs{display:flex;gap:2px;margin:14px 0 0;border-bottom:1px solid #E3EAF3}
+.ov-tab{appearance:none;border:0;background:transparent;font-family:inherit;cursor:pointer;
+  padding:9px 15px 10px;margin-bottom:-1px;border-bottom:2px solid transparent;
+  display:flex;align-items:baseline;gap:8px;border-radius:6px 6px 0 0;transition:background .12s}
+.ov-tab b{font-size:13.5px;color:#5C6F84;font-weight:600;white-space:nowrap}
+.ov-tab em{font-style:normal;font-size:11px;color:#9AAABA}
+.ov-tab:hover{background:#F4F8FD}
+.ov-tab:hover b{color:#1E6FD9}
+.ov-tab.on{border-bottom-color:#1E6FD9}
+.ov-tab.on b{color:#0B2E4E}
+.ov-pane{padding-top:16px}
+.ov-pane[hidden]{display:none}
+/* 报告正文：标题层级比正文低一档（页签已经是一级），字号跟文档正文对齐 */
+.ov-rep{font-size:13px;color:#3D4F63;line-height:1.9}
+.ov-rep .rep-s{font-size:15px;color:#0B2E4E;font-weight:700;margin:26px 0 10px;
+  padding-left:10px;border-left:3px solid #1E6FD9;line-height:1.35;display:flex;
+  align-items:baseline;gap:9px}
+.ov-rep .rep-s:first-child{margin-top:2px}
+.ov-rep .rep-s2{font-size:13.5px;color:#1B3550;font-weight:700;margin:20px 0 7px;line-height:1.5}
+.ov-rep p{margin:0 0 10px}
+.ov-rep ul,.ov-rep ol{margin:0 0 12px;padding-left:21px}
+.ov-rep li{margin:0 0 5px}
+.ov-rep li b{color:#0B2E4E}
+.ov-rep table{width:100%;border-collapse:collapse;font-size:12.4px;margin:0 0 14px;
+  table-layout:auto}
+.ov-rep th{background:#F3F8FD;color:#41566E;text-align:left;padding:8px 10px;
+  border-bottom:1px solid #E3EAF3;font-size:11.5px;white-space:nowrap;vertical-align:top}
+.ov-rep td{padding:8px 10px;border-bottom:1px solid #F0F4F9;vertical-align:top;line-height:1.72}
+.ov-rep tr:last-child td{border-bottom:0}
+.ov-rep code{font-family:var(--mono);font-size:11.5px;background:#F4F7FA;color:#B0244F;
+  border:1px solid #E6EEF7;border-radius:4px;padding:0 5px;white-space:nowrap}
+/* 表格里 code 必须允许折行：列宽按内容自适应，nowrap 的长编号会把整表顶出正文宽 */
+.ov-rep td code{white-space:normal;word-break:break-all}
+.ov-rep .rep-note{background:#F5F9FE;border:1px solid #DCE8F6;border-left:3px solid #1E6FD9;
+  border-radius:0 8px 8px 0;padding:10px 14px;margin:0 0 16px;font-size:12px;color:#41566E;
+  line-height:1.85}
+.ov-rep .rep-note p{margin:0}
+.ov-rep hr{border:0;border-top:1px dashed #E6EEF7;margin:22px 0}
+.ov-rep b{color:#0B2E4E}
 .ov-foot{margin-top:22px;padding-top:12px;border-top:1px dashed #E6EEF7;
   font-size:10.5px;color:#9AAABA;font-family:var(--mono);word-break:break-all}
 @media (max-width:1100px){.ov-nums{grid-template-columns:repeat(3,1fr)}}
+"""
+
+# 入门导读（可选）：整页 iframe，与主文档样式完全隔离。
+# 为什么用 iframe 而不是内联：导读往往是自带 CSS 的独立文档，它的 :root 变量、
+# body 字号、*{box-sizing} 会直接污染 PRD 的正文（--blue / --line / --bg 这种同名变量
+# 含义还不一样），内联过一次，整份 PRD 的配色就变了。
+GUIDE_CSS = """
+#paneGuide{display:none}
+#paneGuide iframe{flex:1;width:100%;height:100%;border:0;display:block;background:#F4F6FB}
+body.gdview #paneGuide{display:flex;flex:1 1 100%;min-width:0}
+body.gdview .pane:not(#paneGuide){display:none}
+body.gdview #r2,body.gdview .modes{display:none}
 """
 
 NAV_JS = r"""
@@ -516,21 +1070,81 @@ function renderNav(q){
   var box = document.getElementById("nvList");
   if (!box) return;
   var html = [];
-  html.push('<button class="ni ov' + (CUR < 0 ? " on" : "") + '" data-i="-1">'
+  /* 入门导读排最前：第一次打开系统的人先要「这套东西怎么用」，不是「第几条规则」 */
+  if (ALL.guide) {
+    html.push('<button class="ni gd' + (CUR === -2 ? " on" : "") + '" data-i="-2">'
+      + '<b>' + esc(ALL.guide.title || "基础业务说明") + '</b><i>'
+      + esc(ALL.guide.note || "先看这一页再看模块") + '</i></button>');
+  }
+  html.push('<button class="ni ov' + (CUR < 0 && CUR !== -2 ? " on" : "") + '" data-i="-1">'
     + '<b>总览</b><i>' + ALL.modules.length + ' 个模块 · '
     + ALL.modules.reduce(function(a,m){ return a + (m.rules||[]).length; }, 0) + ' 条规则</i></button>');
-  var lastSys = null, n = 0;
+  var lastSys = null, n = 0, inG = false;
+  /* 系统 → 一级菜单 → 模块。一级菜单（menu 的第一段）是可折叠的组标题，
+     其余段落成模块按钮的副标题（menu 写三段时第三段并进副标题，不再嵌一层）。
+     先按「系统 + 一级菜单」稳定分组再渲染：模块是按 key 排序读进来的，
+     同一菜单下的模块会被别的菜单隔开，不分组就会冒出两个「人员管理」。 */
+  function closeG(){ if (inG) { html.push('</div>'); inG = false; } }
+  var order = [], grp = {};
   ALL.modules.forEach(function(m, i){
     var mt = m.meta || {};
-    if (q && (HIT[mt.key] || 0) === 0) return;
-    if (mt.system !== lastSys) { html.push('<div class="ng">' + esc(mt.system || "未分组") + '</div>'); lastSys = mt.system; }
-    n++;
-    var sub = q ? ('命中 <em>' + HIT[mt.key] + '</em> 条') : ((m.rules||[]).length + ' 条规则');
-    html.push('<button class="ni' + (CUR === i ? " on" : "") + '" data-i="' + i + '">'
-      + '<b>' + esc(mt.module || "?") + '</b><i>' + esc(mt.key || "") + ' · ' + sub + '</i></button>');
+    var k = (mt.system || "") + "\u0001" + (String(mt.menu || "").split(" / ")[0] || "");
+    if (!grp[k]) { grp[k] = []; order.push(k); }
+    grp[k].push({ m: m, i: i });
+  });
+  var layered = order.length > 1 || !!(ALL.meta && ALL.meta.nav_group);
+  order.forEach(function(k){
+    var items = grp[k].filter(function(o){
+      return !(q && (HIT[(o.m.meta || {}).key] || 0) === 0);
+    });
+    if (!items.length) return;
+    var m0 = items[0].m.meta || {};
+    var lv1 = String(m0.menu || "").split(" / ")[0] || "未分组";
+    if (m0.system !== lastSys) {
+      closeG();
+      html.push('<div class="ng">' + esc(m0.system || "未分组") + '</div>');
+      lastSys = m0.system;
+    }
+    if (layered) {
+      var _mn = ((ALL.meta && ALL.meta.menu_notes) || {})[lv1] || "";
+      var _gid = "g" + order.indexOf(k);
+      html.push('<button class="ng2" data-g="' + _gid + '" aria-expanded="true" title="'
+        + esc(_mn || lv1) + '">'
+        + '<span class="ga">▾</span><span class="gt">' + esc(lv1) + '</span>'
+        + '<span class="gc">' + items.length + '</span></button>');
+      html.push('<div class="ngb" data-g="' + _gid + '">');
+      inG = true;
+    }
+    items.forEach(function(o){
+      var m = o.m, i = o.i, mt = m.meta || {};
+      var lv2 = String(mt.menu || "").split(" / ").slice(1).join(" / ");
+      n++;
+      var tail = q ? ('命中 <em>' + HIT[mt.key] + '</em> 条') : ((m.rules || []).length + ' 条规则');
+      var sub = (lv2 && lv2 !== mt.module) ? (lv2 + ' · ' + tail) : ((mt.key || "") + ' · ' + tail);
+      html.push('<button class="ni' + (layered ? " two" : "") + (CUR === i ? " on" : "") + '" data-i="' + i + '">'
+        + '<b>' + esc(mt.module || "?") + '</b><i>' + esc(sub) + '</i></button>');
+    });
+    closeG();
   });
   if (q && n === 0) html.push('<div class="ng">没有匹配的模块</div>');
   box.innerHTML = html.join("");
+  /* 导航每次重渲染（点模块、搜关键字）都会把组重建一遍，折叠状态必须重放，
+     否则收起一个组之后随手点一下别处，它又自己弹开了。 */
+  applyClosed();
+}
+
+/* 折叠状态只留在内存里，按 data-g（菜单在 order 里的下标）记，搜索过滤不会串位 */
+var CLOSED = {};
+function applyClosed(){
+  var box = document.getElementById("nvList");
+  if (!box) return;
+  Array.prototype.forEach.call(box.querySelectorAll(".ng2"), function(g){
+    var off = !!CLOSED[g.dataset.g];
+    g.classList.toggle("closed", off);
+    g.setAttribute("aria-expanded", off ? "false" : "true");
+    var b = g.nextElementSibling;
+    if (b && b.classList.contains("ngb")) b.classList.toggle("hide", off);
+  });
 }
 
 function esc(s){
@@ -556,6 +1170,11 @@ function search(q){
 
 function showOverview(){
   CUR = -1;
+  document.body.classList.remove("gdview");
+  /* 从「核查/用例/代码」栏回总览时先切回 both：
+     那几栏会把叙事 pane 整个 hide，而总览正文就渲染在叙事 pane 里，
+     不切回来会看到一片空白（从事实卡点回总览时必现）。 */
+  if (typeof goMode === "function") goMode("both");
   document.body.classList.add("ovview");
   document.getElementById("ttl").textContent = ALL.meta.title || "全量 PRD";
   document.getElementById("crumb").textContent = ALL.modules.length + " 个模块";
@@ -566,11 +1185,132 @@ function showOverview(){
   document.querySelectorAll(".pane").forEach(function(p){ p.scrollTop = 0; });
   applyLayout();
   renderNav(document.getElementById("q").value);
+  ovTabInit();
+}
+
+/* 入门导读：整页 iframe。原文放在 text/plain 的 script 里，第一次点开才写进 srcdoc，
+   免得每次打开文档都白白解析 8MB 图文（不点这一页就永远不花这个钱）。 */
+function showGuide(){
+  CUR = -2;
+  if (typeof goMode === "function") goMode("both");
+  document.body.classList.remove("ovview");
+  document.body.classList.add("gdview");
+  var g = ALL.guide || {};
+  document.getElementById("ttl").textContent = g.title || "基础业务说明";
+  document.getElementById("crumb").textContent = g.note || "";
+  document.getElementById("doc").innerHTML = "";
+  document.getElementById("aiBody").innerHTML = "";
+  renderNav(document.getElementById("q").value);
+  gdBoot();
+  applyLayout();
+  window.scrollTo(0, 0);
+}
+function gdBoot(){
+  var f = document.getElementById("gdFrame");
+  if (!f || f.getAttribute("data-on")) return;
+  var s = document.getElementById("gdSrc");
+  if (!s) return;
+  var html = s.textContent;
+  /* 导读自己的目录是 href="#c8" 这种页内锚点。放进 iframe 后，锚点会按「文档地址」解析：
+     srcdoc 继承父页地址 → 一点就把整份 PRD 加载进 iframe。所以统一接管：拦下页内锚点自己做
+     scrollIntoView，不依赖浏览器的片段导航。
+     （收尾标签用字符串拼接生成——注释里也绝对不能出现那个标签的字面量，
+       写在 JS 注释里一样会把整个 script 块截断，整份文档的导航会直接失效） */
+  var SB = "<" + "script>", SE = "<" + "/" + "script>";
+  var boot = SB + "document.addEventListener('click',function(e){"
+    + "var a=e.target.closest?e.target.closest('a'):null;if(!a)return;"
+    + "var h=a.getAttribute('href')||'';if(h.charAt(0)!=='#')return;"
+    + "var t=document.getElementById(h.slice(1));if(!t)return;"
+    + "e.preventDefault();t.scrollIntoView();},true);" + SE;
+  var cut = html.lastIndexOf("</body>");
+  html = (cut > 0) ? (html.slice(0, cut) + boot + html.slice(cut)) : (html + boot);
+  f.setAttribute("data-on", "1");
+
+  /* 加载策略：先用 srcdoc，不用 blob。
+     原因是一次真实事故：单文件拷到另一台电脑，点「基础业务说明」是一片空白。
+     图并不缺——54 张全是内嵌的 data URI，全文零外链；缺的是 blob: 地址本身：
+     部分浏览器（Safari、微信/企微内置浏览器、开了严格策略的环境）拒绝加载
+     file:// 页面里由 blob 生成的 iframe，而 createObjectURL 不会抛错，
+     所以 try/catch 兜不住，页面就安静地空着。
+     srcdoc 不生成任何地址，也不受这类放行策略影响；额外好处是同一个文档里的
+     contentDocument 可读，能真的验证「到底加载出来了没有」，而不是假装成功。 */
+  var tip = document.getElementById("gdTip");
+  var done = false;
+  function win(){
+    done = true;
+    if (tip) tip.hidden = true;
+    f.style.display = "";
+  }
+  function fail(msg){
+    if (done) return;
+    done = true;
+    if (tip) {
+      tip.hidden = false;
+      tip.innerHTML = msg;
+    }
+    f.style.display = "none";
+  }
+  function blobFallback(){
+    try {
+      f.removeAttribute("srcdoc");
+      f.src = URL.createObjectURL(new Blob([html], {type: "text/html;charset=utf-8"}));
+      /* blob 的内容跨源，读不到，没法判断成功失败；不误报，交给用户自己看。 */
+      if (tip) tip.hidden = true;
+      f.style.display = "";
+    } catch (e) {
+      fail("这段内容在当前浏览器里没能加载。换用 Chrome / Edge 打开，"
+         + "或双击同一个压缩包里的《基础业务说明-单页.html》。");
+    }
+  }
+  var t0 = Date.now();
+  function probe(){
+    if (done) return;
+    var d = null;
+    try { d = f.contentDocument; } catch (e) {}
+    if (d && d.body && d.body.innerHTML.length > 1000) { win(); return; }
+    if (Date.now() - t0 < 20000) { setTimeout(probe, 250); return; }
+    fail("基础业务说明没能加载出来（8 MB 正文、54 张图都在这个文件里，缺的是浏览器放行）。<br>"
+       + "① 换用 Chrome / Edge 打开这个文件；<br>"
+       + "② 或用同一个压缩包里的《基础业务说明-单页.html》单独看这一份。");
+  }
+  try {
+    if ("srcdoc" in f) {
+      f.srcdoc = html;
+      setTimeout(probe, 300);
+    } else {
+      blobFallback();
+    }
+  } catch (e) {
+    blobFallback();
+  }
+}
+
+/* 总览页签：核对报告 / 模块索引。页签状态记在 OVTAB，
+   从模块切回总览时停在上次看的那一页，不每次都弹回报告。 */
+var OVTAB = "rep";
+function ovTab(k){
+  OVTAB = k || "rep";
+  document.querySelectorAll(".ov-tab").forEach(function(b){
+    b.classList.toggle("on", b.dataset.ov === OVTAB);
+  });
+  document.querySelectorAll(".ov-pane").forEach(function(p){
+    p.hidden = (p.dataset.ov !== OVTAB);
+  });
+  var d = document.getElementById("doc");
+  if (d) d.scrollTop = 0;
+  window.scrollTo(0, 0);
+}
+function ovTabInit(){
+  /* 没有页签（这份文档没配核对报告）就什么都不做，别动 hidden */
+  if (!document.getElementById("ovTabs")) return;
+  if (OVTAB !== "rep") ovTab(OVTAB);
 }
 
 function goto(i){
+  if (i === -2) { showGuide(); return; }
   if (i < 0) { showOverview(); return; }
   CUR = i;
+  document.body.classList.remove("gdview");
   D = ALL.modules[i];
   bootModule();
   window.scrollTo(0, 0);
@@ -579,18 +1319,103 @@ function goto(i){
 }
 
 document.getElementById("nvList").addEventListener("click", function(e){
-  var b = e.target.closest ? e.target.closest(".ni") : null;
+  if (!e.target.closest) return;
+  /* 一级菜单组标题：折叠 / 展开。标题本身不是页面，点了不该跳走。
+     状态记在 CLOSED 里而不是只改 class，重渲染后 applyClosed() 才能还原。 */
+  var g = e.target.closest(".ng2");
+  if (g) {
+    var gid = g.dataset.g;
+    CLOSED[gid] = !CLOSED[gid];
+    applyClosed();
+    return;
+  }
+  var b = e.target.closest(".ni");
   if (!b) return;
   goto(parseInt(b.dataset.i, 10));
 });
 document.getElementById("q").addEventListener("input", function(){ search(this.value); });
-document.getElementById("navToggle").addEventListener("click", function(){
-  document.body.classList.toggle("navoff");
+/* 页签内容每次切总览都重渲染，事件只能挂在 document 上，不能挂在按钮上 */
+document.addEventListener("click", function(e){
+  var b = e.target.closest ? e.target.closest(".ov-tab") : null;
+  if (b) ovTab(b.dataset.ov);
+});
+/* 改动总览的「回原型」：跨模块 → 先切模块（DOM 整块重建），再切帧，最后交给
+   正向那套 wireTo 高亮 + 连线。顺序反了就会在旧节点上操作，什么也没发生。 */
+document.addEventListener("click", function(e){
+  var b = e.target.closest ? e.target.closest(".ov-jump") : null;
+  if (!b) return;
+  e.preventDefault();
+  e.stopPropagation();
+  goto(parseInt(b.dataset.mod, 10));
+  showFrame(parseInt(b.dataset.fi, 10));
+  wireTo(b.dataset.chg);
+});
+
+/* ---------------- 交叉引用跳转 ----------------
+   规则卡、状态机迁移表在文档栏，事实卡在核查栏，模块名只跳模块。
+   跨模块要先 goto（整块 DOM 会重建），等渲染完再定位，否则拿到的是旧节点。 */
+function xrefEl(xt, xa){
+  if (xt === "rule")  return document.getElementById("rc-" + xa);
+  if (xt === "trans") return document.getElementById("tr-" + xa);
+  if (xt === "fact")  return document.querySelector('.fcard[data-id="' + xa + '"]');
+  return null;
+}
+function xrefFlash(xt, xa){
+  var el = xrefEl(xt, xa);
+  if (!el) return false;
+  if (xt === "fact" && el.classList.contains("hide")) {
+    /* 事实卡可能被筛选条藏起来了，先回到「全部」再定位 */
+    var all = document.querySelector('.fx-bar .chip[data-f="all"]');
+    if (all) all.click();
+  }
+  if (xt === "trans") {
+    /* 表格行不能套 flash()：它加的是 .hl 阴影，行上不生效，改用底色高亮 */
+    el.classList.add("hl");
+    el.scrollIntoView({block: "center", behavior: "smooth"});
+    setTimeout(function(){ el.classList.remove("hl"); }, 2200);
+  } else {
+    flash(el, "center");
+  }
+  return true;
+}
+function xrefGo(mk, xt, xa){
+  var idx = ALL.modules.findIndex(function(m){ return (m.meta||{}).key === mk; });
+  if (idx < 0) return;
+  if (xt === "module") { goto(idx); return; }
+  var same = (idx === CUR);
+  if (!same) goto(idx);
+  setTimeout(function(){
+    /* 规则/迁移落在文档栏，用 both 而不是 human：human 没有对应的顶栏按钮，
+       切过去按钮还停在「原型+文档」，读的人会以为视图没切 */
+    goMode(xt === "fact" ? "facts" : "both");
+    setTimeout(function(){ xrefFlash(xt, xa); }, same ? 10 : 90);
+  }, same ? 0 : 120);
+}
+document.addEventListener("click", function(e){
+  var a = e.target.closest ? e.target.closest("a.xref") : null;
+  if (!a) return;                      /* 没有 data-* 属性，不会被模板那边的跳转误接 */
+  if (e.preventDefault) e.preventDefault();
+  if (e.stopPropagation) e.stopPropagation();
+  xrefGo(a.dataset.xm, a.dataset.xt, a.dataset.xa);
+});
+function navSet(off){
+  document.body.classList.toggle("navoff", off);
+  var t = document.getElementById("navToggle");
+  if (t) t.textContent = off ? "展开 ›" : "收起 ‹";
   applyLayout();
+}
+document.getElementById("navToggle").addEventListener("click", function(){
+  navSet(!document.body.classList.contains("navoff"));
+});
+var navOpenBtn = document.getElementById("navOpen");
+if (navOpenBtn) navOpenBtn.addEventListener("click", function(){
+  navSet(false);
+  var q = document.getElementById("q");
+  if (q) q.focus({ preventScroll: true });
 });
 document.addEventListener("keydown", function(e){
   if (e.target && /input|textarea/i.test(e.target.tagName)) return;
-  if (e.key === "[" ) { document.getElementById("navToggle").click(); }
+  if (e.key === "[") { navSet(!document.body.classList.contains("navoff")); }
   if (!ALL.modules.length) return;
   if (e.key === "ArrowDown" || e.key === "j") { e.preventDefault(); goto(Math.min(CUR + 1, ALL.modules.length - 1)); }
   if (e.key === "ArrowUp" || e.key === "k") { e.preventDefault(); goto(CUR <= 0 ? -1 : CUR - 1); }
@@ -605,7 +1430,12 @@ showOverview();
 """
 
 
-def make_full_html(meta, mods, overview_html, overview_ai_html):
+# 项目级原型补丁样式（root/proto_extra.css），main 里读进来，make_full_html 注入。
+# 帧里用了模板没有的 class 时必须带上，否则帧会整体走形（见 proto_extra.css 头注释）。
+PROTO_CSS = ""
+
+
+def make_full_html(meta, mods, overview_html, overview_ai_html, guide=None):
     tpl = open(TPL, encoding="utf-8").read()
 
     # 1. 数据起点：单模块 → 多模块容器
@@ -655,6 +1485,10 @@ applyLayout();'''
 
     # 4. 注入导航 CSS
     tpl = tpl.replace("</style>", SIDENAV_CSS + "\n</style>", 1)
+    if guide:
+        tpl = tpl.replace("</style>", GUIDE_CSS + "\n</style>", 1)
+    if PROTO_CSS:
+        tpl = tpl.replace("</style>", "\n" + PROTO_CSS + "\n</style>", 1)
 
     # 5. body 包一层：nav + main
     body_open = "<body>\n\n<div class=\"top\">"
@@ -675,6 +1509,7 @@ applyLayout();'''
     <u id="navToggle" title="快捷键 [">收起 ‹</u>
   </div>
 </nav>
+<button id="navOpen" title="展开导航（快捷键 [）" aria-label="展开导航">›</button>
 
 <div class="mn">
 
@@ -690,6 +1525,26 @@ applyLayout();'''
 
 <script>''', 1)
 
+    # 5.5 入门导读：整页 iframe + 原始文档（放在 stage 里，靠 body.gdview 切换显示）
+    if guide:
+        stage = '<div class="stage" id="stage">'
+        if stage not in tpl:
+            sys.exit("✗ 模板里找不到 stage 容器，无法挂入门导读")
+        tpl = tpl.replace(
+            stage,
+            stage + '\n\n  <div class="pane guide" id="paneGuide">'
+                    '<iframe id="gdFrame" title="%s"></iframe>'
+                    '<div id="gdTip" hidden style="flex:1 1 100%%;min-width:0;'
+                    'padding:28px 32px;'
+                    'font:14px/1.9 -apple-system,BlinkMacSystemFont,\'PingFang SC\',\'Microsoft YaHei\',sans-serif;'
+                    'color:#6b5321;background:#fff9e8;border-left:3px solid #e0a800">'
+                    '正在加载基础业务说明……</div></div>' % esc(guide["title"]),
+            1)
+        # 导读原文塞进 text/plain 的 script：浏览器不解析、不改写，JS 取 textContent 直接给 srcdoc。
+        # 前提是原文里不能有 </script（有的话脚本会被提前截断），构建时先查一遍。
+        if "</script" in guide["html"].lower():
+            sys.exit("✗ 入门导读原文里含 </script，无法安全内嵌。先去掉原文的脚本再合并。")
+
     # 6. 顶栏加「返回总览」和菜单键；去掉单模块的 r2 说明（全量版另有总览说明）
     tpl = tpl.replace('''    <div class="modes" id="modes">''',
                       '''    <div class="modes" id="modes">''', 1)
@@ -697,12 +1552,36 @@ applyLayout();'''
     # 7. 注入导航 JS（在 </script> 之前）
     tpl = tpl.replace("</script>\n</body>", NAV_JS + "\n</script>\n</body>", 1)
 
+    # 7.5 导读原文（必须排在 NAV_JS 注入之后：否则上面那个 </script>\n</body> 会命中
+    #     gdSrc 的收尾标签，把四千行导航脚本塞进 text/plain 里，页面直接白屏）
+    if guide:
+        # 必须定位到**最后**一个 </body>：脚本文本里也可能出现这个词（比如
+        # lastIndexOf("</body>")），按第一个匹配插会把导读原文塞进 JS 字符串里，
+        # 整份文档的脚本直接报废。
+        _b = tpl.rfind("</body>")
+        if _b < 0:
+            sys.exit("✗ 模板里找不到 </body>，无法内嵌入门导读")
+        tpl = (tpl[:_b]
+               + '<script type="text/plain" id="gdSrc">%s</script>\n' % guide["html"]
+               + tpl[_b:])
+        # 装配自检：这两种事故都真的发生过——注入点命中自己新写的代码，
+        # 结果把 8MB 导读塞进 JS 字符串里，页面看着正常、导航全部失效。
+        _gi = tpl.find('id="gdSrc"')
+        _nav = tpl.rfind("<script>", 0, _gi)
+        _navend = tpl.find("</script>", _nav) if _nav >= 0 else -1
+        if _nav < 0 or _navend < 0 or _navend > _gi:
+            sys.exit("✗ 入门导读注入位置异常：导航脚本被截断了")
+        if _gi - _nav > 300000:
+            sys.exit("✗ 导航脚本异常膨胀（%d 字节），导读原文被塞进了脚本里" % (_gi - _nav))
+
     # 8. 数据注入
     payload = json.dumps({
         "meta": meta,
         "overview_html": overview_html,
         "overview_ai_html": overview_ai_html,
         "modules": mods,
+        "guide": ({"title": guide["title"], "note": guide.get("note") or ""}
+                  if guide else None),
     }, ensure_ascii=False, indent=1).replace("</", "<\\/")
     inject = "<script>\nwindow.PRD_DATA = %s;\n</script>\n" % payload
     i = tpl.find("<script>")
@@ -781,11 +1660,26 @@ def md_sm(tr):
     return L
 
 
-def build_md(meta, mods):
+def build_md(meta, mods, report=None, guide=None):
     L = []
     L.append("# %s\n" % meta["title"])
     L.append("> 由 %d 个模块 PRD 合并。引擎 %s，生成于 %s。\n"
              % (len(mods), meta["engine"], meta["generated"]))
+    # 导读是图文文档，不搬进文本层（54 张截图转 Base64 只会把 md 变成垃圾），
+    # 但必须留一行指针，否则读 md 的人不知道还有那一页。
+    if guide:
+        L.append("\n> **入门导读**：HTML 版左侧第一项「%s」%s。"
+                 "纯文本层不收图，需要看图请打开 HTML。\n"
+                 % (guide["title"],
+                    ("（%s）" % guide["note"]) if guide.get("note") else ""))
+    # 文本层也要有核对报告：HTML 首页签里有、导出 md 里没有，等于两份产物说的不是一回事
+    if report and report.get("md"):
+        _r = report["md"]
+        _r = re.sub(r"^### ", "#### ", _r, flags=re.M)
+        _r = re.sub(r"^## ", "### ", _r, flags=re.M)
+        _r = re.sub(r"^# ", "## ", _r, flags=re.M)
+        L.append("\n" + _r.strip() + "\n")
+        L.append("\n---\n")
     L.append("| 模块 | 系统 | 所属迭代 | 菜单 | 规则 | case | 负责人 |")
     L.append("|:--|:--|:--|:--|--:|--:|:--|")
     for m in mods:
@@ -860,7 +1754,11 @@ def main():
                     help="允许引擎版本不一致（默认拒绝：老数据合并会缺字段）")
     ap.add_argument("--strict", action="store_true", help="任一模块契约不过就终止")
     ap.add_argument("--allow-unsigned", action="store_true",
-                    help="允许双签不全也合并（只用于内部评审稿，不要拿去交付）")
+                    help="允许未封板也合并（只用于内部评审稿，不要拿去交付）")
+    ap.add_argument("--report", help="跨模块核对报告（.md），挂成总览页的第一个页签；"
+                                     "缺省读 run.json 的 report.file")
+    ap.add_argument("--guide", help="入门导读（自带的独立 HTML），合成为导航第一项「基础业务说明」；"
+                                   "缺省读 run.json 的 guide.file")
     a = ap.parse_args()
 
     if not a.root and not a.from_html:
@@ -957,8 +1855,8 @@ def main():
             uniq.append(m)
     mods = uniq
 
-    # 排序：管理后台 → 主办方端 → 报名者端，组内按 run 顺序
-    order = {"管理后台": 0, "主办方端": 1, "报名者端": 2}
+    # 排序：管理后台 → 企业端 → 员工端，组内按 run 顺序
+    order = {"管理后台": 0, "企业端": 1, "员工端": 2}
     mods.sort(key=lambda m: order.get((m.get("meta") or {}).get("system"), 9))
 
     # 跨模块规则编号查重：id 是全量 PRD 里的全局引用锚点，撞号后「R-xx 说了什么」会有歧义
@@ -977,10 +1875,11 @@ def main():
         if a.strict:
             sys.exit("✗ 规则编号重复，--strict 终止")
 
-    # ---- 合并门禁（第二层）：单模块过不代表能合。这里只查一件机器查得动的事——双签 ----
-    # 为什么放在合并这一环：单模块自检时可以只有作者自己，但一旦合并成全量 PRD，
-    # 它就成了下游（研发/测试）唯一的事实来源，必须有第二个人看过。
+    # ---- 合并门禁：单模块过不代表能合。这里查机器查得动的那件事——有没有人封过板 ----
+    # 为什么放在合并这一环：单模块自检时可以随便试，但一旦合并成全量 PRD，
+    # 它就成了下游（研发/测试）唯一的事实来源，得有人对整份认过。
     unsigned, sig_info = [], {}
+    stale_info = {}
     doc_sign = {}
     if a.root:
         _rp = os.path.join(root, "run.json")
@@ -993,6 +1892,15 @@ def main():
                     print("  ! 文档级确认记的是第 %s 稿，现为第 %s 稿 —— 改过稿，已失效"
                           % (doc_sign.get("draft"), _run.get("draft")))
                     doc_sign = {}
+                elif doc_sign:
+                    # 稿次没变不代表内容没变：比签字时记的内容指纹
+                    _sd = doc_sign.get("digests") or {}
+                    _chg = [_k for _k, _v in _sd.items()
+                            if S.content_digest(os.path.join(root, "modules", _k + ".json")) != _v]
+                    if _chg:
+                        print("  ! 文档级确认之后，这些模块的内容被改过：%s —— 已失效"
+                              % "、".join(sorted(_chg)))
+                        doc_sign = {}
             except (json.JSONDecodeError, OSError):
                 doc_sign = {}
     doc_ok = bool(doc_sign.get("by") and doc_sign.get("at"))
@@ -1006,27 +1914,36 @@ def main():
                     so = (json.load(open(fp, encoding="utf-8")).get("signoff") or {})
                 except json.JSONDecodeError:
                     so = {}
-            miss = [r for r in ("business", "tech") if not (so.get(r) or {}).get("by")]
-            sig_info[k] = {r: (so.get(r) or {}).get("by") for r in ("business", "tech")}
-            if miss:
-                unsigned.append((k, miss))
+            _sg = S.signer_of(so)
+            # 封板只证明有人认过，不证明认的是现在这一版：比内容指纹，对不上算「封的是旧内容」
+            _mh = S.content_digest(os.path.join(root, "modules", k + ".json"))
+            _stale = bool(_sg.get("by") and _sg.get("digest") and _mh
+                          and _sg["digest"] != _mh)
+            sig_info[k] = _sg.get("by")
+            if not _sg.get("by"):
+                unsigned.append((k, "未封板"))
+            elif _stale:
+                stale_info[k] = _sg.get("by")
+                unsigned.append((k, "封的是旧内容"))
         if unsigned and doc_ok:
-            print("  ✓ 文档级确认：%s @ %s（%s，覆盖 %d 个模块，不逐模块双签）"
+            print("  ✓ 文档级确认：%s @ %s（%s，覆盖 %d 个模块，不逐模块封板）"
                   % (doc_sign["by"], doc_sign["at"], doc_sign.get("covers") or "全部模块", len(mods)))
             unsigned = []
         if unsigned:
-            print("  ! 双签未齐 %d 个模块：" % len(unsigned))
-            for k, miss in unsigned[:8]:
-                print("      %s 缺 %s" % (k, "、".join("业务" if x == "business" else "技术"
-                                                    for x in miss)))
+            print("  ! 还不能合并的模块 %d 个：" % len(unsigned))
+            for k, why in unsigned[:8]:
+                if k in stale_info:
+                    print("      %s 封的是旧内容——封板之后模块被改过（%s）" % (k, stale_info[k]))
+                else:
+                    print("      %s %s" % (k, why))
             if a.allow_unsigned:
                 print("      → 已用 --allow-unsigned 合并。这份只能内部评审，不要交付。")
             else:
-                sys.exit("✗ 双签不齐，拒绝合并。\n"
-                         "  签：gate.py sign --role business|tech --by <姓名> --module <key>\n"
+                sys.exit("✗ 还有模块没封板，拒绝合并。\n"
+                         "  封：gate.py sign --root . --module <key> --by <姓名>\n"
                          "  只是内部评审：加 --allow-unsigned（产物会标未签）")
         else:
-            print("  ✓ 双签齐全：%d 个模块" % len(mods))
+            print("  ✓ 已封板：%d 个模块" % len(mods))
 
     # 本稿稿次：run.json 优先（登记过就一定对），否则取各模块 meta.draft 的最大值。
     # 没有它，总览只能报「累计 N 处」，读者会读成「这一稿改了 N 处」。
@@ -1057,7 +1974,18 @@ def main():
             _d, _r = max(_cands)
             _ver_tag = " · 第 %d 稿%s" % (_d, "（修订 %d）" % _r if _r else "")
 
+    _navcfg = {}
+    if a.root:
+        _np = os.path.join(os.path.abspath(os.path.expanduser(a.root)), "run.json")
+        if os.path.exists(_np):
+            try:
+                _navcfg = json.load(open(_np, encoding="utf-8"))
+            except Exception:
+                _navcfg = {}
+
     meta = {
+        "nav_group": bool(_navcfg.get("nav_group")),
+        "menu_notes": _navcfg.get("menu_notes") or {},
         "project": project or "全量 PRD",
         "title": "%s · 全量 PRD%s" % (project or "系统", _ver_tag),
         "short_title": project or "全量 PRD",
@@ -1082,9 +2010,86 @@ def main():
                 _rev_note = json.load(open(_rnp, encoding="utf-8")).get("rev_note") or ""
             except Exception:
                 _rev_note = ""
-    ov = build_overview(meta, mods, cur_draft, cur_rev, doc_sign, rev_note=_rev_note)
+    # 跨模块核对报告：签名前第一个该看的东西，做成总览的首页签。
+    # 没配就不出页签——不能因为缺一份报告把总览改成两页，那样老文档全变样。
+    _rep = None
+    if a.root:
+        _rcfg = {}
+        _rrp = os.path.join(root, "run.json")
+        if os.path.exists(_rrp):
+            try:
+                _rcfg = (json.load(open(_rrp, encoding="utf-8")).get("report") or {})
+            except (json.JSONDecodeError, OSError):
+                _rcfg = {}
+        _rf = a.report or _rcfg.get("file")
+        if _rf:
+            _rp = _rf if os.path.isabs(_rf) else os.path.join(root, _rf)
+            if os.path.exists(_rp):
+                _txt = open(_rp, encoding="utf-8").read()
+                _rep = {
+                    "title": _rcfg.get("title") or "跨模块核对",
+                    "summary": _rcfg.get("summary") or "",
+                    "html": (md_report_html(_txt) if _rp.lower().endswith((".md", ".markdown"))
+                             else _txt),
+                    "md": (_txt if _rp.lower().endswith((".md", ".markdown")) else ""),
+                }
+                print("  ✓ 核对报告 → 总览首页签：%s（%d 节）"
+                      % (os.path.basename(_rp), _rep["html"].count("<h3")))
+            else:
+                print("  ! 登记了核对报告但文件不存在：%s" % _rp)
+
+    # 入门导读：给第一次接触这套系统的人用的图文说明，合成为导航第一项。
+    # 整篇塞进 text/plain 的 script，只在用户点开时才解析——不点就零成本。
+    _gd = None
+    if a.root:
+        _gcfg = {}
+        _grp = os.path.join(root, "run.json")
+        if os.path.exists(_grp):
+            try:
+                _gcfg = (json.load(open(_grp, encoding="utf-8")).get("guide") or {})
+            except (json.JSONDecodeError, OSError):
+                _gcfg = {}
+        _gf = a.guide or _gcfg.get("file")
+        if _gf:
+            _gp = _gf if os.path.isabs(_gf) else os.path.join(root, _gf)
+            if os.path.exists(_gp):
+                _gh = open(_gp, encoding="utf-8").read()
+                _gd = {"title": _gcfg.get("title") or "基础业务说明",
+                       "note": _gcfg.get("note") or "",
+                       "html": _gh}
+                print("  ✓ 入门导读 → 导航首项「%s」（%s，%.1f MB）"
+                      % (_gd["title"], os.path.basename(_gp),
+                         len(_gh.encode()) / 1e6))
+            else:
+                print("  ! 登记了入门导读但文件不存在：%s" % _gp)
+
+    # 交叉引用：规则号 / 迁移号 / 事实号 / 模块名，一律做成可点锚点。
+    # 必须在所有 HTML 生成完之后做——包括核对报告，它是运行时才转成 HTML 的。
+    xr = Xref(mods)
+
+    # 项目级原型补丁样式：帧专用 class 全在这里，缺了整帧走形
+    global PROTO_CSS
+    _pc = os.path.join(root, "proto_extra.css") if root else ""
+    if _pc and os.path.exists(_pc):
+        PROTO_CSS = open(_pc, encoding="utf-8").read()
+        print("  ✓ 项目原型样式 → proto_extra.css（%.1f KB）"
+              % (len(PROTO_CSS.encode()) / 1024))
+
+    ov = build_overview(meta, mods, cur_draft, cur_rev, doc_sign, rev_note=_rev_note,
+                        report=_rep)
+    # 总览没有「当前模块」：mkey=None 时只链模块名，以及前面带 R-XXX 上下文的 T 号
+    ov = linkify_html(ov, None, xr, set())
     ov_ai = build_overview_ai(meta, mods)
-    html = make_full_html(meta, mods, ov, ov_ai)
+    # 模块正文挂链接，但只挂进 HTML 的副本；导出 JSON 仍是纯文本
+    mods_view = linkify_mods(mods, xr)
+    html = make_full_html(meta, mods_view, ov, ov_ai, guide=_gd)
+    # 统计在注入前算：注入后整个 payload 的引号被 JSON 转义成 \"，按原样数会全是 0
+    _src = ov + "".join(s.get("html") or "" for m in mods_view
+                        for s in (m.get("sections") or []))
+    print("  ✓ 交叉引用：%d 处（规则 %d / 迁移 %d / 事实 %d / 模块名 %d）"
+          % (_src.count('class="xref'),
+             _src.count('data-xt="rule"'), _src.count('data-xt="trans"'),
+             _src.count('data-xt="fact"'), _src.count('data-xt="module"')))
 
     out = os.path.abspath(os.path.expanduser(a.out))
     os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
@@ -1116,7 +2121,7 @@ def main():
 
     if a.md:
         mdp = os.path.abspath(os.path.expanduser(a.md))
-        open(mdp, "w", encoding="utf-8").write(build_md(meta, mods))
+        open(mdp, "w", encoding="utf-8").write(build_md(meta, mods, report=_rep, guide=_gd))
         print("  Markdown → %s（%.1f KB）" % (mdp, os.path.getsize(mdp) / 1024))
     if a.json_out:
         jp = os.path.abspath(os.path.expanduser(a.json_out))
@@ -1142,6 +2147,32 @@ def main():
     with open(rp, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=1)
     print("  合并报告 → %s（未签 %d 个）" % (rp, len(unsigned)))
+
+    # 来源身份证：记下「这一版全量由哪些模块、各自什么指纹构成」。
+    # 迭代副本整体复制时它跟着一起走，合回前对一下指纹就知道「我是不是基于这版」，
+    # 不用再靠「未改模块」反推——那招在 scope 覆盖全部模块时就失效了。
+    if a.root:
+        _rdir = os.path.abspath(os.path.expanduser(a.root))
+        _digs = {}
+        for _m in mods:
+            _k = (_m.get("meta") or {}).get("key")
+            if not _k:
+                continue
+            _mp = os.path.join(_rdir, "modules", _k + ".json")
+            if os.path.isfile(_mp):
+                with open(_mp, "rb") as _f:
+                    _digs[_k] = hashlib.sha256(_f.read()).hexdigest()
+        _op = os.path.join(_rdir, "origin.json")
+        with open(_op, "w", encoding="utf-8") as _f:
+            json.dump({
+                "engine": S.ENGINE,
+                "built_at": meta["generated"],
+                "draft": cur_draft,
+                "rev": cur_rev,
+                "state": "built",
+                "modules": _digs,
+            }, _f, ensure_ascii=False, indent=1)
+        print("  来源身份证 → %s（第 %d 稿 · %d 个模块）" % (_op, cur_draft, len(_digs)))
 
     if bad and not a.strict:
         print("\n  ⚠ 有 %d 个模块契约不合规，已强行合并。交付前必须修。" % bad)

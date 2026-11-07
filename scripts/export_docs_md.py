@@ -16,7 +16,7 @@ PRD 产物的页面与文档都存在 JS 字符串里，整段被 json.dumps 打
 
 用法
 ----
-    python3 export_docs_md.py --html ../01-主办方端/PRD.html --out-dir ../90-共享/PRD规格
+    python3 export_docs_md.py --html ../01-企业端/PRD.html --out-dir ../90-共享/PRD规格
     python3 export_docs_md.py --html a.html --html b.html --out-dir out/
     python3 export_docs_md.py --html a.html --check     # 只探测能取到几页
 

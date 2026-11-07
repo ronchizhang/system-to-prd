@@ -62,9 +62,9 @@ SCHEMA = {
             "properties": {
                 "key": {"type": "string", "pattern": r"^[a-z][a-z0-9\-]{2,40}$",
                         "hint": "全局唯一模块 key，如 ops-person-field。合并时用它排序与去重"},
-                "system": {"type": "string", "enum": ["管理后台", "主办方端", "报名者端"]},
-                "module": {"type": "string", "minLength": 2, "hint": "模块名，如 报名字段配置"},
-                "menu": {"type": "string", "minLength": 2, "hint": "三级菜单全路径，如 报名管理 / 报名字段配置"},
+                "system": {"type": "string", "enum": ["管理后台", "企业端", "员工端"]},
+                "module": {"type": "string", "minLength": 2, "hint": "模块名，如 人员字段配置"},
+                "menu": {"type": "string", "minLength": 2, "hint": "三级菜单全路径，如 人员管理 / 人员字段配置"},
                 "route": {"type": "string", "minLength": 3},
                 "env": {"type": "string", "minLength": 3, "hint": "必须写明是测试环境"},
                 "customer": {"type": "string"},
@@ -108,6 +108,11 @@ SCHEMA = {
                     "html": {"type": "string"},
                     "rules": {"type": "boolean"},
                     "statemachine": {"type": "boolean"},
+                    "frames": {
+                        "type": "array", "items": {"type": "string"},
+                        "hint": "这一段讲到的原型帧编号，如 [\"P1\",\"P2\"]。渲染成段标题右侧的小按钮，"
+                                "点一下切到那一帧——读文档时不用自己回左边找图",
+                    },
                 },
             },
         },
@@ -244,8 +249,10 @@ SCHEMA = {
                              "hint": "设计尺寸。后台统一 1440x900，手机端 390x844"},
                 "note": {"type": "string"},
                 "frames": {
-                    "type": "array", "minItems": 1,
-                    "hint": "至少 1 帧：主页面。有弹窗/二级页的，每个再补一帧",
+                    "type": "array", "minItems": 0,
+                    "hint": "主页面 + 每个弹窗/二级页各一帧。确实没有界面的模块（定时任务、纯配置、"
+                            "只跑批的后台服务）可以留空，渲染成「本模块未附原型帧」的空态；"
+                            "但交付说明里要写清为什么没有图，别拿它偷懒",
                     "items": {
                         "type": "object",
                         "required": ["id", "name", "html"],
@@ -253,6 +260,12 @@ SCHEMA = {
                         "properties": {
                             "id": {"type": "string", "pattern": r"^P\d{1,2}$",
                                    "hint": "P1 主页面、P2 新增、P3 弹窗……页签按这个顺序排"},
+                            "kind": {"type": "string",
+                                     "enum": ["ui", "flow", "diagram", "explain"],
+                                     "hint": "帧的性质。ui=实拍界面（默认）；flow=流程/判定逻辑（SVG）；"
+                                             "diagram=全景/分层图；explain=界面化说明页（要上线的页）。"
+                                             "后三类是生成图，不要求 from，不参与一页一帧的尺寸推算。"
+                                             "缺省按 ui 处理，老数据不用补这个字段。"},
                             "name": {"type": "string", "minLength": 2,
                                      "hint": "页面态名，如 字段列表 / 新增字段"},
                             "state": {"type": "string",
@@ -273,49 +286,13 @@ SCHEMA = {
             },
         },
 
-        # ---------------- 改动台账（只有迭代稿才有） ----------------
-        # 为什么必须单独存一份：原型里只剩「改后」的样子，
-        # 「改前」那一版已经不在 HTML 里了，渲染器无从反推。
-        # 而评审时最先被问的恰恰是「原来是什么样」。
-        "changes": {
-            "type": "array",
-            "hint": "本稿改动台账，一处一条；现状稿留空数组。"
-                    "每条写清改前改后，读者不必翻上一稿就能判断这次改得对不对",
-            "items": {
-                "type": "object",
-                "required": ["id", "title", "before", "after"],
-                "additionalProperties": False,
-                "properties": {
-                    "id": {"type": "string", "pattern": r"^C\d{1,2}$",
-                           "hint": "C1、C2……必须和原型里的 data-chg 一模一样，"
-                                   "编号对不上就点不联动"},
-                    "no": {"type": "string",
-                           "hint": "圈码，如 ①。不填就直接显示 id"},
-                    "draft": {"type": "integer",
-                              "hint": "第几稿引入的，和原型标注的 data-draft 一致。"
-                                      "比本稿小的会自动归到「前稿」并收起"},
-                    "title": {"type": "string", "minLength": 4,
-                              "hint": "一句话说清改了什么，不要写成「优化体验」这种"},
-                    "where": {"type": "string",
-                              "hint": "落在哪个页面/弹窗的哪个位置，如「字段列表 · 表头」"},
-                    "before": {"type": "array", "items": {"type": "string"},
-                               "hint": "改前的样子，一行一项。以 - 开头表示这一项被删掉"},
-                    "after": {"type": "array", "items": {"type": "string"},
-                              "hint": "改后的样子，一行一项。以 + 开头表示这一项是新增"},
-                    "why": {"type": "string",
-                            "hint": "写动机不写动作——「为了让 X 不再发生」，"
-                                    "而不是「改了 Y」。评审时被追问的就是这一句"},
-                },
-            },
-        },
-
         # ---------------- ④ 核查 ----------------
         # ---- 以下两块是 v6.0 新增：文档分栏后，用例与代码各归各位 ----
         # 为什么不再塞进叙事：读者是三类人（业务 / 测试 / 研发），
         # 原来把三套语言混在一段里，谁都读不顺。分开以后正文只剩业务语言。
         "testcases": {
             "type": "array",
-            "hint": "测试用例规整。从 用例库库取回后统一成一种形态，一条一个功能点，"
+            "hint": "测试用例规整。从 用例库取回后统一成一种形态，一条一个功能点，"
                     "标出它验证的是哪条业务规则。没有就留空数组，别编",
             "items": {
                 "type": "object",
@@ -725,20 +702,9 @@ def _check_chg_draft(d, e):
               % (k, len(mixed[k]), "、".join("第 %d 稿" % x for x in mixed[k])),
               "同一处改动只能属于一稿。后续又改了它，就把所有标注一起改成新稿次")
 
-    # 第 4 件：原型里标了的每一处，改动台账里都要有对应一条。
-    # 漏写不会报错、不会白屏，只会让右边少一张对照卡——读者以为这处没改过，
-    # 这种「静默缺失」比报错难查得多，所以做成硬门禁。
-    declared = {c.get("id") for c in (d.get("changes") or [])}
-    missing = sorted(set(seen_drafts) - declared, key=lambda x: int(x[1:]))
-    if missing:
-        e.add("changes",
-              "原型标了 %d 处改动，改动台账里没有：%s" % (len(missing), "、".join(missing)),
-              "在 changes 里各补一条，写清 title / before / after / why；"
-              "否则「改前→改后」对照面板里会少这几张卡")
-
 
 # 产品版本 + 稿次的三段式。产品版本可以是任意 Vn.m（后台会换版），稿次必须是「第 N 稿」
-VERSION_PAT = re.compile(r"^\S.{0,23} V\d{1,2}\.\d{1,2} · .+ · 第 \d{1,2} 稿(（修订 \d{1,2}）)?$")
+VERSION_PAT = re.compile(r"^管理后台 V\d{1,2}\.\d{1,2} · .+ · 第 \d{1,2} 稿(（修订 \d{1,2}）)?$")
 VER_RE = re.compile(r"V(\d{1,2})\.(\d{1,2})")
 
 
@@ -828,6 +794,55 @@ def fact_from_ledger(x):
         "evidence": x.get("evidence") or x.get("proof") or "",
         "rules": list(x.get("rules") or []),
     }
+
+
+def signer_of(so):
+    """从一个 signoff 对象里取出签字的那个人，兼容新旧两种结构。
+
+    新：{"by": ..., "at": ..., "digest": ...}   —— 一个人封板
+    老：{"business": {...}, "tech": {...}}      —— 双签时代，取先签的那个
+
+    为什么取消双签：两个人互相确认在真实团队里没人执行，结果每轮检查都挂红叉，
+    红叉挂久了就不再传递信息。签字的意义只是「这一版我认了，可以往下走」——
+    一个人签就够，签的就是产品经理本人。
+    """
+    if not isinstance(so, dict):
+        return {}
+    if so.get("by"):
+        return so
+    for r in ("business", "tech"):
+        o = so.get(r)
+        if isinstance(o, dict) and o.get("by"):
+            return o
+    return {}
+
+
+def content_digest(path_or_data):
+    """模块内容的语义指纹：忽略缩进与键序，只认内容。
+
+    为什么不用文件字节 hash：`build_module_prd --facts` 这类工具会回写模块文件，
+    改的往往只是格式。字节变了就判「内容也变了」，会让签字动不动失效，
+    失效太频繁等于没有签字——人就不看了。
+
+    读不懂的 JSON 退回字节 hash：宁可严一点，也不能给出一个"看起来一致"的假指纹。
+    """
+    import hashlib
+
+    if isinstance(path_or_data, (str, os.PathLike)):
+        try:
+            with open(path_or_data, "rb") as f:
+                raw = f.read()
+        except OSError:
+            return None
+        try:
+            data = json.loads(raw.decode("utf-8"))
+        except Exception:
+            return hashlib.sha256(raw).hexdigest()
+    else:
+        data = path_or_data
+
+    canon = json.dumps(data, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canon.encode("utf-8")).hexdigest()
 
 
 def dump_schema(path):

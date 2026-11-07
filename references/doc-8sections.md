@@ -74,10 +74,10 @@
 
 | 定位 | 有日常读者吗 | 设计目标 | 典型页面 |
 |:--|:--|:--|:--|
-| 工作台 | 有，天天用 | 扫单效率、批量操作、一眼判断 | 结算工作台、审批列表 |
-| **log / 记录** | **没有**，出事才翻 | 事后能还原：谁、什么时候、当时数据什么样 | 报名者退款记录 |
+| 工作台 | 有，天天用 | 扫单效率、批量操作、一眼判断 | 单据工作台、审批列表 |
+| **log / 记录** | **没有**，出事才翻 | 事后能还原：谁、什么时候、当时数据什么样 | 提现单据记录 |
 | 审批台 | 有，待办驱动 | 判断依据齐全、动作明确、留痕 | 各类审批详情 |
-| 配置页 | 有，偶尔改 | 改完即生效、影响范围清楚 | 报名字段配置 |
+| 配置页 | 有，偶尔改 | 改完即生效、影响范围清楚 | 人员字段配置 |
 
 判据一句话：**这个页面有日常读者吗？** 没有就是 log，不要给它设计筛选器和批量操作——
 那是给 log 装了个工作台的外壳，反而误导读者。
@@ -100,7 +100,7 @@
 本页在这个链条里做什么
 ```
 
-实测例：不能向客户收全量信息 → 收什么 = f(所属地区, 票种) → 「国家 × 产品」配置表 → 主办方端要做成 表单平台 允许自助配字段 → 后台是给这个场景做支撑的。
+实测例：不能向客户收全量信息 → 收什么 = f(落地地区, 服务产品) → 「国家 × 产品」配置表 → 企业端要做成 HR SaaS 允许自助配字段 → 后台是给这个场景做支撑的。
 
 然后是**场景卡**，每个写三行：`处境 / 操作 / 结果`。
 
@@ -128,14 +128,14 @@
 ### 一个字段被两个以上开关控制时，列真值表
 
 只要某字段的「显示 / 必填 / 可编辑」由**两个或更多条件**共同决定，就不要在正文里散着写
-「主办方端可以改、后台也可以改、但某种情况下都不行」——**散写必然漏一格**，而且前后端各理解一半。
+「企业端可以改、后台也可以改、但某种情况下都不行」——**散写必然漏一格**，而且前后端各理解一半。
 
 用真值表，一行一格，覆盖全部组合：
 
-| 主办方端开关 | 后台开关 | 显示 | 必填 | 谁能改 |
+| 企业端开关 | 后台开关 | 显示 | 必填 | 谁能改 |
 |:--|:--|:--|:--|:--|
-| 开 | 开 | ✅ | 是 | 主办方端主写，后台可代改（留痕） |
-| 开 | 关 | ✅ | 是 | 仅主办方端 |
+| 开 | 开 | ✅ | 是 | 企业端主写，后台可代改（留痕） |
+| 开 | 关 | ✅ | 是 | 仅企业端 |
 | 关 | 开 | ✅ | 否 | 仅后台 |
 | 关 | 关 | ❌ | — | — |
 
@@ -211,11 +211,11 @@
 
 ```yaml
 context:
-  hard_constraint: 不能向客户收集全量报名信息
-  determinant: 收什么 = f(所属地区, 票种)
+  hard_constraint: 不能向客户收集全量人员信息
+  determinant: 收什么 = f(落地地区, 服务产品)
   data_model_root: 「国家 × 产品」配置表
-  product_intent: 主办方端要做成 表单平台，企业能配自己的字段
-  this_page_role: 后台是给主办方端这个场景做支撑，不是独立系统
+  product_intent: 企业端要做成 HR SaaS，企业能配自己的字段
+  this_page_role: 后台是给企业端这个场景做支撑，不是独立系统
   known_scenarios: [A, B, C]
   boundary_rule: 能力边界由配置项决定，不由场景清单决定；未列出的组合不需改代码
   anti_pattern: 不要建议改成全局统一配置——按客户独立是产品要求
@@ -235,7 +235,7 @@ Entity:
       type: enum
       values: [text, number, check, date, file, country, currency, other]  # 必须列全
       source: dict              # dict | code | config | manual
-      evidence: enum/listEnums → demo:fieldTextType
+      evidence: enum/listEnums → demobackstage:fieldTextType
   states: [draft, enable, disable]
   transitions:
     - id: T2
@@ -244,7 +244,7 @@ Entity:
       trigger: 提交
       guard: 4 项校验通过
       api: POST /field/save
-      evidence: FormFieldController.saveField 无条件 setStatus(ENABLE)
+      evidence: FieldController.saveField 无条件 setStatus(ENABLE)
 ```
 
 `values` 里的枚举**必须来自字典**，不许从界面抄（界面是子集）。
@@ -252,7 +252,7 @@ Entity:
 ### 块 3 · `rules.jsonl` —— 一行一条
 
 ```json
-{"id":"R-OPS-FIELD-05","type":"permission","statement":"客户端权限为「客户可填写」且填写方为客户时，显示「报名者端是否可见」；填写方为报名者时改为显示「是否需要客户审核」","confidence":"互证","src":["fe","be","ui"],"evidence":["fe: formField/add 的 fillParty 三元表达式","be: handleNonBusinessField","ui: step2 实拍两张"],"cases":[{"k":"positive","g":"权限=可填写，填写方=客户","w":"查看其他设置","t":"显示「报名者端是否可见」，不显示「是否需要客户审核」"}],"issues":[]}
+{"id":"R-OPS-FIELD-05","type":"permission","statement":"客户端权限为「客户可填写」且填写方为客户时，显示「人员端是否可见」；填写方为人员时改为显示「是否需要客户审核」","confidence":"互证","src":["fe","be","ui"],"evidence":["fe: fieldSetting/add 的 fillParty 三元表达式","be: handleNonBusinessField","ui: step2 实拍两张"],"cases":[{"k":"positive","g":"权限=可填写，填写方=客户","w":"查看其他设置","t":"显示「人员端是否可见」，不显示「是否需要客户审核」"}],"issues":[]}
 ```
 
 字段要求：
@@ -270,7 +270,7 @@ Entity:
 ### 块 4 · `api_index` —— 本模块涉及的接口
 
 ```json
-{"method":"POST","path":"/demo/form/group/list","purpose":"按客户拉分组与字段",
+{"method":"POST","path":"/demobackstage/field/group/list","purpose":"按客户拉分组与字段",
  "page":"list","auth":"仅登录（无权限点）","req":{"id":"customerId"},"resp_keys":["fieldList","nameCn","type"],
  "evidence":"实测 B00000，本客户返回 6 组 110 字段"}
 ```
@@ -303,7 +303,7 @@ layout:
  "now": "枚举字典 fieldTextType 只有 8 个 key：text/number/check/date/file/country/currency/other",
  "note": "单选/多选是 check 的子值，不是顶层类型",
  "ask": "确认按 8 种改写？",
- "evidence": "GET /demo/enum/listEnums → demo:fieldTextType",
+ "evidence": "GET /demobackstage/enum/listEnums → demobackstage:fieldTextType",
  "rules": ["R-OPS-FIELD-10"]}
 ```
 
@@ -381,9 +381,9 @@ layout:
 
 | 错 | 对 |
 |:--|:--|
-| `<div class="n">0</div><div class="l">位，结算成功报名者</div>` | `<div class="n">0</div><div class="l">结算成功报名者</div>` |
+| `<div class="n">0</div><div class="l">位，出款成功人员</div>` | `<div class="n">0</div><div class="l">出款成功人员</div>` |
 
-错的那版会把量词甩到第二行行首，显示成「大字 0 / 灰字『位，结算成功报名者』」。
+错的那版会把量词甩到第二行行首，显示成「大字 0 / 灰字『位，出款成功人员』」。
 信号：一组统计块里只有一个写对、其余都错 → 基本是一次复制粘贴批量出的，整批改。
 
 更多写作用语（角色词、集合 vs 单值、并集宽表）见 `writing.md`。
@@ -399,7 +399,7 @@ layout:
 
 | 变量 | 取数来源 | 显示条件 | 空值/异常 |
 |:--|:--|:--|:--|
-| 本单人数 | `payment_participant_snapshot` 按 `snapId` 去重 | 恒显示 | 为 0 显示「0 人」，不隐藏 |
+| 本单人数 | `bill_employee_info_snapshot` 按 `snapId` 去重 | 恒显示 | 为 0 显示「0 人」，不隐藏 |
 | 汇总金额 | 按 `currencyId` 分组累加 | 有 1 个以上币种 | 多币种分行，不折合 |
 | 打款方式 | 账户上的 API 标识（不是「打款方式」字段） | 恒显示 | 无标识显示「人工」 |
 
@@ -409,13 +409,13 @@ layout:
 ### 四条要求
 
 1. **每个变量都要有出处**（表名 + 字段，或接口路径），不写「后台计算」这种等于没写。
-2. **显示条件要可判定**：写「有财务用款申请时才出现」，不写「必要时出现」。
+2. **显示条件要可判定**：写「有财务请款时才出现」，不写「必要时出现」。
 3. **空值与异常单独一列**：0、空、多值、失败各自怎么显示，都要写。**不要让人猜**。
 4. **口径与正文一致**：附录里写「多币种分行不折合」，正文第 5 段就不能出现「折合 USD 展示」。
    改一处要两边一起改（见 `writing.md` 第六节）。
 
 ### 一个反面例子
 
-结算二次确认弹窗里「本单结算人数」原来写的是「取 `refund_participant_info` 的条数」，
-实际那张表只有状态没有金额，人数要去 `payment_participant_snapshot` 按 `snapId` 去重。
+出款二次确认弹窗里「本单出款人数」原来写的是「取 `payout_employee_info` 的条数」，
+实际那张表只有状态没有金额，人数要去 `bill_employee_info_snapshot` 按 `snapId` 去重。
 **没有取数表时，这种错只能等研发写完对不上才发现。**
