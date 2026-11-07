@@ -1,8 +1,5 @@
 # 五源核查
 
-> **这份讲「六源各能证明什么」；「六源各从哪读、换工具怎么接、缺了怎么标」见 [`sources-adapters.md`](./sources-adapters.md)。**
-
-
 对应模式 A 的 A2-A3。目标不是「把页面看一遍」，而是**让每条写进 PRD 的结论都能追到来源，且知道能信到什么程度**。
 
 ---
@@ -13,7 +10,7 @@
 |:--|:--|:--|
 | 只看浏览器 | 界面看不见的分支、落库成什么值 | 三档权限各自写入 5 个底层字段，界面只显示 1 个 tag |
 | 只看前端代码 | 后端是否真的接受、有没有二次校验 | 前端限制 250 字，后端不校验；前端置灰，后端不管 |
-| 只看后端代码 | 用户实际看到什么、条件显示长什么样 | 代码里 `view` 分支不改 `participantHide`，界面上是「报名者端是否可见」两个单选 |
+| 只看后端代码 | 用户实际看到什么、条件显示长什么样 | 代码里 `view` 分支不改 `employeeHide`，界面上是「人员端是否可见」两个单选 |
 | 只看用例 | 用例经常是旧版 | 用例写 4 个服务类型，线上是 5 个；用例说页面叫 A，线上叫 B |
 | 只问业务方 | 记不清细节，且说不出落库口径 | 「字段类型就那几种」——实际有 8 个 key |
 
@@ -43,7 +40,7 @@ CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 **免登录：把 token 塞进 localStorage**
 
 ```python
-p.evaluate("localStorage.setItem('demoAdminToken', %s)" % json.dumps(tok))
+p.evaluate("localStorage.setItem('adminToken', %s)" % json.dumps(tok))
 p.send("Page.navigate", {"url": target})
 ```
 
@@ -106,8 +103,8 @@ req = urllib.request.Request(GATEWAY + path,
 前端调 `listEnums` 时会带一串 key，直接从 hook 记录里抄：
 
 ```json
-["demo:fieldStatus","demo:defineFieldType","demo:fieldTextType",
- "demo:permissionConfigType","demo:fillParty", ...]
+["demobackstage:fieldStatus","demobackstage:defineFieldType","demobackstage:fieldTextType",
+ "demobackstage:permissionConfigType","demobackstage:fillParty", ...]
 ```
 
 返回形如 `{"text":"文本","number":"数值",...}`。**字典有几个 key 就是几种，不要数界面上的选项。**
@@ -144,7 +141,7 @@ Counter(f["custPermissionConfig"] for f in all_fields)  # 三档各多少
 |:--|:--|:--|
 | 互斥/条件显示 | `a === "x" ? {label:"甲"} : {label:"乙"}` | 这是 UI 上「选 A 出现甲、选 B 出现乙」的唯一真源 |
 | 校验规则 | `BAN_STR`、`maxLength`、正则 | 界面只显示报错，不显示规则全貌 |
-| 接口常量表 | `{fieldList:"/demo/form/list", ...}` | 一次拿到本模块全部接口名，比逐个抓省事 |
+| 接口常量表 | `{fieldList:"/demobackstage/field/list", ...}` | 一次拿到本模块全部接口名，比逐个抓省事 |
 
 **另外必看**：
 
@@ -213,7 +210,7 @@ mcp__ima-mcp__fetch_media_content(media_id="<media_id>")   # 返回 markdown 化
 
 | 问题 | 例子 | 处理 |
 |:--|:--|:--|
-| 名称过期 | 用例叫「报名信息设置」，线上叫「报名字段配置」 | 以线上为准，台账记差异 |
+| 名称过期 | 用例叫「人员信息设置」，线上叫「人员字段配置」 | 以线上为准，台账记差异 |
 | 枚举过期 | 用例 4 个服务类型，线上 5 个 | 以字典为准 |
 | 规则与代码不符 | 用例说「特殊命名只禁 `*`」，代码禁 `*` 和 `#` | 记 `conflict`，让用户裁定 |
 
@@ -228,7 +225,7 @@ mcp__ima-mcp__fetch_media_content(media_id="<media_id>")   # 返回 markdown 化
 **必须问的三个问题：**
 
 1. **这页最初为了解决什么问题？** 谁提的、当时卡在哪
-2. **收什么数据是由什么决定的？** （实测中答案是「所属地区 × 票种」，这一个答案解释了整个数据模型为什么按客户独立）
+2. **收什么数据是由什么决定的？** （实测中答案是「落地地区 × 服务产品」，这一个答案解释了整个数据模型为什么按客户独立）
 3. **有没有超出设计初衷的用法？** 这条最关键——如果有，说明「能力边界由配置决定，不由场景清单决定」，文档里必须显式声明
 
 **写进文档的方式**：场景卡 + 一条显式声明「以下是已知用法，**不构成能力边界**」。否则读者会把它当成限制。
@@ -311,22 +308,22 @@ B 说法：<原文>（出处）
 
 **① 注释可能是旧的，以实现为准。**
 
-真实案例：`RefundSubmitReqDto.participants` 的注释写「结算报名者的 id（**自营**）」，
-看起来合作方用款申请不用传报名者。实际实现是：
+真实案例：`FinancePayoutReqDto.employees` 的注释写「出款人员的 id（**自营**）」，
+看起来合作方请款不用传人员。实际实现是：
 
 ```java
-if (haveEmpTypes.contains(requestOrder.getType()) || corpTicketOrder) {
-    AssertUtil.isTrue(!CollectionUtils.isEmpty(req.getParticipants()), "结算报名者不能为空");
+if (haveEmpTypes.contains(requestBill.getType()) || demoFlagBill) {
+    AssertUtil.isTrue(!CollectionUtils.isEmpty(req.getEmployees()), "出款人员不能为空");
 ```
 
-`corpTicketOrder` 单独成立 —— 合作方用款申请**同样必传**。这条还是「支持单人结算」的实现依据。
+`demoFlagBill` 单独成立 —— 合作方请款**同样必传**。这条还是「支持单人出款」的实现依据。
 
 **判断方法**：看到 `@NotNull` / 断言 / 白名单，就去找**真正执行校验的那段代码**，不要停在字段注释。
 
 **② 前后端同一份规则，要两边都读。**
 
-真实案例：付款模板白名单，前端是 7 个精确账户名（含 通道B），后端是
-`["空中通道C","珊瑚跨境"] + containsIgnoreCase`，而实际账户名是「…-通道C」，**后端永远匹配不上**。
+真实案例：付款模板白名单，前端是 7 个精确账户名（含 YPay），后端是
+`["XPay","YPay"] + containsIgnoreCase`，而实际账户名是「…-XPay」，**后端永远匹配不上**。
 
 这类「系统内部自己不一致」必须记成 `cls=conflict` 的事实，并写清两边各是什么——
 只写一边，看起来完全正常。

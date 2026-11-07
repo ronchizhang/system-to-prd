@@ -63,6 +63,96 @@ def canon(d):
     return hashlib.md5(json.dumps(d, ensure_ascii=False, sort_keys=True).encode()).hexdigest()
 
 
+def _dchg_blocks(html):
+    """按 <div> 配对切出每个改动块，返回 [(C编号, 块html)]。
+
+    不能按字符串出现次数统计：表头里也写着 data-chg，会被重复计数
+    （这一轮统计就因此出过一次错）。必须真配对。
+    """
+    out = []
+    for m in re.finditer(r'<div[^>]*class="[^"]*\bdchg\b[^"]*"[^>]*>', html):
+        cm = re.search(r'data-chg="(C\d+)"', m.group(0))
+        if not cm:
+            continue
+        i, depth, j = m.start(), 0, m.start()
+        while j < len(html):
+            no, nc = html.find("<div", j), html.find("</div>", j)
+            if nc < 0:
+                break
+            if 0 <= no < nc:
+                depth += 1
+                j = no + 4
+            else:
+                depth -= 1
+                j = nc + 6
+                if depth == 0:
+                    out.append((cm.group(1), html[i:j]))
+                    break
+    return out
+
+
+_NUM_HEAD = re.compile(r"(?:^|<br\s*/?>|</p>|</li>)\s*(?:\d{1,2}[.、)）]|[\u2460-\u2473\u3251-\u325F])")
+
+
+def _plain(h):
+    """转纯文本。块级标签当句末处理——直接抹成空格会把两段连成一句，
+    「单句超 50 字」就会虚高一大截（实测差 3 倍）。"""
+    h = re.sub(r"</?(?:p|div|li|br|tr|h[1-6])[^>]*>", "。", h)
+    h = re.sub(r"<[^>]+>", "", h)
+    return re.sub(r"\s+", " ", h).strip()
+
+
+def _chg_struct(code, blk):
+    """结构类问题：改后能不能逐条核对。返回问题描述或 None。"""
+    # 先确认有没有「改后」信息。三种都算：显式标了改后、表格里有改后列、
+    # 整块本来就只有改后描述（多数块是这种）。
+    # 注意：绝不把「缺改前」当问题——这套文档刻意只写改后。
+    _has_after = ("<b>改后" in blk or ">改后</" in blk or "<th>改后</th>" in blk
+                  or ("改前" not in blk and "改后" not in blk))
+    if not _has_after:
+        return "%s 只有「改前」，没有说新版长什么样" % code
+
+    if "<table" in blk:
+        # 表格行本身就是条目，但表格**之前**那段常被写成散文，一样要能拆
+        before = _plain(blk.split("<table")[0])
+        if len(before) > 60 and len(re.findall(r"[，,；;]", before)) >= 3:
+            return "%s 表格前的说明段能拆成多条，应分条" % code
+        return None
+
+    m = re.search(r"<b>改后[：:]\s*</b>(.*)", blk, re.S)
+    after = m.group(1) if m else (blk.split("</span>", 1)[-1] if "</span>" in blk else blk)
+    txt = _plain(after)
+
+    # 有编号就直接算过，但要查是不是挤在一行
+    heads = _NUM_HEAD.findall(after)
+    if "<ol" in blk or len(heads) >= 2:
+        if len(heads) >= 2 and "<br" not in after and "<li" not in blk:
+            return "%s 的编号挤在一行，应逐条换行" % code
+        return None
+
+    if len(txt) <= 40 or not re.search(r"[，,；;]", txt):
+        return None                      # 一句话说一个变化，本来就不用分条
+    segs = [x for x in re.split(r"[。；;]", txt) if x.strip()]
+    if len(segs) >= 2:
+        return "%s 的改后能数出 %d 条，应分条换行" % (code, len(segs))
+    return "%s 的改后能数出 2 条以上，应分条换行" % code
+
+
+def _chg_style(blk):
+    """文案类计数：返回 (超长句数, 顿号串数, 两分号段数)。只汇总不逐条。
+
+    表格要整块剔掉：单元格里是「字段名 → 取值」，不是句子。
+    算进去的话一张宽表能刷出几十个「超长句」，数字就没意义了。
+    """
+    b = re.sub(r"<table[\s\S]*?</table>", " ", blk)
+    txt = _plain(b)
+    long_sent = sum(1 for s in re.split(r"[。！？]", txt) if len(s.strip()) > 50)
+    dun = sum(1 for s in re.split(r"[。！？]", txt) if s.count("、") >= 4)
+    semi = sum(1 for p in re.split(r"<br\s*/?>", b)
+               if _plain(p).count("；") + _plain(p).count(";") >= 2)
+    return long_sent, dun, semi
+
+
 def check_one(root, key, want_audit=True, hard=False):
     """返回 (items, fatal)。items = [(level, 组, 名称, 说明)]
 
@@ -86,9 +176,9 @@ def check_one(root, key, want_audit=True, hard=False):
     mp = os.path.join(root, "modules", key + ".json")
     fp = os.path.join(root, "facts", key + ".facts.json")
     hp = os.path.join(root, "out", key + ".html")
-    # 文档级确认（小团队默认）：整份 PRD 由一个人看一遍、确认一次，覆盖闸门 1/2 与双签。
-    # 模块级签名仍然认（有人签更好），但不再是必填——6 个模块签 12 次名这件事小团队做不出来，
-    # 硬要求的结果是每轮检查都挂红叉，红叉挂久了就不再传递信息。
+    # 文档级确认：整份 PRD 由一个人看一遍、封一次，覆盖闸门 1/2 与模块封板。
+    # 模块级封板仍然认（更精确），但不是必填——封板的意义是「这一版我认了」，
+    # 一个人签就够，不搞两个角色互相确认。
     _ds = (run or {}).get("signoff") or {}
     ds_ok = bool(_ds.get("by") and _ds.get("at"))
     ds_txt = ""
@@ -100,8 +190,19 @@ def check_one(root, key, want_audit=True, hard=False):
                       % (_ds.get("draft"), "修订 %s" % _ds.get("rev") if _ds.get("rev") else "",
                          _cd, "修订 %s" % _cr if _cr else ""))
         else:
-            ds_txt = ("文档级确认：%s @ %s（第 %s 稿，覆盖 %s）"
-                      % (_ds["by"], _ds["at"], _cd, _ds.get("covers") or "全部模块"))
+            # 稿次一致还不够：有人改完内容不发新稿，两边稿次都是空的或都没变，
+            # 光比稿次永远相等。逐模块比内容指纹，改过就失效。
+            _sd = _ds.get("digests") or {}
+            _changed = [_k for _k, _v in _sd.items()
+                        if S.content_digest(os.path.join(root, "modules", _k + ".json")) != _v]
+            if _changed:
+                ds_ok = False
+                ds_txt = ("签署之后这些模块的内容被改过：%s —— 要重新确认"
+                          % "、".join(sorted(_changed)))
+            else:
+                _dcn = "第 %s 稿" % _cd if _cd is not None else "未编稿次"
+                ds_txt = ("文档级确认：%s @ %s（%s，覆盖 %s）"
+                          % (_ds["by"], _ds["at"], _dcn, _ds.get("covers") or "全部模块"))
 
     facts, ferr = load_json(fp)
     gate_ok = False
@@ -191,6 +292,10 @@ def check_one(root, key, want_audit=True, hard=False):
     # ---------------- 四块内容齐不齐 ----------------
     pf = (d.get("prototype") or {}).get("frames") or []
     drawn = [f for f in pf if len((f.get("html") or "").strip()) >= 20]
+    # 界面帧 vs 生成图：硬约束 11 那套「只写界面真有的字」只约束 ui 帧；
+    # flow / diagram / explain 是硬约束 17 允许的图，要求它们像截图一样干净是错的。
+    # kind 缺省按 ui 处理，老数据不用补字段。
+    ui_frames = [f for f in drawn if (f.get("kind") or "ui") == "ui"]
     add(OK if drawn else FAIL, "内容", "① 原型帧",
         "%d 帧（%d 帧有内容）" % (len(pf), len(drawn)) if drawn
         else "一帧都没有——这份 html 只有文字没有图")
@@ -230,8 +335,9 @@ def check_one(root, key, want_audit=True, hard=False):
     # 原型只画界面，解释一律进叙事（硬约束 11）。
     # 说明条是最典型的污染：它长得像界面，其实是设计笔记——界面本身看不清，
     # 而且改动标注一旦挂在说明条上，说明条被删标注就跟着消失。
+    # 只查 ui 帧：flow / diagram / explain 本来就是图，图里有说明文字是它的本分（硬约束 17）。
     _gn = []
-    for f in drawn:
+    for f in ui_frames:
         n = (f.get("html") or "").count('class="px-gnote"')
         if n:
             _gn.append("%s×%d" % (f.get("id"), n))
@@ -240,14 +346,18 @@ def check_one(root, key, want_audit=True, hard=False):
         "这些帧还留着说明条：%s —— 把内容搬进叙事（字段字典 / 异常边界 / .dchg），原型只留界面"
         % "、".join(_gn))
 
-    # 解释性长文本：界面提示写不到 80 字，写到这个长度基本是在讲设计意图
+    # 解释性长文本：界面提示写不到 80 字，写到这个长度基本是在讲设计意图。
+    # 生成图放宽到 200 字、不看关键词——图注和图内节点本来就带判断语，用界面的尺子量它没有意义。
     _KW = ("为什么", "口径", "依据", "换句话说", "本质", "容易踩", "不要", "千万别", "按这个做")
     _long = []
     for f in drawn:
-        for m in re.finditer(r">([^<>]{80,})<", f.get("html") or ""):
+        _is_ui = (f.get("kind") or "ui") == "ui"
+        _lim = 80 if _is_ui else 200
+        for m in re.finditer(r">([^<>]{%d,})<" % _lim, f.get("html") or ""):
             t = m.group(1).strip()
-            if any(k in t for k in _KW):
-                _long.append("%s「%s…」" % (f.get("id"), t[:14]))
+            if _is_ui and not any(k in t for k in _KW):
+                continue
+            _long.append("%s「%s…」" % (f.get("id"), t[:14]))
     if _long:
         add(WARN, "原型", "长解释没混进界面",
             "%d 处读着像设计笔记：%s —— 确认识别的话是界面提示（两句以内才像产品文案）"
@@ -262,8 +372,10 @@ def check_one(root, key, want_audit=True, hard=False):
         add(FAIL, "内容", "原型有实拍对照吗",
             "有 %d 帧原型，但「浏览器渲染」源没标已核——这图是凭印象画的" % len(drawn))
 
-    # 帧上写了 from 的，快照文件必须真在，否则这条凭据是编的
-    froms = [f.get("from") for f in drawn if f.get("from")]
+    # 帧上写了 from 的，快照文件必须真在，否则这条凭据是编的。
+    # 只查 ui 帧：生成图没有对应页面，逼它写 from 只会逼人编一个。
+    froms = [f.get("from") for f in ui_frames if f.get("from")]
+    no_from = [f.get("id") for f in ui_frames if not f.get("from")]
     if froms:
         snap_dir = os.path.join(root, "snapshot")
         missing, badref = [], []
@@ -289,10 +401,11 @@ def check_one(root, key, want_audit=True, hard=False):
         else:
             add(OK, "内容", "原型有实拍快照吗",
                 "%d 帧带 from，快照与页号都对得上" % len(froms))
-    elif drawn:
+    elif no_from:
         add(WARN, "内容", "原型有实拍快照吗",
-            "帧上没有 from —— 建议用 snapshot_page.py 实拍后生成，"
-            "否则查不出这张图是照着页面画的还是凭印象画的")
+            "这些界面帧上没有 from：%s —— 用 snapshot_page.py 实拍后生成，"
+            "否则查不出这张图是照着页面画的还是凭印象画的"
+            % "、".join(no_from[:6]))
 
     # 事实清单只有一份：模块里的必须和台账一致
     led = (facts or {}).get("facts") or []
@@ -307,6 +420,115 @@ def check_one(root, key, want_audit=True, hard=False):
                 % (len(a_ids), len(b_ids),
                    "少了 " + "、".join(sorted(a_ids - b_ids)[:6]) if a_ids - b_ids
                    else "多了 " + "、".join(sorted(b_ids - a_ids)[:6])))
+
+    # 台账 gate.total 是建台账时写死的：后来补了事实没同步，自检里就会显示成
+    # 「含本模块 ? 条事实」这种半截话，读的人不知道是没填还是漏了。
+    _g = (facts or {}).get("gate") or {}
+    _t = _g.get("total")
+    _n = len(fts)
+    if _t is not None and _t != _n:
+        add(WARN, "数据", "台账条数", "gate.total=%s，实际 %d 条" % (_t, _n))
+
+    # ---------------- 文与图一致 ----------------
+    # 正文写「17 列宽表」「9 列结构不变」，图上是另一张表，此前出过「正文 9 列、图上 7 列」。
+    # 精度优先，分两条：列名比对（主判据，误报低）、列数比对（只查明确句式）。
+    # 不做对象识别就比对会大量误报——一个模块里有列表 7 列、人员明细 17 列、日志 19 列，
+    # 正文的「N 列」不都指向主列表，所以只认「列数不变 N 列」「N 列结构」这两种说法。
+    _th_of = {}
+    for f in drawn:
+        ths = [re.sub(r"<[^>]+>", "", x).replace("&nbsp;", " ").strip()
+               for x in re.findall(r"<th[^>]*>(.*?)</th>", f.get("html") or "", re.S)]
+        # 表头里常嵌改动编号（改①打款账户、改⑥改⑥请款金额），不去掉的话
+        # 正文引用「打款账户」永远匹配不上，四条误报全出在这儿。
+        ths = [re.sub(r"^(?:改[\u2460-\u24FF\u3251-\u325F\u32B1-\u32BF]+)+", "", t).strip()
+               for t in ths]
+        _th_of[f.get("id")] = [t for t in ths if t]
+    _all_th = {t for v in _th_of.values() for t in v}
+    _ui_ids = {f.get("id") for f in ui_frames}
+    _sec_txt = "\n".join((s.get("html") or "") for s in secs)
+
+    _bad_name = []
+    _cand = []
+    # 只认紧邻的两种说法：「XXX」列 / 列「XXX」。
+    # 早先用「前后 20 字内有『列』字」——把「这一行」「逐条列着」「页签…列着」全算成列名引用，
+    # 五个模块报了 25 处，逐条核完全是误报。列名引用必须是紧挨着的。
+    for m in re.finditer(r"「([^」]{2,14})」列(?!着)", _sec_txt):
+        _cand.append(m.group(1))
+    for m in re.finditer(r"列「([^」]{2,14})」", _sec_txt):
+        _cand.append(m.group(1))
+    for name in _cand:
+        name = name.strip()
+        if re.search(r"[<>，。；、：！？（）()\s]", name):   # 带标签或标点：不是列名
+            continue
+        if name in ("—", "无", "-", "／", "/", "不变", "同前", "这一", "该"):
+            continue
+        # 合并表头很常见（「请款状态和费用所属月」一格管两列），正文只引其中一段是对的
+        if name not in _all_th and not any(name in t for t in _all_th):
+            _bad_name.append(name)
+    _bad_name = sorted(set(_bad_name))
+    if _bad_name:
+        add(WARN, "内容", "文与图一致（列名）",
+            "正文提到的列名原型表头里没有：%s —— 图上口径改了正文没跟上"
+            % "、".join(_bad_name[:5]))
+    elif _all_th:
+        add(OK, "内容", "文与图一致（列名）", "正文引用的列名都能在表头里找到")
+
+    # 主列表帧 = 界面帧里「只有一个表、th 最多」的那一帧。
+    # 限定单表很关键：详情页常常是两三张表拼在一帧里（29 个 th），
+    # 拿它当主列表去比「正文说 7 列」必然误报。
+    _tbls = {f.get("id"): len(re.findall(r"<table", f.get("html") or "")) for f in drawn}
+    _main = None
+    for _fid, _ths in _th_of.items():
+        if _fid not in _ui_ids or _tbls.get(_fid) != 1:
+            continue
+        if _main is None or len(_ths) > _main[1]:
+            _main = (_fid, len(_ths))
+    _bad_num = []
+    for _pat in (r"列数(?:还是|仍为|不变)[：: ]?\s*(\d+)\s*列", r"(\d+)\s*列结构"):
+        for m in re.finditer(_pat, _sec_txt):
+            n = int(m.group(1))
+            if _main and n != _main[1]:
+                _bad_num.append("%d 列" % n)
+    if _bad_num:
+        add(WARN, "内容", "文与图一致（列数）",
+            "正文说 %s，主列表图上 %s %d 列"
+            % ("、".join(sorted(set(_bad_num))), _main[0], _main[1]))
+
+    # ---------------- 改动块：只写改后，且改后能逐条核对 ----------------
+    # 这套文档**刻意不写「改前」**：它是增量文档，讲新版长什么样，要对比去看系统。
+    # 所以这里绝不把「有没有改前」当通过条件，也不建议作者补改前。
+    _blks = _dchg_blocks("\n".join((s.get("html") or "") for s in secs))
+    if _blks:
+        _sf, _n_long, _n_dun, _n_semi = [], 0, 0, 0
+        _forms = set()
+        for _c, _b in _blks:
+            _p = _chg_struct(_c, _b)
+            if _p:
+                _sf.append(_p)
+            _x, _y, _z = _chg_style(_b)
+            _n_long, _n_dun, _n_semi = _n_long + _x, _n_dun + _y, _n_semi + _z
+            if "<table" in _b:
+                _forms.add("表格")
+            elif "<ol" in _b or len(_NUM_HEAD.findall(_b)) >= 2:
+                _forms.add("列点")
+            else:
+                _forms.add("文字")
+        if _sf:
+            for _p in _sf:
+                add(WARN, "内容", "改动块能逐条核对", _p)
+        else:
+            add(OK, "内容", "改动块能逐条核对", "%d 块，都能按条核对" % len(_blks))
+        if len(_forms) > 1:
+            add(WARN, "内容", "改动块形态统一",
+                "同一模块里混用了 %s —— 读者要在两种排版之间来回换眼，尽量统一"
+                % "、".join(sorted(_forms)))
+        _tot2 = _n_long + _n_dun + _n_semi
+        if _tot2:
+            add(WARN, "措辞", "改动块文案密度",
+                "本模块 %d 处：单句超 50 字 %d、顿号串 %d、段内两个分号 %d —— 一句一件事"
+                % (_tot2, _n_long, _n_dun, _n_semi))
+        else:
+            add(OK, "措辞", "改动块文案密度", "没有挤在一起的句子")
 
     want = 1 + len([x for x in (d.get("dialogs") or []) if x.get("covered")])
     if len(drawn) < want:
@@ -335,6 +557,28 @@ def check_one(root, key, want_audit=True, hard=False):
         ext = re.findall(r'(?:src|href)="(https?://[^"]+)"', html)
         add(OK if not ext else WARN, "产物", "离线可用",
             "无外链" if not ext else "有 %d 个外链，离线打开会缺资源：%s" % (len(ext), ext[:2]))
+
+        # 样式完整性：补丁 CSS（proto_extra.css 等）里混进一个 </style> 字面量，
+        # 会把后面的样式挤出 <style> 块、变成正文里的裸 CSS——页面表现为「一部分样式失效」，
+        # 肉眼很难定位。这里三件事一起查：数量配对、每块不空、尾部没漏。
+        _so = len(re.findall(r"<style[^>]*>", html))
+        _sc = html.count("</style>")
+        _blocks = re.findall(r"<style[^>]*>(.*?)</style>", html, re.S)
+        _short = [i + 1 for i, b in enumerate(_blocks) if len(b.strip()) < 200]
+        _tail = html.rsplit("</style>", 1)[-1] if _sc else html
+        _leak = re.search(r"\.[a-zA-Z][\w-]*\s*\{[^}]{0,400}:[^}]{0,400}\}", _tail)
+        if _so != _sc:
+            add(FAIL, "产物", "样式块完整",
+                "开 %d 个 <style>、闭 %d 个 </style>，对不上——某块被提前闭合了" % (_so, _sc))
+        elif _short:
+            add(FAIL, "产物", "样式块完整",
+                "第 %s 块样式不足 200 字符，像是被截断了" % "、".join(str(i) for i in _short[:4]))
+        elif _leak:
+            add(FAIL, "产物", "样式块完整",
+                "最后一个 </style> 之后还有 CSS 规则（%s…）——样式漏进正文了"
+                % _leak.group(0)[:36])
+        else:
+            add(OK, "产物", "样式块完整", "%d 块，长度正常且都在 style 里" % len(_blocks))
 
     # ---------------- 命名规范（第二道门禁） ----------------
     # 第一道在 schema._check_naming（数据层）。这里再扫产物 HTML，
@@ -520,7 +764,7 @@ def check_one(root, key, want_audit=True, hard=False):
 
     frames = (d.get("prototype") or {}).get("frames") or []
     labels = " ".join(((f.get("name") or "") + " " + (f.get("note") or "")) for f in frames)
-    # 二级页常常整块拆到独立模块（如「合作方用款申请审批」自己就是一个模块），
+    # 二级页常常整块拆到独立模块（如「合作方请款审批」自己就是一个模块），
     # 只查本模块会把「已经画了、只是画在隔壁」判成漏画。所以本模块找不到时，
     # 再到工程里其他模块的帧名里找一遍——找到了就是覆盖了，只是不在这份文件里。
     other = ""
@@ -537,8 +781,8 @@ def check_one(root, key, want_audit=True, hard=False):
             for f in ((od.get("prototype") or {}).get("frames") or []):
                 other += " " + (f.get("name") or "") + " " + (f.get("note") or "")
     def _hit(name):
-        """名字带括号补充说明时要宽松匹配：「合作方用款申请详情（三个页签）」对不上帧名，
-        但「合作方用款申请详情」能对上。只取括号前那一段做子串比较，别退化成任意词命中。"""
+        """名字带括号补充说明时要宽松匹配：「合作方请款详情（三个页签）」对不上帧名，
+        但「合作方请款详情」能对上。只取括号前那一段做子串比较，别退化成任意词命中。"""
         if name in labels or name in other:
             return True
         for seg in re.split(r"[（(]", name):
@@ -613,7 +857,7 @@ def check_one(root, key, want_audit=True, hard=False):
     _TECH_MAP = re.compile(r'<table[^>]*class="[^"]*tech-map[^"]*"[\s\S]*?</table>', re.I)
     _TAG = re.compile(r"<[^>]+>")
     _PATH = re.compile(r"/[A-Za-z][\w{}$.\-]*(?:/[\w{}$.\-]+)*")
-    _API = re.compile(r"\b(?:GET|POST|PUT|DELETE|PATCH)\s+/[\w/{}\-.$]+|/demo/[\w/]+")
+    _API = re.compile(r"\b(?:GET|POST|PUT|DELETE|PATCH)\s+/[\w/{}\-.$]+|/demobackstage/[\w/]+")
     _CAMEL = re.compile(r"\b[a-z][a-z0-9]*[A-Z][A-Za-z0-9]*\b")
     _SNAKE = re.compile(r"\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b")
     _CONST = re.compile(r"\bConstant\.[A-Za-z_]+|\b[A-Z][A-Z0-9]{2,}(?:_[A-Z0-9]+)+\b")
@@ -629,7 +873,7 @@ def check_one(root, key, want_audit=True, hard=False):
     _api_hit = len(_API.findall(_vis))
     add(OK if _api_hit == 0 else FAIL, "读者友好", "正文没有接口地址",
         "正文零接口地址" if _api_hit == 0 else
-        "正文里有 %d 处接口地址（POST /xxx、/demo/…）—— 业务方不调接口，"
+        "正文里有 %d 处接口地址（POST /xxx、/demobackstage/…）—— 业务方不调接口，"
         "把地址挪进附录 B，正文写「谁点了什么、系统做了什么」" % _api_hit)
 
     _other = len(_CAMEL.findall(_np)) + len(_SNAKE.findall(_np)) + len(_CONST.findall(_np)) \
@@ -693,41 +937,30 @@ def check_one(root, key, want_audit=True, hard=False):
     # 机器只能证明「有没有签」，证明不了「签得对不对」。所以要求两个不同的人，
     # 且业务签字不能是本模块作者——自己确认自己的口径，等于没有第二层。
     so = (facts or {}).get("signoff") or {}
-    biz, tec = so.get("business") or {}, so.get("tech") or {}
-    two = bool(biz.get("by")) and bool(tec.get("by"))
-    signed = two or ds_ok
-    if two:
-        _why3 = "业务 %s / 技术 %s" % (biz.get("by"), tec.get("by"))
+    sg = S.signer_of(so)
+    # 封板只证明「有人认过」，不证明「认的是现在这一版」。逐份比内容指纹：
+    # 封完又改了内容，那签就不算数——不管稿次动没动。
+    _mhash = S.content_digest(mp)
+    _dg = sg.get("digest")
+    stale = bool(_dg and _mhash and _dg != _mhash)
+    signed = (bool(sg.get("by")) and not stale) or ds_ok
+    if sg.get("by") and not stale:
+        _why3 = "%s @ %s%s" % (sg.get("by"), sg.get("at") or "—",
+                               "  " + sg["note"] if sg.get("note") else "")
     elif ds_ok:
-        _why3 = "%s（按文档级确认记，未走模块双签）" % ds_txt
+        # 整份封板还有效。分两种：模块那个封板失效了，或者压根没做过模块封板——
+        # 后者不能说「已失效」，那会让人以为自己的签丢了。
+        if sg.get("by"):
+            _why3 = "%s（模块封板已失效，按整份确认记）" % ds_txt
+        else:
+            _why3 = "%s（按整份确认记，未走模块封板）" % ds_txt
+    elif stale:
+        _why3 = ("%s 封的是旧内容——这个模块在封板之后被改过。"
+                 "重新封一次：gate.py sign --by <姓名>" % sg.get("by"))
     else:
-        _why3 = (("%s。" % ds_txt if ds_txt else "")
-                 + "还差：%s —— 跑 gate.py sign --role business|tech --by <姓名>；"
-                 "或整份文档确认一次 gate.py doc --by <姓名>"
-                 % "、".join(x for x, s in (("业务", biz), ("技术", tec)) if not s.get("by")))
-    add(OK if signed else gate_lv, "签字", "业务 + 技术双签", _why3)
-
-    same = biz.get("by") and tec.get("by") and biz["by"].strip() == tec["by"].strip()
-    if same:
-        add(FAIL, "签字", "两个不同的人", "签的是同一个人（%s）—— 两层门禁退化成一层" % biz["by"])
-    elif two:
-        add(OK, "签字", "两个不同的人", "两人不同")
-    elif ds_ok:
-        add(OK, "签字", "两个不同的人", "文档级确认只要求一个人，此项不适用")
-    else:
-        add(OK, "签字", "两个不同的人", "未签全，暂不判断")
-
-    owner = mt.get("owner") or ""
-    selfsign = biz.get("by") and owner and biz["by"].strip() == owner.strip()
-    if selfsign:
-        add(gate_lv, "签字", "业务签不是自己给自己签",
-            "业务签字人就是模块作者（%s）—— 换一个业务方的人签" % owner)
-    elif two:
-        add(OK, "签字", "业务签不是自己给自己签", "业务签字人与作者不同")
-    elif ds_ok:
-        add(OK, "签字", "业务签不是自己给自己签", "文档级确认，无模块作者自签问题")
-    else:
-        add(OK, "签字", "业务签不是自己给自己签", "未签全，暂不判断")
+        _why3 = ("还没有人封板。gate.py sign --by <姓名> 封这个模块，"
+                 "或 gate.py doc --by <姓名> 封整份")
+    add(OK if signed else gate_lv, "签字", "已封板", _why3)
 
     # ---------------- 安全 ----------------
     if want_audit:

@@ -13,7 +13,7 @@
     python3 probe_pages.py form
     python3 probe_pages.py table
     python3 probe_pages.py dims --selector ".ant-form-item input"
-    python3 probe_pages.py nav --port 9223 --url-filter test1demo
+    python3 probe_pages.py nav --port 9223 --url-filter test1admin
 """
 
 import argparse

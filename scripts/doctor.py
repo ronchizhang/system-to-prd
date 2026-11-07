@@ -49,8 +49,6 @@ def check_files():
          os.path.join(SKILL, "references", "prototype-kit.md")),
         ("操作卡 references/team-runbook.md",
          os.path.join(SKILL, "references", "team-runbook.md")),
-        ("换源指南 references/sources-adapters.md",
-         os.path.join(SKILL, "references", "sources-adapters.md")),
         ("两种交付 references/deliver-modes.md",
          os.path.join(SKILL, "references", "deliver-modes.md")),
         ("采集交互 references/interaction.md",
@@ -137,7 +135,7 @@ def check_cnb():
             add(WARN, "代码仓库命令行", "存在但跑不起来：%s" % e)
     else:
         add(WARN, "代码仓库命令行",
-            "没找到。读后端代码会不可用——先连代码仓库连接器，或用 harvest.py --local 指本地仓库")
+            "没找到。读后端代码会不可用——先连 代码仓库连接器，或用 harvest.py --local 指本地仓库")
 
 
 def check_tpl():

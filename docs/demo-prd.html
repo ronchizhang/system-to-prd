@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>报名字段配置 · PRD</title>
+<title>人员字段配置 · PRD</title>
 <!--
   单模块 PRD 模板（system-to-prd / 模式 A）
   数据来自 window.PRD_DATA，结构见 references/doc-8sections.md
@@ -80,6 +80,14 @@ body:not(.both) .pane.facts .pane-hd{display:none}
 .doc h2::before{content:"";position:absolute;left:0;top:4px;bottom:4px;width:3px;
   border-radius:2px;background:var(--blue)}
 .doc h2 em{font-style:normal;font-size:11px;font-weight:500;color:#9AAABA;margin-left:8px}
+/* 段标题右侧的「这一段对应哪几屏」按钮：1234 直接点，不用回左边自己找 */
+.doc h2 .figjump{float:right;display:inline-flex;align-items:center;gap:4px;
+  margin-top:-1px;font-weight:400}
+.doc h2 .figjump i{font-style:normal;font-size:10px;color:#9AAABA;letter-spacing:.04em}
+.doc h2 .figjump .fj{font:inherit;font-size:10.5px;font-weight:600;line-height:1;
+  padding:3px 8px;border:1px solid #C9DAEC;background:#F5F9FD;color:#346FC5;
+  border-radius:9px;cursor:pointer}
+.doc h2 .figjump .fj:hover{background:#E7F1FC;border-color:#9CC3EE;color:#185FA5}
 .doc h3{font-size:13.5px;font-weight:700;color:#3D5B7A;margin:20px 0 9px}
 .doc p{margin:0 0 12px;line-height:1.9}
 .doc b{color:var(--deep);font-weight:700}
@@ -262,6 +270,20 @@ td.c{text-align:center}
 .fcard.hl{box-shadow:0 0 0 2px #1E6FD9, 0 4px 18px rgba(30,111,217,.18);border-color:#7FB3EE}
 .rule.hl{box-shadow:0 0 0 2px #1E6FD9, 0 4px 18px rgba(30,111,217,.18)}
 .fcard,.rule{transition:box-shadow .2s,border-color .2s}
+/* 交叉引用：正文里出现的规则号 / 迁移号 / 事实号 / 模块名，点了能到。
+   样式刻意做轻——一段话里出现七八个引用是常态，全做成蓝色实心头会盖过正文。 */
+a.xref{color:#1B64C0;text-decoration:none;border-bottom:1px dashed rgba(27,100,192,.45);
+  cursor:pointer;transition:background .12s,border-color .12s;
+  white-space:nowrap}
+a.xref:hover{background:#EAF2FD;border-bottom-color:#1B64C0}
+a.xref code,a.xref .mono{color:inherit}
+code a.xref,pre a.xref{color:#B0244F;border-bottom:1px dotted rgba(176,36,79,.5)}
+code a.xref:hover{background:#FFF0F5}
+/* 模块名引用：颜色跟正文一致，只靠一条浅虚线暗示可点 */
+a.xref.mod{color:inherit;border-bottom:1px dotted #8FA9C2;white-space:normal}
+a.xref.mod:hover{color:#1B64C0;background:#F2F8FF;border-bottom-color:#1B64C0}
+/* 状态机迁移行作为落点：跳过来时整行闪一下，不然滚到表中间不知道看哪 */
+tr.hl td{background:#FFF8E1;transition:background .2s}
 .doc .tw table.mono td.mono{font-family:var(--mono,monospace);font-size:11.5px;white-space:nowrap}
 
 /* ==================================================================
@@ -289,6 +311,12 @@ td.c{text-align:center}
   100% {box-shadow:0 0 0 0 rgba(30,111,217,0)}
 }
 @media (prefers-reduced-motion:reduce){ .dchg.landed,.spc.landed{animation:none} }
+
+/* 操作日志的「操作前 / 操作后」两块标签：创建记录的前一块是空的，照系统留白，不加占位文字 */
+.px-cmp-lb{font-size:12px;color:#8A9AAB;margin:0 0 8px;letter-spacing:.02em}
+.px-cmp-lb.gap{margin-top:16px}
+.px-cmp-empty{height:44px;margin:0 0 16px;border-radius:4px;background:#FBFCFE}
+.px-cmp-sep{height:1px;background:#F0F5FA;margin:0 0 14px}
 
 /* ---------- 用例栏 ---------- */
 .cases-body{padding:22px 26px 80px;max-width:1080px;margin:0 auto}
@@ -339,6 +367,9 @@ td.c{text-align:center}
 /* ---------- 原型区 ---------- */
 .pane.proto{background:#EEF3F9;border-right:1px solid var(--line)}
 body.both .pane.proto{flex:0 0 50%}
+/* 纯原型：只留图，占满整屏，去掉右分隔线。演示/评审时投屏用 */
+body.proto .pane.proto{flex:1 1 100%;border-right:0}
+body.proto .pane-hd .k{color:#1E6FD9}
 .ptabs{display:flex;gap:5px;padding:8px 12px;overflow-x:auto;background:#fff;
   border-bottom:1px solid var(--line);flex:0 0 auto;flex-wrap:wrap}
 .ptab{border:1px solid #E3EAF3;background:#fff;border-radius:6px;padding:4px 10px;font-size:11.5px;
@@ -353,7 +384,7 @@ body.both .pane.proto{flex:0 0 50%}
   box-shadow:0 2px 16px rgba(24,64,120,.13);border:1px solid #DCE6F2}
 /* 所有帧统一按设计尺寸的画布，切换时不跳动 */
 .pframe>
-.pnote{max-width:980px;margin:9px auto 0;font-size:11px;color:#8CA0B4;line-height:1.7}
+.pnote{max-width:min(980px,100%);margin:9px auto 0;font-size:11px;color:#8CA0B4;line-height:1.7}
 .pnote code{font-family:var(--mono);font-size:10.5px;background:#E6EEF7;color:#3D6288;
   padding:1px 5px;border-radius:3px;margin-right:3px;white-space:nowrap}
 
@@ -361,6 +392,11 @@ body.both .pane.proto{flex:0 0 50%}
 .px{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",Arial,sans-serif;
   font-size:14px;color:#1F2A37;background:#F5F7FA;display:flex;flex-direction:column;
   width:1440px;min-height:600px;line-height:1.5;position:relative;overflow:hidden}
+/* 画布要撑满外层框：弹窗/抽屉是 position:absolute + inset:0，锚的是 .px 的盒子。
+   .px 停在 min-height:600 而外层框 900 时，遮罩只盖住上面 600，弹窗底部按钮正好
+   被 overflow:hidden 切掉一半（2026-11-06 字段详情帧就是这么被看出来的）。
+   :not(.full) —— .px.full 是整页长帧，高度必须跟着内容走。 */
+.pframe > .px:not(.full){min-height:100%}
 /* 高弹窗帧用：弹窗本身很高时，画布跟着加高，否则底部按钮会被 overflow:hidden 切掉 */
 .px.tall{min-height:680px}
 /* 整页帧：长页面不要拆成多帧，一页一帧、画布跟着内容长高。
@@ -427,7 +463,7 @@ body.both .pane.proto{flex:0 0 50%}
 .px-table.wide{table-layout:auto;width:max-content;min-width:100%}
 .px-table.wide th,.px-table.wide td{overflow:visible;text-overflow:clip}
 /* 快照按协议分组：每组一张小表，表头只列该协议需要的字段。
-   为什么不用一张并集宽表：并集表里同一列名在不同协议下含义不同（银行编码在 通道A 是 Routing，
+   为什么不用一张并集宽表：并集表里同一列名在不同协议下含义不同（银行编码在 清算网络A 是 Routing，
    在本地清算是分行号），空着的格子读不出「不需要」还是「没填」 */
 .px-grp{border:1px solid #E9EFF6;border-radius:8px;overflow:hidden;margin-top:9px;background:#fff}
 .px-grp-hd{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#F7FAFD;
@@ -447,7 +483,7 @@ body.both .pane.proto{flex:0 0 50%}
 .px-table .pw5{width:15%}
 .px-table .pw6{width:18%}
 .px-table .pw7{width:22%}
-/* 向导型页面（两步流程）的步骤条。实拍是居中圆点 + 编号 + 连线 */
+/* 向导型页面（新增人员这类两步流程）的步骤条。实拍是居中圆点 + 编号 + 连线 */
 .px-steps{display:flex;align-items:center;justify-content:center;gap:12px;margin:2px 0 20px}
 .px-step{display:flex;align-items:center;gap:7px;font-size:13px;color:#8CA0B4}
 .px-step.on{color:#1E6FD9;font-weight:600}
@@ -479,7 +515,7 @@ body.both .pane.proto{flex:0 0 50%}
 .px-tab{padding:9px 0;font-size:13.5px;color:#5C6F84;border-bottom:2px solid transparent}
 .px-tab.on{color:#1E6FD9;font-weight:600;border-bottom-color:#1E6FD9}
 .px-empty{padding:40px;text-align:center;color:#9AAABA;font-size:13px}
-/* 列表底栏：左边批量动作、右边分页。真实后台的列表页就是这样一排 */
+/* 列表底栏：左边批量动作、右边分页。真实后台（单据工作台）就是这样一排 */
 .px-lfoot{display:flex;align-items:center;padding:12px 4px 0;margin-top:4px}
 .px-lfoot .px-pager{padding:0;flex:0 0 auto}
 .px-pager{display:flex;align-items:center;gap:8px;justify-content:flex-end;padding:12px 4px 0;
@@ -581,9 +617,9 @@ body.both .pane.proto{flex:0 0 50%}
 /* 状态格下面的一行小字：失败原因 / 未发起提示 */
 .px-fail{display:inline-block;margin-top:3px;font-size:10.5px;line-height:1.5;color:#B45309}
 .px-fail.red{color:#C62828}
-/* 协议分组：一张结算单里，不同的人可能走不同支付网络，字段各不相同。
+/* 协议分组：一张出款单里，不同的人可能走不同清算网络，字段各不相同。
    按协议拆成若干组，每组一张小表，列只保留该协议真正要的字段——
-   一张并集宽表会把「银行代码」在通道A 是 routing number、在通道B 是 IBAN 混成一列，诱导填错 */
+   一张并集宽表会把「银行代码」在 清算网络A 是 routing number、在 清算网络E 是 银行代码 混成一列，诱导填错 */
 .px-grp{border:1px solid #E3EAF3;border-radius:8px;margin:9px 0;overflow:hidden;background:#fff}
 .px-grp-hd{display:flex;align-items:center;gap:8px;padding:8px 11px;background:#F7FAFD;
   border-bottom:1px solid #E8EFF7;font-size:12px;color:#41566E}
@@ -592,7 +628,7 @@ body.both .pane.proto{flex:0 0 50%}
 .px-grp-hd .px-sp{flex:1}
 .px-grp .px-table th{font-size:11px;padding:7px 9px;background:#FBFDFF}
 .px-grp .px-table td{font-size:11.5px;padding:8px 9px}
-/* 一次结算的批次汇总条：几人 / 多少钱 / 分几批 */
+/* 一次出款的批次汇总条：几人 / 多少钱 / 分几批 */
 .px-batch{display:flex;gap:16px;flex-wrap:wrap;align-items:center;background:#F3F8FD;
   border:1px solid #DCE8F5;border-radius:7px;padding:9px 12px;margin:2px 0 6px;font-size:12.5px;color:#1F2A37}
 .px-batch i{font-style:normal;color:#8FA3B8;margin-right:5px}
@@ -638,7 +674,7 @@ body.both .pane.proto{flex:0 0 50%}
 .px-alert.danger{background:#FEF3F2;border:1px solid #FDA29B;color:#912018}
 .px-alert.danger .ico{background:#D92D20}
 .px-alert.danger b{color:#7A271A}
-/* 表单只读 / 警示态：表单页大量用「自动带出不可改」字段，样式统一在这里，
+/* 表单只读 / 警示态：新增人员这类页面大量用「自动带出不可改」字段，样式统一在这里，
    页面里不许再写内联 style（否则每个人画出来都不一样） */
 .px-fctrl.ro{background:#FAFBFD;color:#8FA3B8}
 .px-fctrl.pick{justify-content:space-between}
@@ -659,8 +695,8 @@ body.both .pane.proto{flex:0 0 50%}
 .px-v{color:#1F2A37}
 /* 不可选那一格里的名字：看着像链接、其实是灰的，悬停给原因 */
 .px-dislink{color:#9AAABA;border-bottom:1px dashed #C9D6E4;cursor:help}
-/* 展开行：该报名者按这条通道收到的全部字段。放在行下方而不是另起弹窗，
-   因为要跟同行的人对照——"他走通道A只要四项，这个人走通道B要八项" */
+/* 展开行：该人员按这个协议收到的全部字段。放在行下方而不是另起弹窗，
+   因为要跟同行的人对照——"他走 清算网络FA 只要四项，这个人走 清算网络S 要八项" */
 .px-exprow td{background:#FBFDFF;border-top:1px dashed #DCE8F5}
 .px-exp-hd{display:flex;align-items:center;gap:8px;font-size:11.5px;color:#41566E;margin-bottom:8px}
 .px-flist{display:grid;grid-template-columns:repeat(4,1fr);gap:6px 14px}
@@ -668,7 +704,7 @@ body.both .pane.proto{flex:0 0 50%}
   background:#fff;border:1px solid #E8EFF7;border-radius:5px;padding:5px 8px}
 .px-flist i{font-style:normal;color:#8FA3B8;display:block;font-size:10px;margin-bottom:2px}
 /* 字段缺失标记：必须是「弱提示」不是「错误」——它只说明这条腿上该协议当前要的字段没填全，
-   不说明钱付不出去（付不付得掉要 示例通道 判）。红色会让人误判成已失败。 */
+   不说明钱付不出去（付不付得掉要 XPay 判）。红色会让人误判成已失败。 */
 .miss{color:#A9660E;background:#FFF6E5;border:1px dashed #EFC98B;border-radius:4px;
   padding:0 5px;font-weight:600;font-size:11px;line-height:16px;display:inline-block;cursor:help}
 .px-tips.miss-tip>.px-tip{min-width:300px;max-width:380px}
@@ -679,7 +715,7 @@ body.both .pane.proto{flex:0 0 50%}
 .px-table th.w-s{width:84px}
 .px-table th.w-n{width:178px}
 .px-table th.w-dt{width:104px}
-/* 允许换行的单元格：金额、名单这类「一条里有多段」的内容，宁可换行也不截断。
+/* 允许换行的单元格：金额、人员名单这类「一条里有多段」的内容，宁可换行也不截断。
    截断会让读的人以为只有一笔/一人。 */
 .px-table td.wrap{white-space:normal;word-break:break-word;text-overflow:clip;line-height:1.5}
 .px-table th.w-c{width:46px}
@@ -699,7 +735,7 @@ body.both .pane.proto{flex:0 0 50%}
 .px-table th.w-m{width:216px}
 .px-table th.w-l{width:24%}
 .px-table th.w-xl{width:28%}
-/* 流程卡片：申请单那种一格一格的豆腐块。一条业务申请拆成 N 张处理单 = N 格 */
+/* 流程卡片：财务请款申请那种一格一格的豆腐块。一条业务请款拆成 N 条财务请款 = N 格 */
 .px-fcard{border:1px solid #EDF0F3;border-radius:8px;background:#fff;
   padding:16px 20px 14px;margin:0 0 12px}
 .px-fcard:last-child{margin-bottom:0}
@@ -745,7 +781,9 @@ body.both .pane.proto{flex:0 0 50%}
 .px-modal-hd{padding:14px 18px;font-size:15px;font-weight:600;border-bottom:1px solid #EFF3F8;
   display:flex;align-items:center}
 .px-modal-hd .x{margin-left:auto;color:#9AAABA;font-size:16px}
-.px-modal-bd{padding:18px}
+/* 内容比 700 还高的弹窗：让正文自己滚，别把底部按钮挤出盒子——
+   .px-modal 是 overflow:hidden，flex 子项不给 min-height:0 时正文会把 footer 顶出去 */
+.px-modal-bd{padding:18px;flex:1 1 auto;min-height:0;overflow:auto}
 .px-modal-ft{padding:12px 18px;border-top:1px solid #EFF3F8;display:flex;justify-content:flex-end;gap:9px}
 .px-drawer{position:absolute;right:0;top:0;bottom:0;width:520px;background:#fff;
   box-shadow:-8px 0 30px rgba(15,23,36,.2);display:flex;flex-direction:column}
@@ -829,7 +867,7 @@ body.both .pane.proto{flex:0 0 50%}
    缩到 40% 就完全看不出——实测过，用户直接说「没有粉色提示」 */
 .px-table td.chg-col{box-shadow:inset 1.5px 0 0 rgba(240,98,146,.55),inset -1.5px 0 0 rgba(240,98,146,.55)}
 /* 改动列的单元格内容比普通列多（账户名 + 标签 + 协议），基础样式是 nowrap + 省略号，
-   硬撑着不换行就会把「全球雇佣香港B-通道C」截成「…通道C…」。改动列一律允许换行 */
+   硬撑着不换行就会把「雇佣服务某地区B-XPay」截成「…XPay…」。改动列一律允许换行 */
 .px-table td.chg-col{white-space:normal;word-break:break-word;overflow-wrap:anywhere;
   text-overflow:clip;line-height:1.55}
 .px-table th.chg-col{position:relative;
@@ -864,15 +902,13 @@ body.both .pane.proto{flex:0 0 50%}
   border-radius:8px;padding:1px 5px;margin-right:4px}
 .pchg a.wip{border-style:dashed;border-color:#B7CBE0;color:#4B6580;background:#F7FAFD}
 .pchg a.wip b{background:#7A9CBE}
-/* 前稿的改动：编号一直在累积，读的人常常只关心「这一稿动了什么」。
-   前稿的胶囊降成灰虚线 + 标出稿次，本稿保持实心粉。 */
+/* 改动胶囊：一条平铺，全部实心。 */
 .pchg a.old{opacity:.62;border-style:dashed;border-color:#E0CFD5;color:#8A6B76;background:#FDFBFC}
 .pchg a.old b{background:#C9A9B5}
 .pchg a i{font-style:normal;font-family:var(--mono);font-size:9px;opacity:.75;margin-left:5px}
 .pchg .pk.sep{color:#9AA7B5;font-weight:600;padding-left:4px}
 
-/* 只看本稿：把所有非本稿的标注一起收起来。
-   只在 JS 里打 .old，不在 CSS 里比数字——样式表不知道本稿是第几稿 */
+/* 标注一视同仁：不再按稿次压暗。 */
 .ocbtn{font:600 10.5px/1 -apple-system,"PingFang SC","Microsoft YaHei";color:#B01D53;
   background:#FFF5F8;border:1px solid #F5B9CE;border-radius:10px;padding:3px 9px;
   cursor:pointer;white-space:nowrap;margin-left:8px}
@@ -904,6 +940,28 @@ body.onlycur .doc .dwip.old > .dchg-bd{display:none}
   color:#fff;background:#EC407A;border-radius:9px;padding:3px 8px;cursor:pointer;white-space:nowrap;
   box-shadow:0 2px 6px rgba(236,64,122,.3)}
 .doc .dchg.wired{box-shadow:0 0 0 2px rgba(236,64,122,.3),0 6px 18px rgba(236,64,122,.18)}
+/* 改动块头部：标题 + 看原型入口。
+   原来只有右上角一个浮动的「回原型」按钮，读者容易看不见；这里把入口挪到标题右边，
+   帧号直接写在链接上（看原型 P3 →），看完一段改动就知道该翻哪一帧。
+   .dchg 和 .dwip 共用一套（两者都可能带 data-chg）。 */
+.doc .dchg-hd{position:absolute;top:-9px;left:12px;display:flex;align-items:center;gap:6px;
+  max-width:calc(100% - 22px);flex-wrap:wrap}
+.doc .dchg-hd > .dchg-bd{position:static}
+.doc .dchg-px{font:500 10px/1 -apple-system,"PingFang SC";color:#9AA7B4;text-decoration:none;
+  white-space:nowrap;border:1px solid #E3E9F0;border-radius:9px;padding:3px 7px;background:#fff;
+  transition:color .15s,border-color .15s,background .15s}
+.doc .dchg-px:hover{color:#1E6FD9;border-color:#BBD3F0;background:#F5F9FF}
+/* 改动块右上角：反向跳回原型。原型→文字有连线，文字→原型原先没有入口，
+   读者看完「为什么改」通常要回去指那处长什么样，只能自己翻帧。 */
+.doc .dchg > .dchg-back,.doc .dwip > .dchg-back{position:absolute;top:-10px;right:10px;display:inline-flex;
+  align-items:center;gap:4px;padding:1px 2px 1px 0}
+.doc .dchg > .dchg-back i,.doc .dwip > .dchg-back i{font-style:normal;font-size:10px;color:#BE6C90;letter-spacing:.04em}
+.doc .dwip > .dchg-back i{color:#7A9CBE}
+.doc .dchg > .dchg-back .fj,.doc .dwip > .dchg-back .fj{font-family:inherit;font-size:10.5px;font-weight:600;line-height:1;
+  padding:3px 8px;border:1px solid #F3BFD2;background:#fff;color:#BE185D;border-radius:9px;cursor:pointer}
+.doc .dwip > .dchg-back .fj{border-color:#C6D8EA;color:#2F6BA8}
+.doc .dchg > .dchg-back .fj:hover{background:#EC407A;border-color:#EC407A;color:#fff}
+.doc .dwip > .dchg-back .fj:hover{background:#4A7FB5;border-color:#4A7FB5;color:#fff}
 .doc .dwip{background:#F4F7FB;border-left:3px solid #93AECB;padding:11px 14px 10px 15px;
   border-radius:0 8px 8px 0;margin:12px 0;position:relative}
 .doc .dwip > .dchg-bd{position:absolute;top:-9px;left:12px;font:600 10px/1 -apple-system,"PingFang SC";
@@ -940,6 +998,7 @@ body.onlycur .doc .dwip.old > .dchg-bd{display:none}
     <span class="sp"></span>
     <div class="modes" id="modes">
       <button data-m="both" class="on">原型+文档</button>
+      <button data-m="proto">纯原型</button>
       <button data-m="cases">测试用例<span class="n" id="nCase"></span></button>
       <button data-m="code">代码逻辑</button>
       <button data-m="facts">核查<span class="n" id="nFact"></span></button>
@@ -957,7 +1016,6 @@ body.onlycur .doc .dwip.old > .dchg-bd{display:none}
       <span id="protoHd">本模块页面态</span>
       <span class="sp" style="flex:1"></span>
       <span id="protoZoom"></span>
-      <button class="ocbtn" style="display:none" onclick="toggleOnlyCur()">只看本稿</button>
     </div>
     <div class="ptabs" id="ptabs"></div>
     <div class="pchg" id="pchg"></div>
@@ -973,7 +1031,6 @@ body.onlycur .doc .dwip.old > .dchg-bd{display:none}
       <span class="k">叙事</span>
       <span>业务 / PM / 测试 / 研发 · 叙事 + 图 + case · 8 段固定结构</span>
       <span class="sp" style="flex:1"></span>
-      <button class="ocbtn" style="display:none" onclick="toggleOnlyCur()">只看本稿</button>
 
     </div>
     <div class="pane-scroll">
@@ -1037,16 +1094,16 @@ window.PRD_DATA = {
  "schema": "module/1.0",
  "engine": "system-to-prd@2.0",
  "meta": {
-  "key": "ops-form-field",
+  "key": "ops-person-field",
   "system": "管理后台",
-  "module": "报名字段配置",
-  "menu": "报名管理 / 报名字段配置",
-  "route": "/activity/formField/list",
-  "env": "测试环境 test1demo",
-  "customer": "主办方 300000000000001（示例）",
+  "module": "人员字段配置",
+  "menu": "人员管理 / 人员字段配置",
+  "route": "/personManage/fieldSetting/list",
+  "env": "测试环境 test1admin",
+  "customer": "客户 DEMO_CUSTOMER_ID（示例）",
   "date": "2026-11-03",
-  "version": "管理后台 V5.0 · 报名字段配置现状 · 第 1 稿",
-  "owner": "王小明",
+  "version": "管理后台 V5.0 · 人员字段配置现状 · 第 1 稿",
+  "owner": "张三",
   "rev": 0,
   "draft": 1
  },
@@ -1054,7 +1111,7 @@ window.PRD_DATA = {
   {
    "name": "浏览器渲染",
    "status": "已核",
-   "detail": "headless 实拍 4 个页面态：列表 / 新增 step1 / step2 主办方填写 / step2 报名者填写 / 选定的服务类型"
+   "detail": "headless 实拍 4 个页面态：列表 / 新增 step1 / step2 客户填写 / step2 人员填写 / 选定的服务类型"
   },
   {
    "name": "后端接口",
@@ -1069,17 +1126,17 @@ window.PRD_DATA = {
   {
    "name": "后端代码",
    "status": "已核",
-   "detail": "FormFieldController 251 行 + FormFieldServiceImpl 2642 行：权限映射、唯一性校验、状态置位"
+   "detail": "FieldController 251 行 + FieldServiceImpl 2642 行：权限映射、唯一性校验、状态置位"
   },
   {
    "name": "用例库",
    "status": "已核",
-   "detail": "命中 100 条，逐字读 5 条核心：新增字段全文 / 字段列表 / 主办方隐藏 icon / 必填标识回写 / 主办方初始化"
+   "detail": "命中 100 条，逐字读 5 条核心：新增字段全文 / 字段列表 / 客户隐藏 icon / 必填标识回写 / 客户初始化"
   },
   {
    "name": "业务确认",
    "status": "已核",
-   "detail": "字段集 = f(活动形式, 票种)；字段总数随主办方变；3 个典型场景已确认为真"
+   "detail": "字段集 = f(落地地区, 服务产品)；字段总数随客户变；3 个典型场景已确认为真"
   }
  ],
  "sections": [
@@ -1087,25 +1144,25 @@ window.PRD_DATA = {
    "n": 1,
    "title": "定位",
    "sub": "这页解决什么问题",
-   "html": "<p>管理后台维护<b>单个主办方<\/b>字段全集的页面。字段配置按主办方维度独立，不是全局一套——这是同一套系统能同时服务线上课、线下课、企业内训的原因。<\/p><p>它不描述页面长相，而是描述<b>配置项 → 下游表现<\/b>的映射：后台改一个开关，主办方端和报名者端的表单立刻跟着变。<\/p><div class=\"callout warn\"><b>页面名以线上为准。<\/b>菜单与页面标题都是「报名字段配置」，用例库里写的「报名信息设置」是旧名。<\/div>"
+   "html": "<p>管理后台维护<b>单个客户<\/b>字段全集的页面。字段配置按客户维度独立，不是全局一套——这是同一套系统能同时服务 代雇模式、独立顾问、薪酬管理 的原因。<\/p><p>它不描述页面长相，而是描述<b>配置项 → 下游表现<\/b>的映射：后台改一个开关，企业端和人员端的表单立刻跟着变。<\/p><div class=\"callout warn\"><b>页面名以线上为准。<\/b>菜单与页面标题都是「人员字段配置」，用例库里写的「人员信息设置」是旧名。<\/div>"
   },
   {
    "n": 2,
    "title": "业务背景与典型场景",
    "sub": "为什么必须这样设计",
-   "html": "<div class=\"callout key\"><b>硬约束：<\/b>做多地区活动报名时，<b>不能向主办方收集全量报名信息<\/b>。线上直播不需要身份证号，线下培训不要参会链接——收多了是骚扰，收少了核验不了身份。<\/div><p>所以「向主办方收什么」本质上取决于两件事：<b>活动形式<\/b>与<b>票种<\/b>。<\/p><div class=\"callout key\">这就是最底层的数据模型：一张「<b>地区 × 票种<\/b>」的配置表。字段之所以不写死在代码里，不是技术偏好——它本来就是「活动形式 × 票种」这两个维度的函数。<\/div><p>主办方端的核心目的是让主办方像用表单平台一样自主配置字段；<b>管理后台是给这个场景做支撑的<\/b>，不是另搞一套。<\/p><div class=\"scn\"><div class=\"scn-h\"><span class=\"scn-k\">A<\/span>同一产品线，不同主办方要填的东西不一样<\/div><div class=\"scn-r\"><b>处境<\/b>甲主办方做线下培训，要求必填「所属部门」；乙主办方做线上公开课，这一项不需要<\/div><div class=\"scn-r\"><b>操作<\/b>运营给甲配上、乙不配<\/div><div class=\"scn-r\"><b>结果<\/b>以前要改代码发版，现在配置即可<\/div><\/div><div class=\"scn\"><div class=\"scn-h\"><span class=\"scn-k\">B<\/span>同一个字段，不同地区叫法不同<\/div><div class=\"scn-r\"><b>处境<\/b>证件号在中国大陆叫「身份证号」、中国香港叫「香港身份证」、海外叫「护照号」<\/div><div class=\"scn-r\"><b>操作<\/b>开启特殊命名，按地区配显示名<\/div><div class=\"scn-r\"><b>结果<\/b>底层同一字段，报名者看到的是本地叫法<\/div><\/div><div class=\"scn\"><div class=\"scn-h\"><span class=\"scn-k\">C<\/span>主办方来定，报名者只能看<\/div><div class=\"scn-r\"><b>处境<\/b>「缴费方式」决定走哪条支付渠道，手续费不同<\/div><div class=\"scn-r\"><b>操作<\/b>做成主办方端可填写、报名者端可查看<\/div><div class=\"scn-r\"><b>结果<\/b>这是<b>成本控制<\/b>，不是技术约束<\/div><\/div><div class=\"callout\">以上是设计之初的已知用法，目前没有发现超纲用法。但系统按配置驱动——凡是配置项能表达的组合都可使用，<b>未列出的场景不需要改代码<\/b>。这些场景用来说明「为什么这样设计」，<b>不构成能力边界<\/b>。<\/div><p class=\"note\">访问需 formField:edit，授予谁由权限配置决定，不在本文档范围内。<\/p>"
+   "html": "<div class=\"callout key\"><b>硬约束：<\/b>做人力服务资源业务时，<b>不能向客户收集全量人员信息<\/b>。某地区员工不可能缴某地区社保，某地区员工也不需要某地区 W-4。收多了是骚扰，收少了不合规。<\/div><p>所以「向客户收什么」本质上取决于两件事：<b>落地地区<\/b>与<b>服务产品<\/b>。<\/p><div class=\"callout key\">这就是最底层的数据模型：一张「<b>国家 × 产品<\/b>」的配置表。字段之所以不写死在代码里，不是技术偏好——它本来就是「落地地区 × 服务产品」这两个维度的函数。<\/div><p>企业端的核心目的是让企业像用 HR SaaS 一样自主配置字段；<b>管理后台是给这个场景做支撑的<\/b>，不是另搞一套。<\/p><div class=\"scn\"><div class=\"scn-h\"><span class=\"scn-k\">A<\/span>同一产品线，不同客户要填的东西不一样<\/div><div class=\"scn-r\"><b>处境<\/b>甲客户做 独立顾问 要求必填「收款币种」，乙客户纯 代雇模式 不需要<\/div><div class=\"scn-r\"><b>操作<\/b>运营给甲配上、乙不配<\/div><div class=\"scn-r\"><b>结果<\/b>以前要改代码发版，现在配置即可<\/div><\/div><div class=\"scn\"><div class=\"scn-h\"><span class=\"scn-k\">B<\/span>同一个字段，不同国家叫法不同<\/div><div class=\"scn-r\"><b>处境<\/b>社保号在中国叫社保号、某地区叫 EPF No.、某地区叫 BPJS<\/div><div class=\"scn-r\"><b>操作<\/b>开启特殊命名，按国家配显示名<\/div><div class=\"scn-r\"><b>结果<\/b>底层同一字段，合作方看到的是本地叫法<\/div><\/div><div class=\"scn\"><div class=\"scn-h\"><span class=\"scn-k\">C<\/span>企业来定，合作方只能看<\/div><div class=\"scn-r\"><b>处境<\/b>「收款类型」决定走哪条清算通道，成本不同<\/div><div class=\"scn-r\"><b>操作<\/b>做成企业端可填写、人员端可查看<\/div><div class=\"scn-r\"><b>结果<\/b>这是<b>成本控制<\/b>，不是技术约束<\/div><\/div><div class=\"callout\">以上是设计之初的已知用法，目前没有发现超纲用法。但系统按配置驱动——凡是配置项能表达的组合都可使用，<b>未列出的场景不需要改代码<\/b>。这些场景用来说明「为什么这样设计」，<b>不构成能力边界<\/b>。<\/div><p class=\"note\">访问需 fieldSetting:edit，授予谁由权限配置决定，不在本文档范围内。<\/p>"
   },
   {
    "n": 3,
    "title": "主流程",
    "sub": "新增一个字段要经过什么",
-   "html": "<div class=\"flow\"><div class=\"fstep\"><span class=\"n\">STEP 1<\/span><div class=\"t\">基本信息<\/div><div class=\"d\">所属分组（带入）· 字段类型（8 种）· 中英名称 · 提示与说明文字 · 主办方端权限三档<\/div><\/div><div class=\"fstep\"><span class=\"n\">STEP 2<\/span><div class=\"t\">适用范围<\/div><div class=\"d\">服务范围 → 服务类型 → 每类的合作方/国家显示/必填配置 → 其他设置四开关<\/div><\/div><div class=\"fstep\"><span class=\"n\">STEP 3<\/span><div class=\"t\">查看并提交<\/div><div class=\"d\">按类型展示不同信息 → 提交前统一校验 → 落库置为「启用」<\/div><\/div><div class=\"fstep\"><span class=\"n\">分支<\/span><div class=\"t\">存草稿<\/div><div class=\"d\">任意一步可存，不校验任何字段，3 秒后关闭标签页<\/div><\/div><\/div><div class=\"callout warn\"><b>「其他设置」在 STEP 2 里，不在 STEP 1。<\/b>用例库的层级容易让人以为它在第一步——实拍确认它在「字段适用的服务范围」之后、服务类型配置之前。<\/div>"
+   "html": "<div class=\"flow\"><div class=\"fstep\"><span class=\"n\">STEP 1<\/span><div class=\"t\">基本信息<\/div><div class=\"d\">所属分组（带入）· 字段类型（8 种）· 中英名称 · 提示与说明文字 · 企业端权限三档<\/div><\/div><div class=\"fstep\"><span class=\"n\">STEP 2<\/span><div class=\"t\">适用范围<\/div><div class=\"d\">服务范围 → 服务类型 → 每类的服务方/国家显示/必填配置 → 其他设置四开关<\/div><\/div><div class=\"fstep\"><span class=\"n\">STEP 3<\/span><div class=\"t\">查看并提交<\/div><div class=\"d\">按类型展示不同信息 → 提交前统一校验 → 落库置为「启用」<\/div><\/div><div class=\"fstep\"><span class=\"n\">分支<\/span><div class=\"t\">存草稿<\/div><div class=\"d\">任意一步可存，不校验任何字段，3 秒后关闭标签页<\/div><\/div><\/div><div class=\"callout warn\"><b>「其他设置」在 STEP 2 里，不在 STEP 1。<\/b>用例库的层级容易让人以为它在第一步——实拍确认它在「字段适用的服务范围」之后、服务类型配置之前。<\/div>"
   },
   {
    "n": 4,
    "title": "字段字典与约束",
    "sub": "可配项的精确约束",
-   "html": "<p>只列<b>配置项<\/b>的约束，不列字段清单——清单随主办方变，写死必然过期。本主办方快照 110 个字段 / 6 个分组。<\/p><div class=\"tw\"><table><tr><th style=\"width:132px\">配置项<\/th><th style=\"width:58px\">类型<\/th><th style=\"width:52px\">必填<\/th><th>取值与限制<\/th><\/tr><tr><td><b>字段类型<\/b><\/td><td>枚举<\/td><td>是<\/td><td><b>8 种<\/b>：文本 / 数值 / 选项 / 日期 / 文件 / 国家·地区 / 币种 / 其他。单选·多选是「选项」的子值，不是顶层类型（见 R-OPS-FIELD-10）<\/td><\/tr><tr><td><b>主办方端权限控制<\/b><\/td><td>枚举<\/td><td>是<\/td><td>三档：主办方隐藏 / 主办方可查看 / 主办方可填写。落库为 permission_config = hide / view / fill_in<\/td><\/tr><tr><td><b>字段填写方<\/b><\/td><td>枚举<\/td><td>是<\/td><td>主办方填写 / 报名者填写。<b>不含<\/b>「管理后台填写」——那一档由权限自动决定<\/td><\/tr><tr><td><b>报名者端是否可见<\/b><\/td><td>枚举<\/td><td>是<\/td><td>可见 / 隐藏。仅当填写方=主办方时出现<\/td><\/tr><tr><td><b>是否需要主办方审核<\/b><\/td><td>枚举<\/td><td>是<\/td><td>需要审核 / 无需审核。仅当填写方=报名者时出现<\/td><\/tr><tr><td><b>是否强制填写<\/b><\/td><td>枚举<\/td><td>是<\/td><td>是 / 否。恒显示，与填写方无关<\/td><\/tr><tr><td><b>适用地区显示配置<\/b><\/td><td>枚举<\/td><td>是<\/td><td>三档：所有均显示 / 指定均显示 / 所有均不显示（countryType = all / specify / none）<\/td><\/tr><tr><td><b>必填项配置<\/b><\/td><td>枚举<\/td><td>是<\/td><td>三档：所有情况均必填 / 根据国家设置 / 所有情况均非必填。<b>显示配置=均不显示时本项不出现<\/b><\/td><\/tr><tr><td><b>合作方<\/b><\/td><td>枚举<\/td><td>否<\/td><td>三档：指定合作方 / 其他合作方 / 无需指定合作方<\/td><\/tr><\/table><\/div><div class=\"callout warn\"><b>字段总数不写死。<\/b>它随主办方配置变化——本文档快照是 110 个，换个主办方就不是这个数。任何「共 N 个字段」的表述都只能标成某时点某主办方的快照。<\/div>"
+   "html": "<p>只列<b>配置项<\/b>的约束，不列字段清单——清单随客户变，写死必然过期。本客户快照 110 个字段 / 6 个分组。<\/p><div class=\"tw\"><table><tr><th style=\"width:132px\">配置项<\/th><th style=\"width:58px\">类型<\/th><th style=\"width:52px\">必填<\/th><th>取值与限制<\/th><\/tr><tr><td><b>字段类型<\/b><\/td><td>枚举<\/td><td>是<\/td><td><b>8 种<\/b>：文本 / 数值 / 选项 / 日期 / 文件 / 国家·地区 / 币种 / 其他。单选·多选是「选项」的子值，不是顶层类型（见 R-OPS-FIELD-10）<\/td><\/tr><tr><td><b>企业端权限控制<\/b><\/td><td>枚举<\/td><td>是<\/td><td>三档：客户隐藏 / 客户可查看 / 客户可填写。落库为 permission_config = hide / view / fill_in<\/td><\/tr><tr><td><b>字段填写方<\/b><\/td><td>枚举<\/td><td>是<\/td><td>客户填写 / 人员填写。<b>不含<\/b>「管理后台填写」——那一档由权限自动决定<\/td><\/tr><tr><td><b>人员端是否可见<\/b><\/td><td>枚举<\/td><td>是<\/td><td>可见 / 隐藏。仅当填写方=客户时出现<\/td><\/tr><tr><td><b>是否需要客户审核<\/b><\/td><td>枚举<\/td><td>是<\/td><td>需要审核 / 无需审核。仅当填写方=人员时出现<\/td><\/tr><tr><td><b>是否强制填写<\/b><\/td><td>枚举<\/td><td>是<\/td><td>是 / 否。恒显示，与填写方无关<\/td><\/tr><tr><td><b>工作国家显示配置<\/b><\/td><td>枚举<\/td><td>是<\/td><td>三档：所有均显示 / 指定均显示 / 所有均不显示（countryType = all / specify / none）<\/td><\/tr><tr><td><b>必填项配置<\/b><\/td><td>枚举<\/td><td>是<\/td><td>三档：所有情况均必填 / 根据国家设置 / 所有情况均非必填。<b>显示配置=均不显示时本项不出现<\/b><\/td><\/tr><tr><td><b>服务方<\/b><\/td><td>枚举<\/td><td>否<\/td><td>三档：指定服务方 / 其他服务方 / 无需指定服务方<\/td><\/tr><\/table><\/div><div class=\"callout warn\"><b>字段总数不写死。<\/b>它随客户配置变化——本文档快照是 110 个，换个客户就不是这个数。任何「共 N 个字段」的表述都只能标成某时点某客户的快照。<\/div>"
   },
   {
    "n": 5,
@@ -1125,17 +1182,17 @@ window.PRD_DATA = {
    "n": 7,
    "title": "异常与边界",
    "sub": "校验在哪一层拦",
-   "html": "<div class=\"tw\"><table><tr><th style=\"width:190px\">场景<\/th><th style=\"width:110px\">校验时机<\/th><th>提示与后效<\/th><\/tr><tr><td>必填项未填就点下一步<\/td><td>前端<\/td><td>toast「存在待填写的内容，请先完成填写后再进行下一步」，并定位到第一个未填项<\/td><\/tr><tr><td>字段名与已有字段重名<\/td><td>后端<\/td><td>报「当前主办方中{类型}：{名称}已存在」。草稿不校验，提交时才校验<\/td><\/tr><tr><td>字段名命中系统占用名<\/td><td>后端<\/td><td>报「{类型}：{名称}禁用」。这条<b>用例完全没写<\/b>，但会拦住运营<\/td><\/tr><tr><td>名称含 <code>*<\/code> 或 <code>#<\/code><\/td><td>后端<\/td><td>报「{类型}{名称}不支持包含*和#」。<b>特殊命名也禁这两个<\/b>，用例说只禁 <code>*<\/code><\/td><\/tr><tr><td>存草稿<\/td><td>不校验<\/td><td>toast「成功保存草稿」，3 秒后关闭标签页。后端该方法<b>没有 @Valid<\/b><\/td><\/tr><tr><td>删除仍有字段的分组<\/td><td>前端<\/td><td>「当前分组内还有字段，请先删除组内字段后再删除分组」<\/td><\/tr><tr><td>删除字段<\/td><td>前端<\/td><td>二次确认：「删除后该字段所有已填写的数据将被清空，删除后不可恢复！」<\/td><\/tr><tr><td>停用字段<\/td><td>前端<\/td><td>二次确认：「停用后，报名信息中将隐藏该字段，不会影响已填写的内容」<\/td><\/tr><\/table><\/div><p class=\"note\">必填项配置里选的国家不能超过 100 个，超过报「超过上限」。<\/p>"
+   "html": "<div class=\"tw\"><table><tr><th style=\"width:190px\">场景<\/th><th style=\"width:110px\">校验时机<\/th><th>提示与后效<\/th><\/tr><tr><td>必填项未填就点下一步<\/td><td>前端<\/td><td>toast「存在待填写的内容，请先完成填写后再进行下一步」，并定位到第一个未填项<\/td><\/tr><tr><td>字段名与已有字段重名<\/td><td>后端<\/td><td>报「当前客户中{类型}：{名称}已存在」。草稿不校验，提交时才校验<\/td><\/tr><tr><td>字段名命中系统占用名<\/td><td>后端<\/td><td>报「{类型}：{名称}禁用」。这条<b>用例完全没写<\/b>，但会拦住运营<\/td><\/tr><tr><td>名称含 <code>*<\/code> 或 <code>#<\/code><\/td><td>后端<\/td><td>报「{类型}{名称}不支持包含*和#」。<b>特殊命名也禁这两个<\/b>，用例说只禁 <code>*<\/code><\/td><\/tr><tr><td>存草稿<\/td><td>不校验<\/td><td>toast「成功保存草稿」，3 秒后关闭标签页。后端该方法<b>没有 @Valid<\/b><\/td><\/tr><tr><td>删除仍有字段的分组<\/td><td>前端<\/td><td>「当前分组内还有字段，请先删除组内字段后再删除分组」<\/td><\/tr><tr><td>删除字段<\/td><td>前端<\/td><td>二次确认：「删除后该字段所有已填写的数据将被清空，删除后不可恢复！」<\/td><\/tr><tr><td>停用字段<\/td><td>前端<\/td><td>二次确认：「停用后，人员信息中将隐藏该字段，不会影响已填写的内容」<\/td><\/tr><\/table><\/div><p class=\"note\">必填项配置里选的国家不能超过 100 个，超过报「超过上限」。<\/p>"
   },
   {
    "n": 8,
    "title": "待确认",
    "sub": "未裁定前不进正文",
-   "html": "<div class=\"tw\"><table><tr><th style=\"width:56px\">编号<\/th><th style=\"width:78px\">严重度<\/th><th>问题<\/th><\/tr><tr><td class=\"mono\">Q-01<\/td><td>P0<\/td><td>合作方类型字段（other=partner）到底给谁用？代码四处打压它：列表强制过滤、新增页主办方端不显示、服务端置灰不可新增<\/td><\/tr><tr><td class=\"mono\">Q-02<\/td><td>P0<\/td><td>停用后存量值在库里是留着还是标记失效？重新启用会不会复活？删除是物理删还是逻辑删？<\/td><\/tr><tr><td class=\"mono\">Q-03<\/td><td>P1<\/td><td>字段类型建好之后能不能改？普通字段把「文本」改成「选项」，存量数据怎么办——代码里没看到迁移逻辑<\/td><\/tr><tr><td class=\"mono\">Q-04<\/td><td>P1<\/td><td>inbound / 电子签加入场景各有一套字段隐藏名单，规则在哪配？它决定「同一字段在不同场景是否出现」<\/td><\/tr><tr><td class=\"mono\">Q-05<\/td><td>P1<\/td><td>作业边界：跨端影响（回写必填标识 / 7 个页面出 icon / 模板机制）写在本页，还是拆到各页面 PRD？<\/td><\/tr><\/table><\/div><div class=\"callout warn\"><b>还有 4 条实现层缺陷待处理：<\/b>编辑停用字段会自动启用（<code>/save<\/code> 与 <code>/edit<\/code> 同一方法且强制 setStatus(ENABLE)）；5 个接口只校验登录不校验权限点；企业自定义字段 coercionFill 恒 true；所属分组首屏显示裸 ID。<\/div>"
+   "html": "<div class=\"tw\"><table><tr><th style=\"width:56px\">编号<\/th><th style=\"width:78px\">严重度<\/th><th>问题<\/th><\/tr><tr><td class=\"mono\">Q-01<\/td><td>P0<\/td><td>服务方类型字段（other=supplier）到底给谁用？代码四处打压它：列表强制过滤、新增页企业端不显示、服务端置灰不可新增<\/td><\/tr><tr><td class=\"mono\">Q-02<\/td><td>P0<\/td><td>停用后存量值在库里是留着还是标记失效？重新启用会不会复活？删除是物理删还是逻辑删？<\/td><\/tr><tr><td class=\"mono\">Q-03<\/td><td>P1<\/td><td>字段类型建好之后能不能改？普通字段把「文本」改成「选项」，存量数据怎么办——代码里没看到迁移逻辑<\/td><\/tr><tr><td class=\"mono\">Q-04<\/td><td>P1<\/td><td>inbound / 电签入职场景各有一套字段隐藏名单，规则在哪配？它决定「同一字段在不同场景是否出现」<\/td><\/tr><tr><td class=\"mono\">Q-05<\/td><td>P1<\/td><td>作业边界：跨端影响（回写必填标识 / 7 个页面出 icon / 模板机制）写在本页，还是拆到各页面 PRD？<\/td><\/tr><\/table><\/div><div class=\"callout warn\"><b>还有 4 条实现层缺陷待处理：<\/b>编辑停用字段会自动启用（<code>/save<\/code> 与 <code>/edit<\/code> 同一方法且强制 setStatus(ENABLE)）；5 个接口只校验登录不校验权限点；企业自定义字段 coercionFill 恒 true；所属分组首屏显示裸 ID。<\/div>"
   }
  ],
- "context": "context:\n  hard_constraint: 不能向主办方收集全量报名信息——线上直播不要身份证号，线下培训不要参会链接\n  determinant: 收什么 = f(活动形式, 票种)\n  data_model_root: 「地区 × 票种」配置表\n  product_intent: 主办方端要做成表单平台，主办方自己能配字段\n  this_page_role: 管理后台是给主办方端这个场景做支撑，不是独立系统\n  known_scenarios: [同一产品线不同主办方配置不同, 同一字段不同国家叫法不同, 主办方指定的缴费方式报名者只读]\n  boundary_rule: 能力边界由配置项决定，不由场景清单决定；未列出的组合不需改代码\n  anti_pattern: 不要建议改成全局统一配置——按主办方独立是产品要求，不是设计缺陷\n  forbidden: 不要把权限点（formField:edit）写进需求，那是运行时配置",
- "entities": "字段定义:\n  一句话: 一条字段就是一个表单问题，比如「身份证号」\n  谁生成: 运营在后台新建；主办方端自助配字段也落到这里\n  关键点:\n    作用范围: 按主办方独立，不是全局一套——这是同一套系统能同时服务线上课、线下课、企业内训的原因\n    状态: 草稿 / 启用 / 停用 / 删除，只有前三个会出现在列表里\n    三档权限: 主办方隐藏 / 主办方可查看 / 主办方可填写，保存时展开成四个下游开关\n字段分组:\n  一句话: 把字段按「基本信息 / 证件信息」这类归堆，报名详情页按分组分段显示\n  谁生成: 运营建组，新建字段时选所属分组\n  关键点:\n    删除限制: 组里还有字段就不许删，会直接拦住\n    自动带入: 在某个分组下点新建，分组自动填好\n报名者填写内容:\n  一句话: 报名者实际填的东西，跟着人走，不跟着字段配置走\n  谁生成: 主办方或报名者在主办方端 / 报名者端填\n  关键点:\n    停用不影响存量: 停用只是不再显示，已经填过的内容还在\n    删除会清空: 删字段连数据一起没，所以二次确认必须写明「不可恢复」\n主办方:\n  一句话: 字段配置的边界，一个主办方一套\n  谁生成: 商务签约后建档\n  关键点:\n    决定可见范围: 能看到哪些主办方，决定能配哪些主办方的字段\n    跨端联动: 后台改一个开关，主办方端和报名者端的表单立刻跟着变\n引用方向: 主办方 → 字段分组 → 字段定义 → 报名者填写内容；前三环是配置，最后一环是数据——改配置不回改已填的内容，删字段例外（连数据一起没）\n",
+ "context": "context:\n  hard_constraint: 不能向客户收集全量人员信息——某地区员工不缴某地区社保，某地区员工不需要某地区 W-4\n  determinant: 收什么 = f(落地地区, 服务产品)\n  data_model_root: 「国家 × 产品」配置表\n  product_intent: 企业端要做成 HR SaaS，企业能配自己的字段\n  this_page_role: 管理后台是给企业端这个场景做支撑，不是独立系统\n  known_scenarios: [同一产品线不同客户配置不同, 同一字段不同国家叫法不同, 企业定价人员只读]\n  boundary_rule: 能力边界由配置项决定，不由场景清单决定；未列出的组合不需改代码\n  anti_pattern: 不要建议改成全局统一配置——按客户独立是产品要求，不是设计缺陷\n  forbidden: 不要把权限点（fieldSetting:edit）写进需求，那是运行时配置",
+ "entities": "字段定义:\n  一句话: 一条字段就是一个表单问题，比如「护照号」\n  谁生成: 运营在后台新建；企业端自助配字段也落到这里\n  关键点:\n    作用范围: 按客户独立，不是全局一套——这是同一套系统能同时服务 代雇模式、独立顾问、薪酬管理 的原因\n    状态: 草稿 / 启用 / 停用 / 删除，只有前三个会出现在列表里\n    三档权限: 客户隐藏 / 客户可查看 / 客户可填写，保存时展开成四个下游开关\n字段分组:\n  一句话: 把字段按「基本信息 / 证件信息」这类归堆，人员详情页按分组分段显示\n  谁生成: 运营建组，新建字段时选所属分组\n  关键点:\n    删除限制: 组里还有字段就不许删，会直接拦住\n    自动带入: 在某个分组下点新建，分组自动填好\n人员填写内容:\n  一句话: 人员实际填的东西，跟着人走，不跟着字段配置走\n  谁生成: 客户或人员在企业端 / 员工端填\n  关键点:\n    停用不影响存量: 停用只是不再显示，已经填过的内容还在\n    删除会清空: 删字段连数据一起没，所以二次确认必须写明「不可恢复」\n客户:\n  一句话: 字段配置的边界，一个客户一套\n  谁生成: 商务签约后建档\n  关键点:\n    决定可见范围: 能看到哪些客户，决定能配哪些客户的字段\n    跨端联动: 后台改一个开关，企业端和人员端的表单立刻跟着变\n引用方向: 客户 → 字段分组 → 字段定义 → 人员填写内容；前三环是配置，最后一环是数据——改配置不回改已填的内容，删字段例外（连数据一起没）\n",
  "rules": [
   {
    "id": "R-OPS-FIELD-00",
@@ -1144,13 +1201,13 @@ window.PRD_DATA = {
    "src": [
     "biz"
    ],
-   "statement": "字段集是「活动形式 × 票种」的函数，因此字段配置按主办方维度独立，不是全局一套；后台的存在目的是支撑主办方端自助配字段",
+   "statement": "字段集是「落地地区 × 服务产品」的函数，因此字段配置按客户维度独立，不是全局一套；后台的存在目的是支撑企业端自助配字段",
    "evidence": "业务方确认 + context.yaml 的 determinant / data_model_root",
    "cases": [
     {
      "k": "negative",
      "g": "把字段配置改成全局一套",
-     "w": "任意两个不同国家的主办方查看报名表单",
+     "w": "任意两个不同国家的客户查看人员表单",
      "t": "两边看到的字段集相同——与业务前提冲突，属错误优化"
     }
    ],
@@ -1169,29 +1226,29 @@ window.PRD_DATA = {
     "ui",
     "ima"
    ],
-   "statement": "主办方端权限三档决定填 party、报名者端隐藏、强制填写、主办方审核四个底层字段的值：hide→admin/隐藏/非强制/不审核；view→admin/取入参/非强制/不审核；fill_in 按填写方分 cust 或 participant",
-   "evidence": "be: handleSystemField() 原文；ui: step1 三张单选卡实拍；ima: 新增字段 step3 的数据检查段",
+   "statement": "企业端权限三档决定填 party、人员端隐藏、强制填写、客户审核四个底层字段的值：hide→admin/隐藏/非强制/不审核；view→admin/取入参/非强制/不审核；fill_in 按填写方分 cust 或 employee",
+   "evidence": "be: handleNonBusinessField() 原文；ui: step1 三张单选卡实拍；ima: 新增字段 step3 的数据检查段",
    "cases": [
     {
      "k": "positive",
-     "g": "权限=主办方隐藏",
+     "g": "权限=客户隐藏",
      "w": "保存后查 detail",
-     "t": "fillParty=admin、participantHide=true、coercionFill=false、needApproval=false"
+     "t": "fillParty=admin、employeeHide=true、coercionFill=false、needApproval=false"
     },
     {
      "k": "positive",
-     "g": "权限=主办方可填写，填写方=主办方填写",
+     "g": "权限=客户可填写，填写方=客户填写",
      "w": "保存后查 detail",
-     "t": "fillParty=cust、needApproval=false，participantHide 取「报名者端是否可见」的值"
+     "t": "fillParty=cust、needApproval=false，employeeHide 取「人员端是否可见」的值"
     },
     {
      "k": "negative",
-     "g": "权限=主办方隐藏",
-     "w": "试图让报名者端可见",
-     "t": "不允许——隐藏档下 participantHide 被强制置 true"
+     "g": "权限=客户隐藏",
+     "w": "试图让人员端可见",
+     "t": "不允许——隐藏档下 employeeHide 被强制置 true"
     }
    ],
-   "note": "view 分支不改 participantHide，完全依赖前端传值。前端不传就会被上一状态污染，这是隐患。",
+   "note": "view 分支不改 employeeHide，完全依赖前端传值。前端不传就会被上一状态污染，这是隐患。",
    "facts": [
     "F-08"
    ]
@@ -1205,26 +1262,26 @@ window.PRD_DATA = {
     "be",
     "ui"
    ],
-   "statement": "「字段填写方」与后续显示项互斥：填写方=主办方时显示「报名者端是否可见」，填写方=报名者时改为显示「是否需要主办方审核」；「是否强制填写」两者都显示",
-   "evidence": "fe: `\"cust\"===c.fillParty ? {报名者端是否可见} : {是否需要主办方审核}`；be: handleSystemField 的两个分支；ui: 两种选择各实拍一张",
+   "statement": "「字段填写方」与后续显示项互斥：填写方=客户时显示「人员端是否可见」，填写方=人员时改为显示「是否需要客户审核」；「是否强制填写」两者都显示",
+   "evidence": "fe: `\"cust\"===c.fillParty ? {人员端是否可见} : {是否需要客户审核}`；be: handleNonBusinessField 的两个分支；ui: 两种选择各实拍一张",
    "cases": [
     {
      "k": "positive",
-     "g": "填写方=主办方填写",
+     "g": "填写方=客户填写",
      "w": "看其他设置",
-     "t": "显示「报名者端是否可见」，不显示「是否需要主办方审核」"
+     "t": "显示「人员端是否可见」，不显示「是否需要客户审核」"
     },
     {
      "k": "positive",
-     "g": "填写方=报名者填写",
+     "g": "填写方=人员填写",
      "w": "看其他设置",
-     "t": "显示「是否需要主办方审核」，不显示「报名者端是否可见」"
+     "t": "显示「是否需要客户审核」，不显示「人员端是否可见」"
     },
     {
      "k": "edge",
-     "g": "先选主办方填写再切报名者填写",
+     "g": "先选客户填写再切人员填写",
      "w": "看其他设置",
-     "t": "前者的值不再提交，后端 participantHide 被强制置 false"
+     "t": "前者的值不再提交，后端 employeeHide 被强制置 false"
     }
    ],
    "facts": [
@@ -1239,20 +1296,20 @@ window.PRD_DATA = {
     "be",
     "ima"
    ],
-   "statement": "字段名称（中英文）与特殊命名（中英文）四者之间，在当前主办方维度不能互相重复；草稿不参与校验；同一个字段内部的字段名与特殊命名可以重复",
+   "statement": "字段名称（中英文）与特殊命名（中英文）四者之间，在当前客户维度不能互相重复；草稿不参与校验；同一个字段内部的字段名与特殊命名可以重复",
    "evidence": "be: checkFieldExistsName() 按 custId 查重，saveField 里 `if (status != DRAFT)` 才调用；ima: 新增字段 step3 提交校验段",
    "cases": [
     {
      "k": "negative",
      "g": "已有字段「姓名」，新建字段也叫「姓名」",
      "w": "提交",
-     "t": "报「当前主办方中字段名称：姓名已存在」，不落库"
+     "t": "报「当前客户中字段名称：姓名已存在」，不落库"
     },
     {
      "k": "positive",
-     "g": "不同主办方都有「姓名」",
+     "g": "不同客户都有「姓名」",
      "w": "各自提交",
-     "t": "都通过——校验是主办方维度"
+     "t": "都通过——校验是客户维度"
     },
     {
      "k": "edge",
@@ -1353,7 +1410,7 @@ window.PRD_DATA = {
     "ui",
     "api"
    ],
-   "statement": "适用地区显示配置选「所有均不显示」时，必填项配置整块不渲染，detail 里 requiredConfig 为 null",
+   "statement": "工作国家显示配置选「所有均不显示」时，必填项配置整块不渲染，detail 里 requiredConfig 为 null",
    "evidence": "api: detail 实测 19 个 fieldScopeConfig 的 countryType=none 且 requiredConfigType=null；ui: 切换实拍",
    "cases": [
     {
@@ -1381,12 +1438,12 @@ window.PRD_DATA = {
     "ui",
     "ima"
    ],
-   "statement": "列表里出现的系统字段必须满足「主办方端权限≠主办方隐藏」且已提交；企业自定义字段则连草稿一起出现",
-   "evidence": "ui: 列表实拍（本主办方 110 个字段中仅 1 个 hide，列表中不可见）；ima: 字段列表「字段来源」段",
+   "statement": "列表里出现的系统字段必须满足「企业端权限≠客户隐藏」且已提交；企业自定义字段则连草稿一起出现",
+   "evidence": "ui: 列表实拍（本客户 110 个字段中仅 1 个 hide，列表中不可见）；ima: 字段列表「字段来源」段",
    "cases": [
     {
      "k": "positive",
-     "g": "某系统字段权限改成主办方隐藏",
+     "g": "某系统字段权限改成客户隐藏",
      "w": "刷新列表",
      "t": "该字段从列表消失"
     },
@@ -1409,7 +1466,7 @@ window.PRD_DATA = {
     "be"
    ],
    "statement": "提交或编辑字段时后端无条件把状态置为「启用」——编辑一个已停用的字段会让它重新启用",
-   "evidence": "be: FormFieldController.saveField 首行 `req.setStatus(FieldStatusEnum.ENABLE)`，/save 与 /edit 共用该方法",
+   "evidence": "be: FieldController.saveField 首行 `req.setStatus(FieldStatusEnum.ENABLE)`，/save 与 /edit 共用该方法",
    "cases": [
     {
      "k": "negative",
@@ -1473,7 +1530,7 @@ window.PRD_DATA = {
     "from": "草稿",
     "to": "启用",
     "trigger": "提交",
-    "guard": "4 项校验通过；落库后主办方端下次加载可见",
+    "guard": "4 项校验通过；落库后企业端下次加载可见",
     "label": "提交·校验过",
     "kind": "normal"
    },
@@ -1482,7 +1539,7 @@ window.PRD_DATA = {
     "from": "启用",
     "to": "停用",
     "trigger": "停用",
-    "guard": "二次确认；主办方端不再显示该字段，历史值保留",
+    "guard": "二次确认；企业端不再显示该字段，历史值保留",
     "label": "停用",
     "kind": "normal"
    },
@@ -1509,7 +1566,7 @@ window.PRD_DATA = {
     "from": "启用",
     "to": "删除",
     "trigger": "删除",
-    "guard": "需二次确认并列出受影响的主办方与产品线",
+    "guard": "需二次确认并列出受影响的客户与产品线",
     "label": "删除·二次确认",
     "kind": "danger"
    },
@@ -1525,85 +1582,85 @@ window.PRD_DATA = {
   ],
   "caption": "由下方迁移表渲染。橙色回边 = 可逆；红色实线 = 不可逆且需确认；灰色虚线 = 草稿专属路径。",
   "confidence": "T2 已由后端代码证实，其余为推论",
-  "note": "T2 的依据是 FormFieldController.saveField 无条件 setStatus(ENABLE)。T4 的「历史值是否复活」、T7 的「历史数据是真删还是不可见」都未验证，已挂 Q-02。中间是否存在「审核中」这类过渡态同样未验证。"
+  "note": "T2 的依据是 FieldController.saveField 无条件 setStatus(ENABLE)。T4 的「历史值是否复活」、T7 的「历史数据是真删还是不可见」都未验证，已挂 Q-02。中间是否存在「审核中」这类过渡态同样未验证。"
  },
  "apis": [
   {
    "method": "POST",
-   "path": "/demo/form/group/list",
-   "purpose": "按主办方拉分组与字段",
+   "path": "/demobackstage/field/group/list",
+   "purpose": "按客户拉分组与字段",
    "auth": "permission=true（要权限点）",
-   "evidence": "实测 B00000，本主办方返回 6 组 110 字段"
+   "evidence": "实测 B00000，本客户返回 6 组 110 字段"
   },
   {
    "method": "POST",
-   "path": "/demo/form/list",
+   "path": "/demobackstage/field/list",
    "purpose": "字段查询",
    "auth": "仅登录（无权限点）",
-   "evidence": "后端强制 setFilterFieldCode([FIELD_PARTNER_CODE])，过滤合作方类型字段"
+   "evidence": "后端强制 setFilterFieldCode([FIELD_SUPPLIER_CODE])，过滤服务方类型字段"
   },
   {
    "method": "POST",
-   "path": "/demo/form/detail",
+   "path": "/demobackstage/field/detail",
    "purpose": "字段全量详情",
    "auth": "permission=true",
-   "evidence": "返回 24 个属性，含 fillParty / participantHide / coercionFill / needApproval"
+   "evidence": "返回 24 个属性，含 fillParty / employeeHide / coercionFill / needApproval"
   },
   {
    "method": "POST",
-   "path": "/demo/form/save",
+   "path": "/demobackstage/field/save",
    "purpose": "提交（/save 与 /edit 同一方法）",
    "auth": "permission=true",
    "evidence": "首行 setStatus(ENABLE)"
   },
   {
    "method": "POST",
-   "path": "/demo/form/save/draft",
+   "path": "/demobackstage/field/save/draft",
    "purpose": "存草稿",
    "auth": "仅登录（无权限点）",
    "evidence": "方法签名无 @Valid，与用例「不校验任何」一致"
   },
   {
    "method": "POST",
-   "path": "/demo/form/edit/status",
+   "path": "/demobackstage/field/edit/status",
    "purpose": "启用/停用",
    "auth": "permission=true",
    "evidence": "一次只改一个字段，无批量接口"
   },
   {
    "method": "POST",
-   "path": "/demo/form/delete",
+   "path": "/demobackstage/field/delete",
    "purpose": "删除字段",
    "auth": "permission=true",
    "evidence": "无回收站，不可恢复"
   },
   {
    "method": "POST",
-   "path": "/demo/form/field/sort",
+   "path": "/demobackstage/field/field/sort",
    "purpose": "字段拖动排序",
    "auth": "仅登录（无权限点）",
    "evidence": "权限缺口"
   },
   {
    "method": "POST",
-   "path": "/demo/form/ref/template",
-   "purpose": "引用模板配置",
+   "path": "/demobackstage/field/ref/template",
+   "purpose": "引用模板客户配置",
    "auth": "permission=true",
-   "evidence": "批量刷给存量主办方"
+   "evidence": "批量刷给存量客户"
   },
   {
    "method": "POST",
-   "path": "/demo/form/checkValueBeforeCommit",
+   "path": "/demobackstage/field/checkValueBeforeCommit",
    "purpose": "两端提交前校验字段值",
    "auth": "仅登录（无权限点）",
-   "evidence": "主办方端/报名者端保存报名者时调用"
+   "evidence": "企业端/人员端保存人员时调用"
   }
  ],
  "questions": [
   {
    "id": "Q-01",
-   "title": "合作方类型字段到底给谁用",
-   "why": "代码四处打压它：/list 强制过滤、新增页主办方端不显示、服务端置灰不可新增。若是历史遗留，PRD 该写「已停用」；若仍在用，要说清入口",
+   "title": "服务方类型字段到底给谁用",
+   "why": "代码四处打压它：/list 强制过滤、新增页企业端不显示、服务端置灰不可新增。若是历史遗留，PRD 该写「已停用」；若仍在用，要说清入口",
    "ask": "这个类型现在还有人用吗？入口在哪？"
   },
   {
@@ -1620,14 +1677,14 @@ window.PRD_DATA = {
   },
   {
    "id": "Q-04",
-   "title": "inbound / 电子签场景的字段隐藏名单在哪配",
+   "title": "inbound / 电签场景的字段隐藏名单在哪配",
    "why": "两套 filter 方法存在但名单来源未定位，它决定同一字段在不同场景是否出现",
    "ask": "名单在哪配？要不要写进本页 PRD？"
   },
   {
    "id": "Q-05",
    "title": "跨端影响写在本页还是拆出去",
-   "why": "已确认 4 条：回写必填标识驱动主办方端「需补充信息」、主办方隐藏字段在报名管理 7 个页面出 icon、模板机制、inbound 隐藏名单。全写在页内会很长，都不写测试测不到回归",
+   "why": "已确认 4 条：回写必填标识驱动企业端「需补充信息」、客户隐藏字段在人员管理 7 个页面出 icon、模板机制、inbound 隐藏名单。全写在页内会很长，都不写测试测不到回归",
    "ask": "A 全写页内 / B 页内只写影响一句 / C 单独出一页「跨端影响」"
   },
   {
@@ -1642,34 +1699,34 @@ window.PRD_DATA = {
    "type": "二级页",
    "name": "新增字段",
    "entry": "分组头部「+ 新增字段」",
-   "route": "/activity/formField/add?customerId=&groupId=",
+   "route": "/personManage/fieldSetting/add?customerId=&groupId=",
    "covered": true
   },
   {
    "type": "二级页",
    "name": "编辑字段",
    "entry": "行操作「编辑」",
-   "route": "/activity/formField/edit/:id?customerId=",
+   "route": "/personManage/fieldSetting/edit/:id?customerId=",
    "covered": true
   },
   {
    "type": "二级页",
    "name": "字段详情",
    "entry": "行操作「查看」/ 点行",
-   "route": "/activity/formField/details/:id?customerId=",
+   "route": "/personManage/fieldSetting/details/:id?customerId=",
    "covered": true
   },
   {
    "type": "弹窗",
    "name": "新增/编辑分组",
    "entry": "「管理分组」内",
-   "route": "组件 Ce（formField/list chunk 内）",
+   "route": "组件 Ce（fieldSetting/list chunk 内）",
    "covered": true
   },
   {
    "type": "弹窗",
-   "name": "引用模板配置",
-   "entry": "页面右上「引用模板配置」",
+   "name": "引用模板客户配置",
+   "entry": "页面右上「引用模板客户配置」",
    "route": "referenceTemplateConfigurationModal",
    "covered": false
   },
@@ -1688,66 +1745,66 @@ window.PRD_DATA = {
    "covered": true
   }
  ],
- "layout": "layout:\n  canvas: 1440 设计稿\n  page: 左主办方列表 236px + 右侧字段区\n  columns: 8 列（字段名称 / 状态 / 字段类型 / 类型 / 适用产品 / 主办方端权限 / 报名者端权限 / 操作）\n  form_grid: 2 列，label 在上\n  permission_card: 三张单选卡竖排，选中态蓝边 + 蓝点\n  dialog: width 720 / 居中 / 遮罩 rgba(0,0,0,.45)\n  note: 列表不分页（按分组全部展开）",
+ "layout": "layout:\n  canvas: 1440 设计稿\n  page: 左客户列表 236px + 右侧字段区\n  columns: 8 列（字段名称 / 状态 / 字段类型 / 类型 / 适用产品 / 企业端权限 / 人员端权限 / 操作）\n  form_grid: 2 列，label 在上\n  permission_card: 三张单选卡竖排，选中态蓝边 + 蓝点\n  dialog: width 720 / 居中 / 遮罩 rgba(0,0,0,.45)\n  note: 列表不分页（按分组全部展开）",
  "prototype": {
   "viewport": "1440x900",
-  "note": "原型按 1440×900 设计尺寸渲染后等比缩放。列表里的字段名是抽样，本主办方实际 110 个字段（见核查 F-02）。九帧覆盖主页面与全部七个弹窗/二级页。【这是手绘样例，只为示范九帧该画什么、每帧 note 怎么写；真实交付要走 snapshot_page.py 实拍 + proto_from_snapshot.py 生成，帧上带 from 才算有依据】",
+  "note": "原型按 1440×900 设计尺寸渲染后等比缩放。列表里的字段名是抽样，本客户实际 110 个字段（见核查 F-02）。九帧覆盖主页面与全部七个弹窗/二级页。【这是手绘样例，只为示范九帧该画什么、每帧 note 怎么写；真实交付要走 snapshot_page.py 实拍 + proto_from_snapshot.py 生成，帧上带 from 才算有依据】",
   "frames": [
    {
     "id": "P1",
     "name": "字段列表",
     "state": "默认态",
-    "route": "/activity/formField?customerId=300000000000001",
-    "note": "6 个固定分组、不可展开收起。列表只出现「主办方端权限≠主办方隐藏」且已提交的字段，不是全部字段——这是硬规则，见 F-14。",
-    "html": "<div class=\"px\">\n<div class=\"px-top\">\n  <div class=\"px-logo\">DEMO <i>ADMIN<\/i><\/div>\n  <div class=\"px-tmenu\"><span>主办方<\/span><span class=\"on\">报名者<\/span><span>配置<\/span>\n    <span>财务<\/span><span>运营<\/span><\/div>\n  <div class=\"px-tright\"><span>蓝湾科技有限公司<\/span><div class=\"px-av\">运<\/div><\/div>\n<\/div><div class=\"px-body\">\n<div class=\"px-side\">\n  <div class=\"px-mi\">主办方管理<\/div>\n  <div class=\"px-mi on\">报名管理<\/div>\n  <div class=\"px-mi sub on\">报名字段配置<\/div>\n  <div class=\"px-mi sub\">报名信息设置<\/div>\n  <div class=\"px-mi sub\">合作方类型<\/div>\n  <div class=\"px-mi\">账单管理<\/div>\n  <div class=\"px-mi\">模板主办方<\/div>\n<\/div>\n<div class=\"px-main\">\n  <div class=\"px-crumb\">报名管理 <i>/<\/i> 报名字段配置<\/div>\n  <div class=\"px-h1\">报名字段配置 <span class=\"px-tag blue\">主办方 300000000000001<\/span><\/div>\n  <div class=\"px-toolbar\">\n    <div class=\"px-in ph\">搜索字段名称<\/div>\n    <div class=\"px-sel\">全部分组<\/div>\n    <span class=\"sp\"><\/span>\n    <button class=\"px-btn\">引用模板配置<\/button>\n    <button class=\"px-btn pri\">+ 新增字段<\/button>\n  <\/div>\n  <div class=\"px-card\">\n    <div class=\"px-card-hd\">基本信息 <span class=\"px-tag\">12 个字段<\/span>\n      <span class=\"sp\"><\/span><button class=\"px-btn link\">+ 新增字段<\/button><\/div>\n    <table class=\"px-table\">\n      <tr><th class=\"w-l\">字段名称<\/th><th class=\"w-m\">字段类型<\/th><th class=\"w-s\">是否必填<\/th>\n        <th class=\"w-m\">主办方可见<\/th><th class=\"w-s\">状态<\/th><th class=\"w-m\">操作<\/th><\/tr>\n      <tr><td>姓名<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>主办方可填<\/td><td><span class=\"px-tag green\">启用<\/span><\/td><td><span class=\"px-btn link\">编辑<\/span><span class=\"px-btn link d\">停用<\/span><\/td><\/tr><tr><td>手机号<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>主办方不可见<\/td><td><span class=\"px-tag green\">启用<\/span><\/td><td><span class=\"px-btn link\">编辑<\/span><span class=\"px-btn link d\">停用<\/span><\/td><\/tr><tr><td>出生日期<\/td><td><span class=\"px-tag\">日期<\/span><\/td><td>否<\/td><td>主办方可填<\/td><td><span class=\"px-tag green\">启用<\/span><\/td><td><span class=\"px-btn link\">编辑<\/span><span class=\"px-btn link d\">停用<\/span><\/td><\/tr><tr><td>常用邮箱<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>否<\/td><td>主办方可填<\/td><td><span class=\"px-tag gray\">停用<\/span><\/td><td><span class=\"px-btn link\">编辑<\/span><span class=\"px-btn link d\">停用<\/span><\/td><\/tr>\n    <\/table>\n  <\/div>\n  <div class=\"px-card\">\n    <div class=\"px-card-hd\">证件信息 <span class=\"px-tag\">9 个字段<\/span>\n      <span class=\"sp\"><\/span><button class=\"px-btn link\">+ 新增字段<\/button><\/div>\n    <table class=\"px-table\">\n      <tr><th class=\"w-l\">字段名称<\/th><th class=\"w-m\">字段类型<\/th><th class=\"w-s\">是否必填<\/th>\n        <th class=\"w-m\">主办方可见<\/th><th class=\"w-s\">状态<\/th><th class=\"w-m\">操作<\/th><\/tr>\n      <tr><td>证件类型<\/td><td><span class=\"px-tag\">选项<\/span><\/td><td>是<\/td><td>主办方可填<\/td><td><span class=\"px-tag green\">启用<\/span><\/td><td><span class=\"px-btn link\">编辑<\/span><span class=\"px-btn link d\">停用<\/span><\/td><\/tr><tr><td>证件号码<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>主办方可填<\/td><td><span class=\"px-tag green\">启用<\/span><\/td><td><span class=\"px-btn link\">编辑<\/span><span class=\"px-btn link d\">停用<\/span><\/td><\/tr><tr><td>签发国家/地区<\/td><td><span class=\"px-tag\">国家·地区<\/span><\/td><td>是<\/td><td>主办方不可见<\/td><td><span class=\"px-tag green\">启用<\/span><\/td><td><span class=\"px-btn link\">编辑<\/span><span class=\"px-btn link d\">停用<\/span><\/td><\/tr>\n    <\/table>\n  <\/div>\n  <div class=\"px-card\">\n    <div class=\"px-card-hd\">缴费信息 <span class=\"px-tag\">7 个字段<\/span>\n      <span class=\"sp\"><\/span><button class=\"px-btn link\">+ 新增字段<\/button><\/div>\n    <table class=\"px-table\">\n      <tr><th class=\"w-l\">字段名称<\/th><th class=\"w-m\">字段类型<\/th><th class=\"w-s\">是否必填<\/th>\n        <th class=\"w-m\">主办方可见<\/th><th class=\"w-s\">状态<\/th><th class=\"w-m\">操作<\/th><\/tr>\n      <tr><td>支付方式<\/td><td><span class=\"px-tag\">选项<\/span><\/td><td>是<\/td><td>主办方可填<\/td><td><span class=\"px-tag green\">启用<\/span><\/td><td><span class=\"px-btn link\">编辑<\/span><span class=\"px-btn link d\">停用<\/span><\/td><\/tr><tr><td>发票抬头<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>否<\/td><td>主办方可填<\/td><td><span class=\"px-tag green\">启用<\/span><\/td><td><span class=\"px-btn link\">编辑<\/span><span class=\"px-btn link d\">停用<\/span><\/td><\/tr><tr><td>支付币种<\/td><td><span class=\"px-tag\">币种<\/span><\/td><td>是<\/td><td>主办方不可见<\/td><td><span class=\"px-tag green\">启用<\/span><\/td><td><span class=\"px-btn link\">编辑<\/span><span class=\"px-btn link d\">停用<\/span><\/td><\/tr>\n    <\/table>\n  <\/div>\n  <div class=\"px-pager\"><span>共 110 个字段 · 6 组<\/span><b>‹<\/b><b class=\"on\">1<\/b><b>2<\/b><b>3<\/b><b>›<\/b><\/div>\n<\/div><\/div><\/div>"
+    "route": "/personManage/fieldSetting?customerId=DEMO_CUSTOMER_ID",
+    "note": "6 个固定分组、不可展开收起。列表只出现「企业端权限≠客户隐藏」且已提交的字段，不是全部字段——这是硬规则，见 F-14。",
+    "html": "<div class=\"px\">\n<div class=\"px-top\">\n  <div class=\"px-logo\">Demo <i>Brand<\/i><\/div>\n  <div class=\"px-tmenu\"><span>客户<\/span><span class=\"on\">人员<\/span><span>配置<\/span>\n    <span>财务<\/span><span>运营<\/span><\/div>\n  <div class=\"px-tright\"><span>示例客户A有限公司<\/span><div class=\"px-av\">运<\/div><\/div>\n<\/div><div class=\"px-body\">\n<div class=\"px-side\">\n  <div class=\"px-mi\">客户管理<\/div>\n  <div class=\"px-mi on\">人员管理<\/div>\n  <div class=\"px-mi sub on\">人员字段配置<\/div>\n  <div class=\"px-mi sub\">人员信息设置<\/div>\n  <div class=\"px-mi sub\">服务方类型<\/div>\n  <div class=\"px-mi\">账单管理<\/div>\n  <div class=\"px-mi\">模板客户<\/div>\n<\/div>\n<div class=\"px-main\">\n  <div class=\"px-crumb\">人员管理 <i>/<\/i> 人员字段配置<\/div>\n  <div class=\"px-h1\">人员字段配置 <span class=\"px-tag blue\">客户 DEMO_CUSTOMER_ID<\/span><\/div>\n  <div class=\"px-toolbar\">\n    <div class=\"px-in ph\">搜索字段名称<\/div>\n    <div class=\"px-sel\">全部分组<\/div>\n    <span class=\"sp\"><\/span>\n    <button class=\"px-btn\">引用模板客户配置<\/button>\n    <button class=\"px-btn pri\">+ 新增字段<\/button>\n  <\/div>\n  <div class=\"px-card\">\n    <div class=\"px-card-hd\">基本信息 <span class=\"px-tag\">12 个字段<\/span>\n      <span class=\"sp\"><\/span><button class=\"px-btn link\">+ 新增字段<\/button><\/div>\n    <table class=\"px-table\">\n      <tr><th class=\"w-l\">字段名称<\/th><th class=\"w-m\">字段类型<\/th><th class=\"w-s\">是否必填<\/th>\n        <th class=\"w-m\">客户可见<\/th><th class=\"w-s\">状态<\/th><th class=\"w-m\">操作<\/th><\/tr>\n      <tr><td>姓名<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>客户可填<\/td><td><span class=\"px-tag green\">启用<\/span><\/td><td><span class=\"px-btn link\">编辑<\/span><span class=\"px-btn link d\">停用<\/span><\/td><\/tr><tr><td>手机号<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>客户不可见<\/td><td><span class=\"px-tag green\">启用<\/span><\/td><td><span class=\"px-btn link\">编辑<\/span><span class=\"px-btn link d\">停用<\/span><\/td><\/tr><tr><td>出生日期<\/td><td><span class=\"px-tag\">日期<\/span><\/td><td>否<\/td><td>客户可填<\/td><td><span class=\"px-tag green\">启用<\/span><\/td><td><span class=\"px-btn link\">编辑<\/span><span class=\"px-btn link d\">停用<\/span><\/td><\/tr><tr><td>常用邮箱<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>否<\/td><td>客户可填<\/td><td><span class=\"px-tag gray\">停用<\/span><\/td><td><span class=\"px-btn link\">编辑<\/span><span class=\"px-btn link d\">停用<\/span><\/td><\/tr>\n    <\/table>\n  <\/div>\n  <div class=\"px-card\">\n    <div class=\"px-card-hd\">证件信息 <span class=\"px-tag\">9 个字段<\/span>\n      <span class=\"sp\"><\/span><button class=\"px-btn link\">+ 新增字段<\/button><\/div>\n    <table class=\"px-table\">\n      <tr><th class=\"w-l\">字段名称<\/th><th class=\"w-m\">字段类型<\/th><th class=\"w-s\">是否必填<\/th>\n        <th class=\"w-m\">客户可见<\/th><th class=\"w-s\">状态<\/th><th class=\"w-m\">操作<\/th><\/tr>\n      <tr><td>证件类型<\/td><td><span class=\"px-tag\">选项<\/span><\/td><td>是<\/td><td>客户可填<\/td><td><span class=\"px-tag green\">启用<\/span><\/td><td><span class=\"px-btn link\">编辑<\/span><span class=\"px-btn link d\">停用<\/span><\/td><\/tr><tr><td>证件号码<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>客户可填<\/td><td><span class=\"px-tag green\">启用<\/span><\/td><td><span class=\"px-btn link\">编辑<\/span><span class=\"px-btn link d\">停用<\/span><\/td><\/tr><tr><td>签发国家/地区<\/td><td><span class=\"px-tag\">国家·地区<\/span><\/td><td>是<\/td><td>客户不可见<\/td><td><span class=\"px-tag green\">启用<\/span><\/td><td><span class=\"px-btn link\">编辑<\/span><span class=\"px-btn link d\">停用<\/span><\/td><\/tr>\n    <\/table>\n  <\/div>\n  <div class=\"px-card\">\n    <div class=\"px-card-hd\">收款信息 <span class=\"px-tag\">7 个字段<\/span>\n      <span class=\"sp\"><\/span><button class=\"px-btn link\">+ 新增字段<\/button><\/div>\n    <table class=\"px-table\">\n      <tr><th class=\"w-l\">字段名称<\/th><th class=\"w-m\">字段类型<\/th><th class=\"w-s\">是否必填<\/th>\n        <th class=\"w-m\">客户可见<\/th><th class=\"w-s\">状态<\/th><th class=\"w-m\">操作<\/th><\/tr>\n      <tr><td>收款方式<\/td><td><span class=\"px-tag\">选项<\/span><\/td><td>是<\/td><td>客户可填<\/td><td><span class=\"px-tag green\">启用<\/span><\/td><td><span class=\"px-btn link\">编辑<\/span><span class=\"px-btn link d\">停用<\/span><\/td><\/tr><tr><td>开户行名称<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>否<\/td><td>客户可填<\/td><td><span class=\"px-tag green\">启用<\/span><\/td><td><span class=\"px-btn link\">编辑<\/span><span class=\"px-btn link d\">停用<\/span><\/td><\/tr><tr><td>收款币种<\/td><td><span class=\"px-tag\">币种<\/span><\/td><td>是<\/td><td>客户不可见<\/td><td><span class=\"px-tag green\">启用<\/span><\/td><td><span class=\"px-btn link\">编辑<\/span><span class=\"px-btn link d\">停用<\/span><\/td><\/tr>\n    <\/table>\n  <\/div>\n  <div class=\"px-pager\"><span>共 110 个字段 · 6 组<\/span><b>‹<\/b><b class=\"on\">1<\/b><b>2<\/b><b>3<\/b><b>›<\/b><\/div>\n<\/div><\/div><\/div>"
    },
    {
     "id": "P2",
     "name": "新增字段",
     "state": "第 1 步 · 基础信息",
-    "route": "/activity/formField/add?customerId=&groupId=",
+    "route": "/personManage/fieldSetting/add?customerId=&groupId=",
     "note": "字段类型只有 8 种：文本/数值/选项/日期/文件/国家·地区/币种/其他。「单选」「多选」是「选项」的子值，不是独立类型——见 F-01。",
-    "html": "<div class=\"px\">\n<div class=\"px-top\">\n  <div class=\"px-logo\">DEMO <i>ADMIN<\/i><\/div>\n  <div class=\"px-tmenu\"><span>主办方<\/span><span class=\"on\">报名者<\/span><span>配置<\/span>\n    <span>财务<\/span><span>运营<\/span><\/div>\n  <div class=\"px-tright\"><span>蓝湾科技有限公司<\/span><div class=\"px-av\">运<\/div><\/div>\n<\/div><div class=\"px-body\">\n<div class=\"px-side\">\n  <div class=\"px-mi\">主办方管理<\/div>\n  <div class=\"px-mi on\">报名管理<\/div>\n  <div class=\"px-mi sub on\">报名字段配置<\/div>\n  <div class=\"px-mi sub\">报名信息设置<\/div>\n  <div class=\"px-mi sub\">合作方类型<\/div>\n  <div class=\"px-mi\">账单管理<\/div>\n  <div class=\"px-mi\">模板主办方<\/div>\n<\/div>\n<div class=\"px-main\">\n  <div class=\"px-crumb\">报名管理 <i>/<\/i> 报名字段配置<\/div>\n  <div class=\"px-h1\">报名字段配置 <span class=\"px-tag blue\">主办方 300000000000001<\/span><\/div>\n  <div class=\"px-toolbar\">\n    <div class=\"px-in ph\">搜索字段名称<\/div>\n    <div class=\"px-sel\">全部分组<\/div>\n    <span class=\"sp\"><\/span>\n    <button class=\"px-btn pri\">+ 新增字段<\/button>\n  <\/div>\n  <div class=\"px-card\">\n    <div class=\"px-card-hd\">基本信息 <span class=\"px-tag\">12 个字段<\/span><\/div>\n    <table class=\"px-table\">\n      <tr><th class=\"w-l\">字段名称<\/th><th class=\"w-m\">字段类型<\/th><th class=\"w-s\">是否必填<\/th>\n        <th class=\"w-m\">主办方可见<\/th><th class=\"w-s\">状态<\/th><\/tr>\n      <tr><td>姓名<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>主办方可填<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n      <tr><td>手机号<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>主办方不可见<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n      <tr><td>出生日期<\/td><td><span class=\"px-tag\">日期<\/span><\/td><td>否<\/td><td>主办方可填<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n    <\/table>\n  <\/div>\n<\/div><\/div>\n  <div class=\"px-mask\"><div class=\"px-modal wide\"><div class=\"px-modal-hd\">新增字段<span class=\"px-tag blue\">第 1 步 / 共 2 步<\/span>\n    <span class=\"x\">✕<\/span><\/div><div class=\"px-modal-bd\">\n<div class=\"px-form c2\">\n  <div class=\"px-frow\"><div class=\"px-flabel\"><em>*<\/em>字段名称（中文）<\/div>\n    <div class=\"px-fctrl ph\">请输入，≤30 字<\/div><\/div>\n  <div class=\"px-frow\"><div class=\"px-flabel\"><em>*<\/em>字段名称（英文）<\/div>\n    <div class=\"px-fctrl ph\">Please input<\/div><\/div>\n  <div class=\"px-frow\"><div class=\"px-flabel\"><em>*<\/em>字段类型<\/div>\n    <div class=\"px-fctrl sel\">文本<\/div><\/div>\n  <div class=\"px-frow\"><div class=\"px-flabel\"><em>*<\/em>所属分组<\/div>\n    <div class=\"px-fctrl sel\">基本信息<\/div><\/div>\n  <div class=\"px-frow\"><div class=\"px-flabel\">占位提示（中文）<\/div>\n    <div class=\"px-fctrl ph\">选填<\/div><\/div>\n  <div class=\"px-frow\"><div class=\"px-flabel\">排序<\/div>\n    <div class=\"px-fctrl\">100<\/div><\/div>\n  <div class=\"px-frow full\"><div class=\"px-flabel\">字段说明<\/div>\n    <div class=\"px-fctrl area ph\">选填，展示在字段下方<\/div><\/div>\n<\/div>\n<div class=\"px-fhint\">字段名称不允许包含 <b>*<\/b> 和 <b>#<\/b>；在当前主办方维度内不能与已有字段重名，\n也不能与系统占用字段名重名（后者会报「{类型}：{名称}禁用」）。<\/div><\/div>\n    <div class=\"px-modal-ft\"><button class=\"px-btn\">取消<\/button><button class=\"px-btn pri\">下一步<\/button><\/div><\/div><\/div><\/div>"
+    "html": "<div class=\"px\">\n<div class=\"px-top\">\n  <div class=\"px-logo\">Demo <i>Brand<\/i><\/div>\n  <div class=\"px-tmenu\"><span>客户<\/span><span class=\"on\">人员<\/span><span>配置<\/span>\n    <span>财务<\/span><span>运营<\/span><\/div>\n  <div class=\"px-tright\"><span>示例客户A有限公司<\/span><div class=\"px-av\">运<\/div><\/div>\n<\/div><div class=\"px-body\">\n<div class=\"px-side\">\n  <div class=\"px-mi\">客户管理<\/div>\n  <div class=\"px-mi on\">人员管理<\/div>\n  <div class=\"px-mi sub on\">人员字段配置<\/div>\n  <div class=\"px-mi sub\">人员信息设置<\/div>\n  <div class=\"px-mi sub\">服务方类型<\/div>\n  <div class=\"px-mi\">账单管理<\/div>\n  <div class=\"px-mi\">模板客户<\/div>\n<\/div>\n<div class=\"px-main\">\n  <div class=\"px-crumb\">人员管理 <i>/<\/i> 人员字段配置<\/div>\n  <div class=\"px-h1\">人员字段配置 <span class=\"px-tag blue\">客户 DEMO_CUSTOMER_ID<\/span><\/div>\n  <div class=\"px-toolbar\">\n    <div class=\"px-in ph\">搜索字段名称<\/div>\n    <div class=\"px-sel\">全部分组<\/div>\n    <span class=\"sp\"><\/span>\n    <button class=\"px-btn pri\">+ 新增字段<\/button>\n  <\/div>\n  <div class=\"px-card\">\n    <div class=\"px-card-hd\">基本信息 <span class=\"px-tag\">12 个字段<\/span><\/div>\n    <table class=\"px-table\">\n      <tr><th class=\"w-l\">字段名称<\/th><th class=\"w-m\">字段类型<\/th><th class=\"w-s\">是否必填<\/th>\n        <th class=\"w-m\">客户可见<\/th><th class=\"w-s\">状态<\/th><\/tr>\n      <tr><td>姓名<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>客户可填<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n      <tr><td>手机号<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>客户不可见<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n      <tr><td>出生日期<\/td><td><span class=\"px-tag\">日期<\/span><\/td><td>否<\/td><td>客户可填<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n    <\/table>\n  <\/div>\n<\/div><\/div>\n  <div class=\"px-mask\"><div class=\"px-modal wide\"><div class=\"px-modal-hd\">新增字段<span class=\"px-tag blue\">第 1 步 / 共 2 步<\/span>\n    <span class=\"x\">✕<\/span><\/div><div class=\"px-modal-bd\">\n<div class=\"px-form c2\">\n  <div class=\"px-frow\"><div class=\"px-flabel\"><em>*<\/em>字段名称（中文）<\/div>\n    <div class=\"px-fctrl ph\">请输入，≤30 字<\/div><\/div>\n  <div class=\"px-frow\"><div class=\"px-flabel\"><em>*<\/em>字段名称（英文）<\/div>\n    <div class=\"px-fctrl ph\">Please input<\/div><\/div>\n  <div class=\"px-frow\"><div class=\"px-flabel\"><em>*<\/em>字段类型<\/div>\n    <div class=\"px-fctrl sel\">文本<\/div><\/div>\n  <div class=\"px-frow\"><div class=\"px-flabel\"><em>*<\/em>所属分组<\/div>\n    <div class=\"px-fctrl sel\">基本信息<\/div><\/div>\n  <div class=\"px-frow\"><div class=\"px-flabel\">占位提示（中文）<\/div>\n    <div class=\"px-fctrl ph\">选填<\/div><\/div>\n  <div class=\"px-frow\"><div class=\"px-flabel\">排序<\/div>\n    <div class=\"px-fctrl\">100<\/div><\/div>\n  <div class=\"px-frow full\"><div class=\"px-flabel\">字段说明<\/div>\n    <div class=\"px-fctrl area ph\">选填，展示在字段下方<\/div><\/div>\n<\/div>\n<div class=\"px-fhint\">字段名称不允许包含 <b>*<\/b> 和 <b>#<\/b>；在当前客户维度内不能与已有字段重名，\n也不能与系统占用字段名重名（后者会报「{类型}：{名称}禁用」）。<\/div><\/div>\n    <div class=\"px-modal-ft\"><button class=\"px-btn\">取消<\/button><button class=\"px-btn pri\">下一步<\/button><\/div><\/div><\/div><\/div>"
    },
    {
     "id": "P3",
     "name": "新增字段",
     "state": "第 2 步 · 其他设置",
-    "route": "/activity/formField/add?customerId=&groupId=",
-    "note": "「其他设置」整块在现有 PRD 里没有。填写方与后续两项互斥：填写方=主办方 → 显示「报名者端是否可见」；填写方=报名者 → 显示「是否需要主办方审核」——见 F-07 / R-OPS-FIELD-05。",
-    "html": "<div class=\"px\">\n<div class=\"px-top\">\n  <div class=\"px-logo\">DEMO <i>ADMIN<\/i><\/div>\n  <div class=\"px-tmenu\"><span>主办方<\/span><span class=\"on\">报名者<\/span><span>配置<\/span>\n    <span>财务<\/span><span>运营<\/span><\/div>\n  <div class=\"px-tright\"><span>蓝湾科技有限公司<\/span><div class=\"px-av\">运<\/div><\/div>\n<\/div><div class=\"px-body\">\n<div class=\"px-side\">\n  <div class=\"px-mi\">主办方管理<\/div>\n  <div class=\"px-mi on\">报名管理<\/div>\n  <div class=\"px-mi sub on\">报名字段配置<\/div>\n  <div class=\"px-mi sub\">报名信息设置<\/div>\n  <div class=\"px-mi sub\">合作方类型<\/div>\n  <div class=\"px-mi\">账单管理<\/div>\n  <div class=\"px-mi\">模板主办方<\/div>\n<\/div>\n<div class=\"px-main\">\n  <div class=\"px-crumb\">报名管理 <i>/<\/i> 报名字段配置<\/div>\n  <div class=\"px-h1\">报名字段配置 <span class=\"px-tag blue\">主办方 300000000000001<\/span><\/div>\n  <div class=\"px-toolbar\">\n    <div class=\"px-in ph\">搜索字段名称<\/div>\n    <div class=\"px-sel\">全部分组<\/div>\n    <span class=\"sp\"><\/span>\n    <button class=\"px-btn pri\">+ 新增字段<\/button>\n  <\/div>\n  <div class=\"px-card\">\n    <div class=\"px-card-hd\">基本信息 <span class=\"px-tag\">12 个字段<\/span><\/div>\n    <table class=\"px-table\">\n      <tr><th class=\"w-l\">字段名称<\/th><th class=\"w-m\">字段类型<\/th><th class=\"w-s\">是否必填<\/th>\n        <th class=\"w-m\">主办方可见<\/th><th class=\"w-s\">状态<\/th><\/tr>\n      <tr><td>姓名<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>主办方可填<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n      <tr><td>手机号<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>主办方不可见<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n      <tr><td>出生日期<\/td><td><span class=\"px-tag\">日期<\/span><\/td><td>否<\/td><td>主办方可填<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n    <\/table>\n  <\/div>\n<\/div><\/div>\n  <div class=\"px-mask\"><div class=\"px-modal wide\"><div class=\"px-modal-hd\">新增字段<span class=\"px-tag blue\">第 2 步 / 共 2 步<\/span>\n    <span class=\"x\">✕<\/span><\/div><div class=\"px-modal-bd\">\n<div class=\"px-tabs\"><span class=\"px-tab on\">其他设置<\/span><span class=\"px-tab\">特殊命名<\/span><\/div>\n<div class=\"px-form c2\">\n  <div class=\"px-frow\"><div class=\"px-flabel\"><em>*<\/em>填写方<\/div>\n    <div class=\"px-fctrl sel\">主办方填写<\/div>\n    <div class=\"px-fhint\">选「主办方填写」→ 出现「报名者端是否可见」；选「报名者填写」→ 出现「是否需要主办方审核」<\/div><\/div>\n  <div class=\"px-frow\"><div class=\"px-flabel\">报名者端是否可见<\/div>\n    <div class=\"px-fctrl\"><span class=\"px-sw on\"><\/span><\/div><\/div>\n  <div class=\"px-frow\"><div class=\"px-flabel\">强制填写<\/div>\n    <div class=\"px-fctrl\"><span class=\"px-sw\"><\/span><\/div><\/div>\n  <div class=\"px-frow\"><div class=\"px-flabel\">是否需要主办方审核<\/div>\n    <div class=\"px-fctrl\"><span class=\"px-tag\">不显示（填写方=主办方）<\/span><\/div><\/div>\n<\/div>\n<div class=\"px-fhint\">这一块在现有 PRD 里整块缺失。四个开关的值不是运营手选的，\n而是由主办方端权限三档反推：hide → admin/隐藏/非强制/不审核；只看 → …（真值表见核查 F-08）。<\/div><\/div>\n    <div class=\"px-modal-ft\"><button class=\"px-btn\">上一步<\/button><button class=\"px-btn\">存草稿<\/button><button class=\"px-btn pri\">提交<\/button><\/div><\/div><\/div><\/div>"
+    "route": "/personManage/fieldSetting/add?customerId=&groupId=",
+    "note": "「其他设置」整块在现有 PRD 里没有。填写方与后续两项互斥：填写方=客户 → 显示「人员端是否可见」；填写方=人员 → 显示「是否需要客户审核」——见 F-07 / R-OPS-FIELD-05。",
+    "html": "<div class=\"px\">\n<div class=\"px-top\">\n  <div class=\"px-logo\">Demo <i>Brand<\/i><\/div>\n  <div class=\"px-tmenu\"><span>客户<\/span><span class=\"on\">人员<\/span><span>配置<\/span>\n    <span>财务<\/span><span>运营<\/span><\/div>\n  <div class=\"px-tright\"><span>示例客户A有限公司<\/span><div class=\"px-av\">运<\/div><\/div>\n<\/div><div class=\"px-body\">\n<div class=\"px-side\">\n  <div class=\"px-mi\">客户管理<\/div>\n  <div class=\"px-mi on\">人员管理<\/div>\n  <div class=\"px-mi sub on\">人员字段配置<\/div>\n  <div class=\"px-mi sub\">人员信息设置<\/div>\n  <div class=\"px-mi sub\">服务方类型<\/div>\n  <div class=\"px-mi\">账单管理<\/div>\n  <div class=\"px-mi\">模板客户<\/div>\n<\/div>\n<div class=\"px-main\">\n  <div class=\"px-crumb\">人员管理 <i>/<\/i> 人员字段配置<\/div>\n  <div class=\"px-h1\">人员字段配置 <span class=\"px-tag blue\">客户 DEMO_CUSTOMER_ID<\/span><\/div>\n  <div class=\"px-toolbar\">\n    <div class=\"px-in ph\">搜索字段名称<\/div>\n    <div class=\"px-sel\">全部分组<\/div>\n    <span class=\"sp\"><\/span>\n    <button class=\"px-btn pri\">+ 新增字段<\/button>\n  <\/div>\n  <div class=\"px-card\">\n    <div class=\"px-card-hd\">基本信息 <span class=\"px-tag\">12 个字段<\/span><\/div>\n    <table class=\"px-table\">\n      <tr><th class=\"w-l\">字段名称<\/th><th class=\"w-m\">字段类型<\/th><th class=\"w-s\">是否必填<\/th>\n        <th class=\"w-m\">客户可见<\/th><th class=\"w-s\">状态<\/th><\/tr>\n      <tr><td>姓名<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>客户可填<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n      <tr><td>手机号<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>客户不可见<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n      <tr><td>出生日期<\/td><td><span class=\"px-tag\">日期<\/span><\/td><td>否<\/td><td>客户可填<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n    <\/table>\n  <\/div>\n<\/div><\/div>\n  <div class=\"px-mask\"><div class=\"px-modal wide\"><div class=\"px-modal-hd\">新增字段<span class=\"px-tag blue\">第 2 步 / 共 2 步<\/span>\n    <span class=\"x\">✕<\/span><\/div><div class=\"px-modal-bd\">\n<div class=\"px-tabs\"><span class=\"px-tab on\">其他设置<\/span><span class=\"px-tab\">特殊命名<\/span><\/div>\n<div class=\"px-form c2\">\n  <div class=\"px-frow\"><div class=\"px-flabel\"><em>*<\/em>填写方<\/div>\n    <div class=\"px-fctrl sel\">客户填写<\/div>\n    <div class=\"px-fhint\">选「客户填写」→ 出现「人员端是否可见」；选「人员填写」→ 出现「是否需要客户审核」<\/div><\/div>\n  <div class=\"px-frow\"><div class=\"px-flabel\">人员端是否可见<\/div>\n    <div class=\"px-fctrl\"><span class=\"px-sw on\"><\/span><\/div><\/div>\n  <div class=\"px-frow\"><div class=\"px-flabel\">强制填写<\/div>\n    <div class=\"px-fctrl\"><span class=\"px-sw\"><\/span><\/div><\/div>\n  <div class=\"px-frow\"><div class=\"px-flabel\">是否需要客户审核<\/div>\n    <div class=\"px-fctrl\"><span class=\"px-tag\">不显示（填写方=客户）<\/span><\/div><\/div>\n<\/div>\n<div class=\"px-fhint\">这一块在现有 PRD 里整块缺失。四个开关的值不是运营手选的，\n而是由企业端权限三档反推：hide → admin/隐藏/非强制/不审核；只看 → …（真值表见核查 F-08）。<\/div><\/div>\n    <div class=\"px-modal-ft\"><button class=\"px-btn\">上一步<\/button><button class=\"px-btn\">存草稿<\/button><button class=\"px-btn pri\">提交<\/button><\/div><\/div><\/div><\/div>"
    },
    {
     "id": "P4",
     "name": "编辑字段",
     "state": "第 1 步 · 值已填",
-    "route": "/activity/formField/edit/:id?customerId=",
+    "route": "/personManage/fieldSetting/edit/:id?customerId=",
     "note": "与新增同构，差异只有两点：标题是「编辑字段」、各控件带原值。注意后端 /save 与 /edit 是同一个方法且强制置「启用」——见 F-24。",
-    "html": "<div class=\"px\">\n<div class=\"px-top\">\n  <div class=\"px-logo\">DEMO <i>ADMIN<\/i><\/div>\n  <div class=\"px-tmenu\"><span>主办方<\/span><span class=\"on\">报名者<\/span><span>配置<\/span>\n    <span>财务<\/span><span>运营<\/span><\/div>\n  <div class=\"px-tright\"><span>蓝湾科技有限公司<\/span><div class=\"px-av\">运<\/div><\/div>\n<\/div><div class=\"px-body\">\n<div class=\"px-side\">\n  <div class=\"px-mi\">主办方管理<\/div>\n  <div class=\"px-mi on\">报名管理<\/div>\n  <div class=\"px-mi sub on\">报名字段配置<\/div>\n  <div class=\"px-mi sub\">报名信息设置<\/div>\n  <div class=\"px-mi sub\">合作方类型<\/div>\n  <div class=\"px-mi\">账单管理<\/div>\n  <div class=\"px-mi\">模板主办方<\/div>\n<\/div>\n<div class=\"px-main\">\n  <div class=\"px-crumb\">报名管理 <i>/<\/i> 报名字段配置<\/div>\n  <div class=\"px-h1\">报名字段配置 <span class=\"px-tag blue\">主办方 300000000000001<\/span><\/div>\n  <div class=\"px-toolbar\">\n    <div class=\"px-in ph\">搜索字段名称<\/div>\n    <div class=\"px-sel\">全部分组<\/div>\n    <span class=\"sp\"><\/span>\n    <button class=\"px-btn pri\">+ 新增字段<\/button>\n  <\/div>\n  <div class=\"px-card\">\n    <div class=\"px-card-hd\">基本信息 <span class=\"px-tag\">12 个字段<\/span><\/div>\n    <table class=\"px-table\">\n      <tr><th class=\"w-l\">字段名称<\/th><th class=\"w-m\">字段类型<\/th><th class=\"w-s\">是否必填<\/th>\n        <th class=\"w-m\">主办方可见<\/th><th class=\"w-s\">状态<\/th><\/tr>\n      <tr><td>姓名<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>主办方可填<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n      <tr><td>手机号<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>主办方不可见<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n      <tr><td>出生日期<\/td><td><span class=\"px-tag\">日期<\/span><\/td><td>否<\/td><td>主办方可填<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n    <\/table>\n  <\/div>\n<\/div><\/div>\n  <div class=\"px-mask\"><div class=\"px-modal wide\"><div class=\"px-modal-hd\">编辑字段<span class=\"px-tag blue\">第 1 步 / 共 2 步<\/span>\n    <span class=\"x\">✕<\/span><\/div><div class=\"px-modal-bd\">\n<div class=\"px-form c2\">\n  <div class=\"px-frow\"><div class=\"px-flabel\"><em>*<\/em>字段名称（中文）<\/div>\n    <div class=\"px-fctrl\">姓名<\/div><\/div>\n  <div class=\"px-frow\"><div class=\"px-flabel\"><em>*<\/em>字段名称（英文）<\/div>\n    <div class=\"px-fctrl\">Name<\/div><\/div>\n  <div class=\"px-frow\"><div class=\"px-flabel\"><em>*<\/em>字段类型<\/div>\n    <div class=\"px-fctrl sel\">文本<\/div><\/div>\n  <div class=\"px-frow\"><div class=\"px-flabel\"><em>*<\/em>所属分组<\/div>\n    <div class=\"px-fctrl sel\">基本信息<\/div><\/div>\n  <div class=\"px-frow\"><div class=\"px-flabel\">占位提示（中文）<\/div>\n    <div class=\"px-fctrl\">请输入姓名<\/div><\/div>\n  <div class=\"px-frow\"><div class=\"px-flabel\">排序<\/div>\n    <div class=\"px-fctrl\">100<\/div><\/div>\n  <div class=\"px-frow full\"><div class=\"px-flabel\">字段说明<\/div>\n    <div class=\"px-fctrl area ph\">选填，展示在字段下方<\/div><\/div>\n<\/div>\n<div class=\"px-fhint\">字段名称不允许包含 <b>*<\/b> 和 <b>#<\/b>；在当前主办方维度内不能与已有字段重名，\n也不能与系统占用字段名重名（后者会报「{类型}：{名称}禁用」）。<\/div><\/div>\n    <div class=\"px-modal-ft\"><button class=\"px-btn\">取消<\/button><button class=\"px-btn pri\">下一步<\/button><\/div><\/div><\/div><\/div>"
+    "html": "<div class=\"px\">\n<div class=\"px-top\">\n  <div class=\"px-logo\">Demo <i>Brand<\/i><\/div>\n  <div class=\"px-tmenu\"><span>客户<\/span><span class=\"on\">人员<\/span><span>配置<\/span>\n    <span>财务<\/span><span>运营<\/span><\/div>\n  <div class=\"px-tright\"><span>示例客户A有限公司<\/span><div class=\"px-av\">运<\/div><\/div>\n<\/div><div class=\"px-body\">\n<div class=\"px-side\">\n  <div class=\"px-mi\">客户管理<\/div>\n  <div class=\"px-mi on\">人员管理<\/div>\n  <div class=\"px-mi sub on\">人员字段配置<\/div>\n  <div class=\"px-mi sub\">人员信息设置<\/div>\n  <div class=\"px-mi sub\">服务方类型<\/div>\n  <div class=\"px-mi\">账单管理<\/div>\n  <div class=\"px-mi\">模板客户<\/div>\n<\/div>\n<div class=\"px-main\">\n  <div class=\"px-crumb\">人员管理 <i>/<\/i> 人员字段配置<\/div>\n  <div class=\"px-h1\">人员字段配置 <span class=\"px-tag blue\">客户 DEMO_CUSTOMER_ID<\/span><\/div>\n  <div class=\"px-toolbar\">\n    <div class=\"px-in ph\">搜索字段名称<\/div>\n    <div class=\"px-sel\">全部分组<\/div>\n    <span class=\"sp\"><\/span>\n    <button class=\"px-btn pri\">+ 新增字段<\/button>\n  <\/div>\n  <div class=\"px-card\">\n    <div class=\"px-card-hd\">基本信息 <span class=\"px-tag\">12 个字段<\/span><\/div>\n    <table class=\"px-table\">\n      <tr><th class=\"w-l\">字段名称<\/th><th class=\"w-m\">字段类型<\/th><th class=\"w-s\">是否必填<\/th>\n        <th class=\"w-m\">客户可见<\/th><th class=\"w-s\">状态<\/th><\/tr>\n      <tr><td>姓名<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>客户可填<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n      <tr><td>手机号<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>客户不可见<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n      <tr><td>出生日期<\/td><td><span class=\"px-tag\">日期<\/span><\/td><td>否<\/td><td>客户可填<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n    <\/table>\n  <\/div>\n<\/div><\/div>\n  <div class=\"px-mask\"><div class=\"px-modal wide\"><div class=\"px-modal-hd\">编辑字段<span class=\"px-tag blue\">第 1 步 / 共 2 步<\/span>\n    <span class=\"x\">✕<\/span><\/div><div class=\"px-modal-bd\">\n<div class=\"px-form c2\">\n  <div class=\"px-frow\"><div class=\"px-flabel\"><em>*<\/em>字段名称（中文）<\/div>\n    <div class=\"px-fctrl\">姓名<\/div><\/div>\n  <div class=\"px-frow\"><div class=\"px-flabel\"><em>*<\/em>字段名称（英文）<\/div>\n    <div class=\"px-fctrl\">Name<\/div><\/div>\n  <div class=\"px-frow\"><div class=\"px-flabel\"><em>*<\/em>字段类型<\/div>\n    <div class=\"px-fctrl sel\">文本<\/div><\/div>\n  <div class=\"px-frow\"><div class=\"px-flabel\"><em>*<\/em>所属分组<\/div>\n    <div class=\"px-fctrl sel\">基本信息<\/div><\/div>\n  <div class=\"px-frow\"><div class=\"px-flabel\">占位提示（中文）<\/div>\n    <div class=\"px-fctrl\">请输入姓名<\/div><\/div>\n  <div class=\"px-frow\"><div class=\"px-flabel\">排序<\/div>\n    <div class=\"px-fctrl\">100<\/div><\/div>\n  <div class=\"px-frow full\"><div class=\"px-flabel\">字段说明<\/div>\n    <div class=\"px-fctrl area ph\">选填，展示在字段下方<\/div><\/div>\n<\/div>\n<div class=\"px-fhint\">字段名称不允许包含 <b>*<\/b> 和 <b>#<\/b>；在当前客户维度内不能与已有字段重名，\n也不能与系统占用字段名重名（后者会报「{类型}：{名称}禁用」）。<\/div><\/div>\n    <div class=\"px-modal-ft\"><button class=\"px-btn\">取消<\/button><button class=\"px-btn pri\">下一步<\/button><\/div><\/div><\/div><\/div>"
    },
    {
     "id": "P5",
     "name": "字段详情",
     "state": "只读",
-    "route": "/activity/formField/details/:id?customerId=",
+    "route": "/personManage/fieldSetting/details/:id?customerId=",
     "note": "只读展示，无编辑入口。系统字段能否编辑各源说法不一——见 F-06。",
-    "html": "<div class=\"px\">\n<div class=\"px-top\">\n  <div class=\"px-logo\">DEMO <i>ADMIN<\/i><\/div>\n  <div class=\"px-tmenu\"><span>主办方<\/span><span class=\"on\">报名者<\/span><span>配置<\/span>\n    <span>财务<\/span><span>运营<\/span><\/div>\n  <div class=\"px-tright\"><span>蓝湾科技有限公司<\/span><div class=\"px-av\">运<\/div><\/div>\n<\/div><div class=\"px-body\">\n<div class=\"px-side\">\n  <div class=\"px-mi\">主办方管理<\/div>\n  <div class=\"px-mi on\">报名管理<\/div>\n  <div class=\"px-mi sub on\">报名字段配置<\/div>\n  <div class=\"px-mi sub\">报名信息设置<\/div>\n  <div class=\"px-mi sub\">合作方类型<\/div>\n  <div class=\"px-mi\">账单管理<\/div>\n  <div class=\"px-mi\">模板主办方<\/div>\n<\/div>\n<div class=\"px-main\">\n  <div class=\"px-crumb\">报名管理 <i>/<\/i> 报名字段配置<\/div>\n  <div class=\"px-h1\">报名字段配置 <span class=\"px-tag blue\">主办方 300000000000001<\/span><\/div>\n  <div class=\"px-toolbar\">\n    <div class=\"px-in ph\">搜索字段名称<\/div>\n    <div class=\"px-sel\">全部分组<\/div>\n    <span class=\"sp\"><\/span>\n    <button class=\"px-btn pri\">+ 新增字段<\/button>\n  <\/div>\n  <div class=\"px-card\">\n    <div class=\"px-card-hd\">基本信息 <span class=\"px-tag\">12 个字段<\/span><\/div>\n    <table class=\"px-table\">\n      <tr><th class=\"w-l\">字段名称<\/th><th class=\"w-m\">字段类型<\/th><th class=\"w-s\">是否必填<\/th>\n        <th class=\"w-m\">主办方可见<\/th><th class=\"w-s\">状态<\/th><\/tr>\n      <tr><td>姓名<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>主办方可填<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n      <tr><td>手机号<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>主办方不可见<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n      <tr><td>出生日期<\/td><td><span class=\"px-tag\">日期<\/span><\/td><td>否<\/td><td>主办方可填<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n    <\/table>\n  <\/div>\n<\/div><\/div>\n  <div class=\"px-mask\"><div class=\"px-modal wide\"><div class=\"px-modal-hd\">字段详情\n    <span class=\"x\">✕<\/span><\/div><div class=\"px-modal-bd\">\n<table class=\"px-table\">\n  <tr><th class=\"w-l\">项目<\/th><th>值<\/th><\/tr>\n  <tr><td>字段名称（中 / 英）<\/td><td>姓名 / Name<\/td><\/tr>\n  <tr><td>字段类型<\/td><td><span class=\"px-tag\">文本<\/span><\/td><\/tr>\n  <tr><td>所属分组<\/td><td>基本信息<\/td><\/tr>\n  <tr><td>主办方端权限<\/td><td><span class=\"px-tag blue\">可查看可填写<\/span><\/td><\/tr>\n  <tr><td>填写方<\/td><td>主办方填写<\/td><\/tr>\n  <tr><td>报名者端可见<\/td><td><span class=\"px-tag green\">是<\/span><\/td><\/tr>\n  <tr><td>状态<\/td><td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n  <tr><td>创建 / 修改<\/td><td>2026-03-11 10:22 · 运营 张某<\/td><\/tr>\n<\/table>\n<div class=\"px-fhint\">系统字段在本页只读；企业自定义字段可编辑——这一条多个来源说法不一，见核查 F-06。<\/div><\/div>\n    <div class=\"px-modal-ft\"><button class=\"px-btn\">关闭<\/button><\/div><\/div><\/div><\/div>"
+    "html": "<div class=\"px\">\n<div class=\"px-top\">\n  <div class=\"px-logo\">Demo <i>Brand<\/i><\/div>\n  <div class=\"px-tmenu\"><span>客户<\/span><span class=\"on\">人员<\/span><span>配置<\/span>\n    <span>财务<\/span><span>运营<\/span><\/div>\n  <div class=\"px-tright\"><span>示例客户A有限公司<\/span><div class=\"px-av\">运<\/div><\/div>\n<\/div><div class=\"px-body\">\n<div class=\"px-side\">\n  <div class=\"px-mi\">客户管理<\/div>\n  <div class=\"px-mi on\">人员管理<\/div>\n  <div class=\"px-mi sub on\">人员字段配置<\/div>\n  <div class=\"px-mi sub\">人员信息设置<\/div>\n  <div class=\"px-mi sub\">服务方类型<\/div>\n  <div class=\"px-mi\">账单管理<\/div>\n  <div class=\"px-mi\">模板客户<\/div>\n<\/div>\n<div class=\"px-main\">\n  <div class=\"px-crumb\">人员管理 <i>/<\/i> 人员字段配置<\/div>\n  <div class=\"px-h1\">人员字段配置 <span class=\"px-tag blue\">客户 DEMO_CUSTOMER_ID<\/span><\/div>\n  <div class=\"px-toolbar\">\n    <div class=\"px-in ph\">搜索字段名称<\/div>\n    <div class=\"px-sel\">全部分组<\/div>\n    <span class=\"sp\"><\/span>\n    <button class=\"px-btn pri\">+ 新增字段<\/button>\n  <\/div>\n  <div class=\"px-card\">\n    <div class=\"px-card-hd\">基本信息 <span class=\"px-tag\">12 个字段<\/span><\/div>\n    <table class=\"px-table\">\n      <tr><th class=\"w-l\">字段名称<\/th><th class=\"w-m\">字段类型<\/th><th class=\"w-s\">是否必填<\/th>\n        <th class=\"w-m\">客户可见<\/th><th class=\"w-s\">状态<\/th><\/tr>\n      <tr><td>姓名<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>客户可填<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n      <tr><td>手机号<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>客户不可见<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n      <tr><td>出生日期<\/td><td><span class=\"px-tag\">日期<\/span><\/td><td>否<\/td><td>客户可填<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n    <\/table>\n  <\/div>\n<\/div><\/div>\n  <div class=\"px-mask\"><div class=\"px-modal wide\"><div class=\"px-modal-hd\">字段详情\n    <span class=\"x\">✕<\/span><\/div><div class=\"px-modal-bd\">\n<table class=\"px-table\">\n  <tr><th class=\"w-l\">项目<\/th><th>值<\/th><\/tr>\n  <tr><td>字段名称（中 / 英）<\/td><td>姓名 / Name<\/td><\/tr>\n  <tr><td>字段类型<\/td><td><span class=\"px-tag\">文本<\/span><\/td><\/tr>\n  <tr><td>所属分组<\/td><td>基本信息<\/td><\/tr>\n  <tr><td>企业端权限<\/td><td><span class=\"px-tag blue\">可查看可填写<\/span><\/td><\/tr>\n  <tr><td>填写方<\/td><td>客户填写<\/td><\/tr>\n  <tr><td>人员端可见<\/td><td><span class=\"px-tag green\">是<\/span><\/td><\/tr>\n  <tr><td>状态<\/td><td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n  <tr><td>创建 / 修改<\/td><td>2026-03-11 10:22 · 运营 张某<\/td><\/tr>\n<\/table>\n<div class=\"px-fhint\">系统字段在本页只读；企业自定义字段可编辑——这一条多个来源说法不一，见核查 F-06。<\/div><\/div>\n    <div class=\"px-modal-ft\"><button class=\"px-btn\">关闭<\/button><\/div><\/div><\/div><\/div>"
    },
    {
     "id": "P6",
     "name": "新增/编辑分组",
     "state": "弹窗",
-    "route": "组件 Ce（formField/list chunk 内）",
+    "route": "组件 Ce（fieldSetting/list chunk 内）",
     "note": "分组是三类五种固定组，不可展开收起——见 F-13。",
-    "html": "<div class=\"px\">\n<div class=\"px-top\">\n  <div class=\"px-logo\">DEMO <i>ADMIN<\/i><\/div>\n  <div class=\"px-tmenu\"><span>主办方<\/span><span class=\"on\">报名者<\/span><span>配置<\/span>\n    <span>财务<\/span><span>运营<\/span><\/div>\n  <div class=\"px-tright\"><span>蓝湾科技有限公司<\/span><div class=\"px-av\">运<\/div><\/div>\n<\/div><div class=\"px-body\">\n<div class=\"px-side\">\n  <div class=\"px-mi\">主办方管理<\/div>\n  <div class=\"px-mi on\">报名管理<\/div>\n  <div class=\"px-mi sub on\">报名字段配置<\/div>\n  <div class=\"px-mi sub\">报名信息设置<\/div>\n  <div class=\"px-mi sub\">合作方类型<\/div>\n  <div class=\"px-mi\">账单管理<\/div>\n  <div class=\"px-mi\">模板主办方<\/div>\n<\/div>\n<div class=\"px-main\">\n  <div class=\"px-crumb\">报名管理 <i>/<\/i> 报名字段配置<\/div>\n  <div class=\"px-h1\">报名字段配置 <span class=\"px-tag blue\">主办方 300000000000001<\/span><\/div>\n  <div class=\"px-toolbar\">\n    <div class=\"px-in ph\">搜索字段名称<\/div>\n    <div class=\"px-sel\">全部分组<\/div>\n    <span class=\"sp\"><\/span>\n    <button class=\"px-btn pri\">+ 新增字段<\/button>\n  <\/div>\n  <div class=\"px-card\">\n    <div class=\"px-card-hd\">基本信息 <span class=\"px-tag\">12 个字段<\/span><\/div>\n    <table class=\"px-table\">\n      <tr><th class=\"w-l\">字段名称<\/th><th class=\"w-m\">字段类型<\/th><th class=\"w-s\">是否必填<\/th>\n        <th class=\"w-m\">主办方可见<\/th><th class=\"w-s\">状态<\/th><\/tr>\n      <tr><td>姓名<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>主办方可填<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n      <tr><td>手机号<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>主办方不可见<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n      <tr><td>出生日期<\/td><td><span class=\"px-tag\">日期<\/span><\/td><td>否<\/td><td>主办方可填<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n    <\/table>\n  <\/div>\n<\/div><\/div>\n  <div class=\"px-mask\"><div class=\"px-modal mini\"><div class=\"px-modal-hd\">新增分组\n    <span class=\"x\">✕<\/span><\/div><div class=\"px-modal-bd\">\n<div class=\"px-form c2\">\n  <div class=\"px-frow\"><div class=\"px-flabel\"><em>*<\/em>分组名称（中文）<\/div>\n    <div class=\"px-fctrl ph\">请输入<\/div><\/div>\n  <div class=\"px-frow\"><div class=\"px-flabel\"><em>*<\/em>分组名称（英文）<\/div>\n    <div class=\"px-fctrl ph\">Please input<\/div><\/div>\n  <div class=\"px-frow\"><div class=\"px-flabel\">排序<\/div><div class=\"px-fctrl\">10<\/div><\/div>\n<\/div>\n<div class=\"px-fhint\">分组是三类五种固定组，不可展开收起——见核查 F-13。<\/div><\/div>\n    <div class=\"px-modal-ft\"><button class=\"px-btn\">取消<\/button><button class=\"px-btn pri\">确定<\/button><\/div><\/div><\/div><\/div>"
+    "html": "<div class=\"px\">\n<div class=\"px-top\">\n  <div class=\"px-logo\">Demo <i>Brand<\/i><\/div>\n  <div class=\"px-tmenu\"><span>客户<\/span><span class=\"on\">人员<\/span><span>配置<\/span>\n    <span>财务<\/span><span>运营<\/span><\/div>\n  <div class=\"px-tright\"><span>示例客户A有限公司<\/span><div class=\"px-av\">运<\/div><\/div>\n<\/div><div class=\"px-body\">\n<div class=\"px-side\">\n  <div class=\"px-mi\">客户管理<\/div>\n  <div class=\"px-mi on\">人员管理<\/div>\n  <div class=\"px-mi sub on\">人员字段配置<\/div>\n  <div class=\"px-mi sub\">人员信息设置<\/div>\n  <div class=\"px-mi sub\">服务方类型<\/div>\n  <div class=\"px-mi\">账单管理<\/div>\n  <div class=\"px-mi\">模板客户<\/div>\n<\/div>\n<div class=\"px-main\">\n  <div class=\"px-crumb\">人员管理 <i>/<\/i> 人员字段配置<\/div>\n  <div class=\"px-h1\">人员字段配置 <span class=\"px-tag blue\">客户 DEMO_CUSTOMER_ID<\/span><\/div>\n  <div class=\"px-toolbar\">\n    <div class=\"px-in ph\">搜索字段名称<\/div>\n    <div class=\"px-sel\">全部分组<\/div>\n    <span class=\"sp\"><\/span>\n    <button class=\"px-btn pri\">+ 新增字段<\/button>\n  <\/div>\n  <div class=\"px-card\">\n    <div class=\"px-card-hd\">基本信息 <span class=\"px-tag\">12 个字段<\/span><\/div>\n    <table class=\"px-table\">\n      <tr><th class=\"w-l\">字段名称<\/th><th class=\"w-m\">字段类型<\/th><th class=\"w-s\">是否必填<\/th>\n        <th class=\"w-m\">客户可见<\/th><th class=\"w-s\">状态<\/th><\/tr>\n      <tr><td>姓名<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>客户可填<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n      <tr><td>手机号<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>客户不可见<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n      <tr><td>出生日期<\/td><td><span class=\"px-tag\">日期<\/span><\/td><td>否<\/td><td>客户可填<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n    <\/table>\n  <\/div>\n<\/div><\/div>\n  <div class=\"px-mask\"><div class=\"px-modal mini\"><div class=\"px-modal-hd\">新增分组\n    <span class=\"x\">✕<\/span><\/div><div class=\"px-modal-bd\">\n<div class=\"px-form c2\">\n  <div class=\"px-frow\"><div class=\"px-flabel\"><em>*<\/em>分组名称（中文）<\/div>\n    <div class=\"px-fctrl ph\">请输入<\/div><\/div>\n  <div class=\"px-frow\"><div class=\"px-flabel\"><em>*<\/em>分组名称（英文）<\/div>\n    <div class=\"px-fctrl ph\">Please input<\/div><\/div>\n  <div class=\"px-frow\"><div class=\"px-flabel\">排序<\/div><div class=\"px-fctrl\">10<\/div><\/div>\n<\/div>\n<div class=\"px-fhint\">分组是三类五种固定组，不可展开收起——见核查 F-13。<\/div><\/div>\n    <div class=\"px-modal-ft\"><button class=\"px-btn\">取消<\/button><button class=\"px-btn pri\">确定<\/button><\/div><\/div><\/div><\/div>"
    },
    {
     "id": "P7",
-    "name": "引用模板配置",
+    "name": "引用模板客户配置",
     "state": "弹窗",
     "route": "referenceTemplateConfigurationModal",
-    "note": "新主办方按模板主办方的分组 + 字段一次性生成，不用逐个加——见 F-17。",
-    "html": "<div class=\"px\">\n<div class=\"px-top\">\n  <div class=\"px-logo\">DEMO <i>ADMIN<\/i><\/div>\n  <div class=\"px-tmenu\"><span>主办方<\/span><span class=\"on\">报名者<\/span><span>配置<\/span>\n    <span>财务<\/span><span>运营<\/span><\/div>\n  <div class=\"px-tright\"><span>蓝湾科技有限公司<\/span><div class=\"px-av\">运<\/div><\/div>\n<\/div><div class=\"px-body\">\n<div class=\"px-side\">\n  <div class=\"px-mi\">主办方管理<\/div>\n  <div class=\"px-mi on\">报名管理<\/div>\n  <div class=\"px-mi sub on\">报名字段配置<\/div>\n  <div class=\"px-mi sub\">报名信息设置<\/div>\n  <div class=\"px-mi sub\">合作方类型<\/div>\n  <div class=\"px-mi\">账单管理<\/div>\n  <div class=\"px-mi\">模板主办方<\/div>\n<\/div>\n<div class=\"px-main\">\n  <div class=\"px-crumb\">报名管理 <i>/<\/i> 报名字段配置<\/div>\n  <div class=\"px-h1\">报名字段配置 <span class=\"px-tag blue\">主办方 300000000000001<\/span><\/div>\n  <div class=\"px-toolbar\">\n    <div class=\"px-in ph\">搜索字段名称<\/div>\n    <div class=\"px-sel\">全部分组<\/div>\n    <span class=\"sp\"><\/span>\n    <button class=\"px-btn pri\">+ 新增字段<\/button>\n  <\/div>\n  <div class=\"px-card\">\n    <div class=\"px-card-hd\">基本信息 <span class=\"px-tag\">12 个字段<\/span><\/div>\n    <table class=\"px-table\">\n      <tr><th class=\"w-l\">字段名称<\/th><th class=\"w-m\">字段类型<\/th><th class=\"w-s\">是否必填<\/th>\n        <th class=\"w-m\">主办方可见<\/th><th class=\"w-s\">状态<\/th><\/tr>\n      <tr><td>姓名<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>主办方可填<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n      <tr><td>手机号<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>主办方不可见<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n      <tr><td>出生日期<\/td><td><span class=\"px-tag\">日期<\/span><\/td><td>否<\/td><td>主办方可填<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n    <\/table>\n  <\/div>\n<\/div><\/div>\n  <div class=\"px-mask\"><div class=\"px-modal wide\"><div class=\"px-modal-hd\">引用模板配置\n    <span class=\"x\">✕<\/span><\/div><div class=\"px-modal-bd\">\n<div class=\"px-toolbar\"><div class=\"px-in ph\">搜索模板主办方<\/div>\n  <span class=\"sp\"><\/span><span class=\"px-fhint\">选中后按该主办方的分组 + 字段生成本主办方配置<\/span><\/div>\n<table class=\"px-table\">\n  <tr><th class=\"w-s\">选择<\/th><th class=\"w-xl\">模板主办方<\/th><th class=\"w-m\">活动形式<\/th>\n    <th class=\"w-m\">票种<\/th><th class=\"w-s\">字段数<\/th><\/tr>\n  <tr><td><span class=\"px-chk on\"><\/span><\/td><td>上海 A 文化传播有限公司<\/td><td>上海<\/td>\n    <td>线上直播<\/td><td>96<\/td><\/tr>\n  <tr><td><span class=\"px-chk\"><\/span><\/td><td>深圳 B 教育科技有限公司<\/td><td>深圳<\/td>\n    <td>线下培训<\/td><td>88<\/td><\/tr>\n  <tr><td><span class=\"px-chk\"><\/span><\/td><td>杭州 C 会展服务有限公司<\/td><td>杭州<\/td>\n    <td>线上直播 + 线下培训<\/td><td>112<\/td><\/tr>\n<\/table><\/div>\n    <div class=\"px-modal-ft\"><button class=\"px-btn\">取消<\/button><button class=\"px-btn pri\">引用<\/button><\/div><\/div><\/div><\/div>"
+    "note": "新客户按模板客户的分组 + 字段一次性生成，不用逐个加——见 F-17。",
+    "html": "<div class=\"px\">\n<div class=\"px-top\">\n  <div class=\"px-logo\">Demo <i>Brand<\/i><\/div>\n  <div class=\"px-tmenu\"><span>客户<\/span><span class=\"on\">人员<\/span><span>配置<\/span>\n    <span>财务<\/span><span>运营<\/span><\/div>\n  <div class=\"px-tright\"><span>示例客户A有限公司<\/span><div class=\"px-av\">运<\/div><\/div>\n<\/div><div class=\"px-body\">\n<div class=\"px-side\">\n  <div class=\"px-mi\">客户管理<\/div>\n  <div class=\"px-mi on\">人员管理<\/div>\n  <div class=\"px-mi sub on\">人员字段配置<\/div>\n  <div class=\"px-mi sub\">人员信息设置<\/div>\n  <div class=\"px-mi sub\">服务方类型<\/div>\n  <div class=\"px-mi\">账单管理<\/div>\n  <div class=\"px-mi\">模板客户<\/div>\n<\/div>\n<div class=\"px-main\">\n  <div class=\"px-crumb\">人员管理 <i>/<\/i> 人员字段配置<\/div>\n  <div class=\"px-h1\">人员字段配置 <span class=\"px-tag blue\">客户 DEMO_CUSTOMER_ID<\/span><\/div>\n  <div class=\"px-toolbar\">\n    <div class=\"px-in ph\">搜索字段名称<\/div>\n    <div class=\"px-sel\">全部分组<\/div>\n    <span class=\"sp\"><\/span>\n    <button class=\"px-btn pri\">+ 新增字段<\/button>\n  <\/div>\n  <div class=\"px-card\">\n    <div class=\"px-card-hd\">基本信息 <span class=\"px-tag\">12 个字段<\/span><\/div>\n    <table class=\"px-table\">\n      <tr><th class=\"w-l\">字段名称<\/th><th class=\"w-m\">字段类型<\/th><th class=\"w-s\">是否必填<\/th>\n        <th class=\"w-m\">客户可见<\/th><th class=\"w-s\">状态<\/th><\/tr>\n      <tr><td>姓名<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>客户可填<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n      <tr><td>手机号<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>客户不可见<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n      <tr><td>出生日期<\/td><td><span class=\"px-tag\">日期<\/span><\/td><td>否<\/td><td>客户可填<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n    <\/table>\n  <\/div>\n<\/div><\/div>\n  <div class=\"px-mask\"><div class=\"px-modal wide\"><div class=\"px-modal-hd\">引用模板客户配置\n    <span class=\"x\">✕<\/span><\/div><div class=\"px-modal-bd\">\n<div class=\"px-toolbar\"><div class=\"px-in ph\">搜索模板客户<\/div>\n  <span class=\"sp\"><\/span><span class=\"px-fhint\">选中后按该客户的分组 + 字段生成本客户配置<\/span><\/div>\n<table class=\"px-table\">\n  <tr><th class=\"w-s\">选择<\/th><th class=\"w-xl\">模板客户<\/th><th class=\"w-m\">落地地区<\/th>\n    <th class=\"w-m\">服务产品<\/th><th class=\"w-s\">字段数<\/th><\/tr>\n  <tr><td><span class=\"px-chk on\"><\/span><\/td><td>示例客户B制造有限公司<\/td><td>某地区<\/td>\n    <td>代雇模式<\/td><td>96<\/td><\/tr>\n  <tr><td><span class=\"px-chk\"><\/span><\/td><td>示例客户C贸易公司<\/td><td>某地区<\/td>\n    <td>薪酬管理<\/td><td>88<\/td><\/tr>\n  <tr><td><span class=\"px-chk\"><\/span><\/td><td>示例客户D服务公司<\/td><td>某地区<\/td>\n    <td>代雇模式 + 独立顾问<\/td><td>112<\/td><\/tr>\n<\/table><\/div>\n    <div class=\"px-modal-ft\"><button class=\"px-btn\">取消<\/button><button class=\"px-btn pri\">引用<\/button><\/div><\/div><\/div><\/div>"
    },
    {
     "id": "P8",
@@ -1755,7 +1812,7 @@ window.PRD_DATA = {
     "state": "弹窗",
     "route": "Modal.confirm",
     "note": "停用的语义是「不再出现在表单」，不是删除数据。但后续编辑会把它重新启用——见 F-24。",
-    "html": "<div class=\"px\">\n<div class=\"px-top\">\n  <div class=\"px-logo\">DEMO <i>ADMIN<\/i><\/div>\n  <div class=\"px-tmenu\"><span>主办方<\/span><span class=\"on\">报名者<\/span><span>配置<\/span>\n    <span>财务<\/span><span>运营<\/span><\/div>\n  <div class=\"px-tright\"><span>蓝湾科技有限公司<\/span><div class=\"px-av\">运<\/div><\/div>\n<\/div><div class=\"px-body\">\n<div class=\"px-side\">\n  <div class=\"px-mi\">主办方管理<\/div>\n  <div class=\"px-mi on\">报名管理<\/div>\n  <div class=\"px-mi sub on\">报名字段配置<\/div>\n  <div class=\"px-mi sub\">报名信息设置<\/div>\n  <div class=\"px-mi sub\">合作方类型<\/div>\n  <div class=\"px-mi\">账单管理<\/div>\n  <div class=\"px-mi\">模板主办方<\/div>\n<\/div>\n<div class=\"px-main\">\n  <div class=\"px-crumb\">报名管理 <i>/<\/i> 报名字段配置<\/div>\n  <div class=\"px-h1\">报名字段配置 <span class=\"px-tag blue\">主办方 300000000000001<\/span><\/div>\n  <div class=\"px-toolbar\">\n    <div class=\"px-in ph\">搜索字段名称<\/div>\n    <div class=\"px-sel\">全部分组<\/div>\n    <span class=\"sp\"><\/span>\n    <button class=\"px-btn pri\">+ 新增字段<\/button>\n  <\/div>\n  <div class=\"px-card\">\n    <div class=\"px-card-hd\">基本信息 <span class=\"px-tag\">12 个字段<\/span><\/div>\n    <table class=\"px-table\">\n      <tr><th class=\"w-l\">字段名称<\/th><th class=\"w-m\">字段类型<\/th><th class=\"w-s\">是否必填<\/th>\n        <th class=\"w-m\">主办方可见<\/th><th class=\"w-s\">状态<\/th><\/tr>\n      <tr><td>姓名<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>主办方可填<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n      <tr><td>手机号<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>主办方不可见<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n      <tr><td>出生日期<\/td><td><span class=\"px-tag\">日期<\/span><\/td><td>否<\/td><td>主办方可填<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n    <\/table>\n  <\/div>\n<\/div><\/div>\n  <div class=\"px-mask\"><div class=\"px-modal mini\"><div class=\"px-modal-hd\">停用确认\n    <span class=\"x\">✕<\/span><\/div><div class=\"px-modal-bd\"><div class=\"px-fhint\">停用后该字段不再出现在新增/编辑报名表单，已有存量数据保留。再次提交或编辑该字段会把它重新置为「启用」——这是当前实现的缺陷，见核查 F-24。<\/div><\/div>\n    <div class=\"px-modal-ft\"><button class=\"px-btn\">取消<\/button><button class=\"px-btn pri\">确定<\/button><\/div><\/div><\/div><\/div>"
+    "html": "<div class=\"px\">\n<div class=\"px-top\">\n  <div class=\"px-logo\">Demo <i>Brand<\/i><\/div>\n  <div class=\"px-tmenu\"><span>客户<\/span><span class=\"on\">人员<\/span><span>配置<\/span>\n    <span>财务<\/span><span>运营<\/span><\/div>\n  <div class=\"px-tright\"><span>示例客户A有限公司<\/span><div class=\"px-av\">运<\/div><\/div>\n<\/div><div class=\"px-body\">\n<div class=\"px-side\">\n  <div class=\"px-mi\">客户管理<\/div>\n  <div class=\"px-mi on\">人员管理<\/div>\n  <div class=\"px-mi sub on\">人员字段配置<\/div>\n  <div class=\"px-mi sub\">人员信息设置<\/div>\n  <div class=\"px-mi sub\">服务方类型<\/div>\n  <div class=\"px-mi\">账单管理<\/div>\n  <div class=\"px-mi\">模板客户<\/div>\n<\/div>\n<div class=\"px-main\">\n  <div class=\"px-crumb\">人员管理 <i>/<\/i> 人员字段配置<\/div>\n  <div class=\"px-h1\">人员字段配置 <span class=\"px-tag blue\">客户 DEMO_CUSTOMER_ID<\/span><\/div>\n  <div class=\"px-toolbar\">\n    <div class=\"px-in ph\">搜索字段名称<\/div>\n    <div class=\"px-sel\">全部分组<\/div>\n    <span class=\"sp\"><\/span>\n    <button class=\"px-btn pri\">+ 新增字段<\/button>\n  <\/div>\n  <div class=\"px-card\">\n    <div class=\"px-card-hd\">基本信息 <span class=\"px-tag\">12 个字段<\/span><\/div>\n    <table class=\"px-table\">\n      <tr><th class=\"w-l\">字段名称<\/th><th class=\"w-m\">字段类型<\/th><th class=\"w-s\">是否必填<\/th>\n        <th class=\"w-m\">客户可见<\/th><th class=\"w-s\">状态<\/th><\/tr>\n      <tr><td>姓名<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>客户可填<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n      <tr><td>手机号<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>客户不可见<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n      <tr><td>出生日期<\/td><td><span class=\"px-tag\">日期<\/span><\/td><td>否<\/td><td>客户可填<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n    <\/table>\n  <\/div>\n<\/div><\/div>\n  <div class=\"px-mask\"><div class=\"px-modal mini\"><div class=\"px-modal-hd\">停用确认\n    <span class=\"x\">✕<\/span><\/div><div class=\"px-modal-bd\"><div class=\"px-fhint\">停用后该字段不再出现在新增/编辑人员表单，已有存量数据保留。再次提交或编辑该字段会把它重新置为「启用」——这是当前实现的缺陷，见核查 F-24。<\/div><\/div>\n    <div class=\"px-modal-ft\"><button class=\"px-btn\">取消<\/button><button class=\"px-btn pri\">确定<\/button><\/div><\/div><\/div><\/div>"
    },
    {
     "id": "P9",
@@ -1763,7 +1820,7 @@ window.PRD_DATA = {
     "state": "弹窗",
     "route": "Modal.confirm",
     "note": "删除不可逆。停用字段的存量数据后续怎么处理仍未定——见 Q-02。",
-    "html": "<div class=\"px\">\n<div class=\"px-top\">\n  <div class=\"px-logo\">DEMO <i>ADMIN<\/i><\/div>\n  <div class=\"px-tmenu\"><span>主办方<\/span><span class=\"on\">报名者<\/span><span>配置<\/span>\n    <span>财务<\/span><span>运营<\/span><\/div>\n  <div class=\"px-tright\"><span>蓝湾科技有限公司<\/span><div class=\"px-av\">运<\/div><\/div>\n<\/div><div class=\"px-body\">\n<div class=\"px-side\">\n  <div class=\"px-mi\">主办方管理<\/div>\n  <div class=\"px-mi on\">报名管理<\/div>\n  <div class=\"px-mi sub on\">报名字段配置<\/div>\n  <div class=\"px-mi sub\">报名信息设置<\/div>\n  <div class=\"px-mi sub\">合作方类型<\/div>\n  <div class=\"px-mi\">账单管理<\/div>\n  <div class=\"px-mi\">模板主办方<\/div>\n<\/div>\n<div class=\"px-main\">\n  <div class=\"px-crumb\">报名管理 <i>/<\/i> 报名字段配置<\/div>\n  <div class=\"px-h1\">报名字段配置 <span class=\"px-tag blue\">主办方 300000000000001<\/span><\/div>\n  <div class=\"px-toolbar\">\n    <div class=\"px-in ph\">搜索字段名称<\/div>\n    <div class=\"px-sel\">全部分组<\/div>\n    <span class=\"sp\"><\/span>\n    <button class=\"px-btn pri\">+ 新增字段<\/button>\n  <\/div>\n  <div class=\"px-card\">\n    <div class=\"px-card-hd\">基本信息 <span class=\"px-tag\">12 个字段<\/span><\/div>\n    <table class=\"px-table\">\n      <tr><th class=\"w-l\">字段名称<\/th><th class=\"w-m\">字段类型<\/th><th class=\"w-s\">是否必填<\/th>\n        <th class=\"w-m\">主办方可见<\/th><th class=\"w-s\">状态<\/th><\/tr>\n      <tr><td>姓名<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>主办方可填<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n      <tr><td>手机号<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>主办方不可见<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n      <tr><td>出生日期<\/td><td><span class=\"px-tag\">日期<\/span><\/td><td>否<\/td><td>主办方可填<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n    <\/table>\n  <\/div>\n<\/div><\/div>\n  <div class=\"px-mask\"><div class=\"px-modal mini\"><div class=\"px-modal-hd\">删除确认\n    <span class=\"x\">✕<\/span><\/div><div class=\"px-modal-bd\"><div class=\"px-fhint\">删除后该字段及其存量数据一并移除，不可恢复。已提交过数据的字段建议改「停用」而非删除。<\/div><\/div>\n    <div class=\"px-modal-ft\"><button class=\"px-btn\">取消<\/button><button class=\"px-btn danger\">删除<\/button><\/div><\/div><\/div><\/div>"
+    "html": "<div class=\"px\">\n<div class=\"px-top\">\n  <div class=\"px-logo\">Demo <i>Brand<\/i><\/div>\n  <div class=\"px-tmenu\"><span>客户<\/span><span class=\"on\">人员<\/span><span>配置<\/span>\n    <span>财务<\/span><span>运营<\/span><\/div>\n  <div class=\"px-tright\"><span>示例客户A有限公司<\/span><div class=\"px-av\">运<\/div><\/div>\n<\/div><div class=\"px-body\">\n<div class=\"px-side\">\n  <div class=\"px-mi\">客户管理<\/div>\n  <div class=\"px-mi on\">人员管理<\/div>\n  <div class=\"px-mi sub on\">人员字段配置<\/div>\n  <div class=\"px-mi sub\">人员信息设置<\/div>\n  <div class=\"px-mi sub\">服务方类型<\/div>\n  <div class=\"px-mi\">账单管理<\/div>\n  <div class=\"px-mi\">模板客户<\/div>\n<\/div>\n<div class=\"px-main\">\n  <div class=\"px-crumb\">人员管理 <i>/<\/i> 人员字段配置<\/div>\n  <div class=\"px-h1\">人员字段配置 <span class=\"px-tag blue\">客户 DEMO_CUSTOMER_ID<\/span><\/div>\n  <div class=\"px-toolbar\">\n    <div class=\"px-in ph\">搜索字段名称<\/div>\n    <div class=\"px-sel\">全部分组<\/div>\n    <span class=\"sp\"><\/span>\n    <button class=\"px-btn pri\">+ 新增字段<\/button>\n  <\/div>\n  <div class=\"px-card\">\n    <div class=\"px-card-hd\">基本信息 <span class=\"px-tag\">12 个字段<\/span><\/div>\n    <table class=\"px-table\">\n      <tr><th class=\"w-l\">字段名称<\/th><th class=\"w-m\">字段类型<\/th><th class=\"w-s\">是否必填<\/th>\n        <th class=\"w-m\">客户可见<\/th><th class=\"w-s\">状态<\/th><\/tr>\n      <tr><td>姓名<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>客户可填<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n      <tr><td>手机号<\/td><td><span class=\"px-tag\">文本<\/span><\/td><td>是<\/td><td>客户不可见<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n      <tr><td>出生日期<\/td><td><span class=\"px-tag\">日期<\/span><\/td><td>否<\/td><td>客户可填<\/td>\n        <td><span class=\"px-tag green\">启用<\/span><\/td><\/tr>\n    <\/table>\n  <\/div>\n<\/div><\/div>\n  <div class=\"px-mask\"><div class=\"px-modal mini\"><div class=\"px-modal-hd\">删除确认\n    <span class=\"x\">✕<\/span><\/div><div class=\"px-modal-bd\"><div class=\"px-fhint\">删除后该字段及其存量数据一并移除，不可恢复。已提交过数据的字段建议改「停用」而非删除。<\/div><\/div>\n    <div class=\"px-modal-ft\"><button class=\"px-btn\">取消<\/button><button class=\"px-btn danger\">删除<\/button><\/div><\/div><\/div><\/div>"
    }
   ]
  },
@@ -1785,14 +1842,14 @@ window.PRD_DATA = {
    "now": "枚举字典 fieldTextType 只有 8 个 key：text 文本 / number 数值 / check 选项 / date 日期 / file 文件 / country 国家·地区 / currency 币种 / other 其他",
    "note": "单选/多选是 check 的**选项类型**子值（checkFieldType），不是顶层类型。「下拉框」「搜索」「警告」在字典、代码、用例、页面里都不存在。用户上一轮说的「9 种是代码枚举」需要修正——代码里也只有 8 种。",
    "ask": "确认按 8 种改写？",
-   "evidence": "字典 GET /demo/enum/listEnums → demo:fieldTextType；新增页字段类型下拉实拍 8 项；用例库「新增字段」同一份 8 项表述",
+   "evidence": "字典 GET /demobackstage/enum/listEnums → demobackstage:fieldTextType；新增页字段类型下拉实拍 8 项；用例库「新增字段」同一份 8 项表述",
    "rules": [
     "R-OPS-FIELD-10"
    ]
   },
   {
    "id": "F-02",
-   "title": "字段数是 110（本主办方），且不可写死",
+   "title": "字段数是 110（本客户），且不可写死",
    "area": "字段数量",
    "cls": "fix",
    "sev": "P1",
@@ -1800,17 +1857,17 @@ window.PRD_DATA = {
     "api"
    ],
    "old": "PRD 写「117 个字段」",
-   "now": "group/list 返回 6 个分组共 110 个字段：基本信息 29 / 联系方式 2 / 参会信息 33 / 缴费信息 11 / 其他信息 35 / 其他缴费信息 0",
-   "note": "117 既不是本主办方字段数也不是任何接口返回值。按业务方口径字段总数随主办方变，正文只能写「随主办方配置变化」。",
-   "ask": "同意删掉 117，改成「快照 110 / 随主办方变」？",
-   "evidence": "POST /demo/form/group/list {\"id\":\"300000000000001\"} → 6 组 fieldList 合计 110",
+   "now": "group/list 返回 6 个分组共 110 个字段：基本信息 29 / 联系方式 2 / 工作信息 33 / 收款信息 11 / 其他信息 35 / 其他收款信息 0",
+   "note": "117 既不是本客户字段数也不是任何接口返回值。按业务方口径字段总数随客户变，正文只能写「随客户配置变化」。",
+   "ask": "同意删掉 117，改成「快照 110 / 随客户变」？",
+   "evidence": "POST /demobackstage/field/group/list {\"id\":\"DEMO_CUSTOMER_ID\"} → 6 组 fieldList 合计 110",
    "rules": [
     "R-OPS-FIELD-00"
    ]
   },
   {
    "id": "F-03",
-   "title": "页面名是「报名字段配置」，用例叫她「报名信息设置」",
+   "title": "页面名是「人员字段配置」，用例叫她「人员信息设置」",
    "area": "命名",
    "cls": "fix",
    "sev": "P1",
@@ -1819,10 +1876,10 @@ window.PRD_DATA = {
     "ima",
     "fe"
    ],
-   "old": "用例库首行写「页面说明 title：报名信息设置」",
-   "now": "顶栏页签 = 报名字段配置；页面标题 = 报名字段配置；副标题 = 「管理后台配置主办方端报名信息字段相关内容，实现报名信息的自主采集与高效提交」",
+   "old": "用例库首行写「页面说明 title：人员信息设置」",
+   "now": "顶栏页签 = 人员字段配置；页面标题 = 人员字段配置；副标题 = 「管理后台配置企业端人员信息字段相关内容，实现人员信息的自主采集与高效提交」",
    "note": "用例是旧名。文档应以线上实名为准，另标注旧名便于对旧用例。",
-   "ask": "确认用「报名字段配置」，注释里留旧名？",
+   "ask": "确认用「人员字段配置」，注释里留旧名？",
    "evidence": "实拍顶栏与页面 h1；前端 chunk 路由 title",
    "rules": []
   },
@@ -1840,7 +1897,7 @@ window.PRD_DATA = {
    "now": "代码 BAN_STR = [\"*\", \"#\"]，checkFieldExistsName() 对英文名和中文名都是全量遍历 BAN_STR",
    "note": "字段名与特殊命名走同一个 checkFieldExistsName，type 只影响报错文案（FieldNameTypeEnum）。所以特殊命名 **也禁 #**，用例写漏了。",
    "ask": "以代码为准（都禁 * 和 #），还是要改代码让特殊命名放开 #？",
-   "evidence": "FormFieldServiceImpl.java: `private static final List<String> BAN_STR = Arrays.asList(\"*\", \"#\");`；`for (String banStr : BAN_STR) { if (nameEn.contains(banStr)) throw ... }` 中文同理",
+   "evidence": "FieldServiceImpl.java: `private static final List<String> BAN_STR = Arrays.asList(\"*\", \"#\");`；`for (String banStr : BAN_STR) { if (nameEn.contains(banStr)) throw ... }` 中文同理",
    "rules": [
     "R-OPS-FIELD-03"
    ]
@@ -1856,9 +1913,9 @@ window.PRD_DATA = {
     "api",
     "fe"
    ],
-   "old": "用例库：「全球名义雇主、全球自由顾问、全球票务管理、人事代理服务」",
-   "now": "实拍 5 项：早鸟票 / 标准票 / 团体票 / 学生票 / 企业内训票",
-   "note": "用例里的「单日票」在系统里找不到对应票种；「企业内训票」用例完全没提。另：字典 fieldProductStatus 的 complete 值是「终止合作」，用例写「已终止合作」。",
+   "old": "用例库：「代雇服务、顾问服务、薪酬服务、人事代理服务」",
+   "now": "实拍 5 项：代雇服务 / 顾问服务 / 薪酬服务 / 薪酬外包 / 合作方平台服务",
+   "note": "用例里的「人事代理服务」在系统里找不到对应产品；「合作方平台服务」用例完全没提。另：字典 fieldProductStatus 的 complete 值是「终止合作」，用例写「已终止合作」。",
    "ask": "以线上 5 个产品为准？「人事代理服务」是废止产品还是别名？",
    "evidence": "step2 选「选定的服务类型」后实拍；字段 productList 里 nameCn/nameEn 成对出现；前端 productList 排序 sort=1,3,5,6,13",
    "rules": []
@@ -1874,16 +1931,16 @@ window.PRD_DATA = {
     "fe",
     "ima"
    ],
-   "old": "用例库：「系统字段 → 只有【查看】」；hover 提示「针对系统字段的修改请联系您的专属顾问进行操作」",
+   "old": "用例库：「系统字段 → 只有【查看】」；hover 提示「针对系统字段的修改请联系您的服务经理进行操作」",
    "now": "实拍列表每一行（全部是 fixed 系统字段）操作列都是「查看 | 编辑」两个按钮",
    "note": "代码里编辑按钮只看权限码（auth），不看字段 type。若「系统字段只读」是产品意图，应在后端 saveField 里拦，现在没拦。",
    "ask": "系统字段允许运营编辑吗？若允许，用例要改；若不允许，是缺陷要修。",
-   "evidence": "实拍 /activity/formField/list 首屏 15 行，操作列均为查看+编辑；前端 `i={key:\"edit\", ... auth: e.includes(ze)}` 用权限码控制，不是按 type 控制",
+   "evidence": "实拍 /personManage/fieldSetting/list 首屏 15 行，操作列均为查看+编辑；前端 `i={key:\"edit\", ... auth: e.includes(ze)}` 用权限码控制，不是按 type 控制",
    "rules": []
   },
   {
    "id": "F-07",
-   "title": "「其他设置」整块 PRD 没有：填写方 / 报名者端可见 / 是否审核 / 强制填写",
+   "title": "「其他设置」整块 PRD 没有：填写方 / 人员端可见 / 是否审核 / 强制填写",
    "area": "其他设置",
    "cls": "add",
    "sev": "P0",
@@ -1894,10 +1951,10 @@ window.PRD_DATA = {
     "be"
    ],
    "old": "PRD 只有「双端三档权限」一句",
-   "now": "step2 顶部有可折叠「其他设置」，内含四个互斥联动字段：\n① 字段填写方（必填）：主办方填写 / 报名者填写\n② 主办方填写 → 显示「报名者端是否可见」：可见 / 隐藏\n③ 报名者填写 → 显示「是否需要主办方审核」：需要审核 / 无需审核\n④ 是否强制填写（恒显示）：是 / 否",
+   "now": "step2 顶部有可折叠「其他设置」，内含四个互斥联动字段：\n① 字段填写方（必填）：客户填写 / 人员填写\n② 客户填写 → 显示「人员端是否可见」：可见 / 隐藏\n③ 人员填写 → 显示「是否需要客户审核」：需要审核 / 无需审核\n④ 是否强制填写（恒显示）：是 / 否",
    "note": "这是本页第二复杂的规则块，PRD 完全缺失。②③ 互斥是硬规则，不是可选。",
    "ask": "确认这块补进 PRD，并作为独立规则 R-xx？",
-   "evidence": "实拍 /tmp/x_a_cust.png（主办方填写）、/tmp/x_b_emp.png（报名者填写）；前端 `\"cust\"===c.fillParty ? {报名者端是否可见} : {是否需要主办方审核}`；后端 handleSystemField 按 permissionConfig × fillParty 分支赋值",
+   "evidence": "实拍 /tmp/x_a_cust.png（客户填写）、/tmp/x_b_emp.png（人员填写）；前端 `\"cust\"===c.fillParty ? {人员端是否可见} : {是否需要客户审核}`；后端 handleNonBusinessField 按 permissionConfig × fillParty 分支赋值",
    "rules": [
     "R-OPS-FIELD-05"
    ]
@@ -1912,10 +1969,10 @@ window.PRD_DATA = {
     "be"
    ],
    "old": "PRD 只说「三档权限」，没说三档各自落库成什么",
-   "now": "非企业自定义字段（fixed/service）：\n  hide    → fillParty=admin, participantHide=true,  coercionFill=false, needApproval=false\n  view    → fillParty=admin, coercionFill=false, needApproval=false（participantHide 取入参）\n  fill_in + 主办方填写 → fillParty=cust,     needApproval=false（participantHide 取入参）\n  fill_in + 报名者填写 → fillParty=participant, participantHide=false\n企业自定义字段（business）：先置 fillParty=cust、coercionFill=true，再：\n  hide → participantHide=true；view → participantHide=false；fill_in → fillParty=participant",
-   "note": "① 企业自定义字段 coercionFill 恒 true（PRD 没有）；② 企业自定义字段 fillParty 永远不是 admin；③ view 分支不改 participantHide，靠前端传值——前端不传就会被上一状态污染。",
+   "now": "非企业自定义字段（fixed/service）：\n  hide    → fillParty=admin, employeeHide=true,  coercionFill=false, needApproval=false\n  view    → fillParty=admin, coercionFill=false, needApproval=false（employeeHide 取入参）\n  fill_in + 客户填写 → fillParty=cust,     needApproval=false（employeeHide 取入参）\n  fill_in + 人员填写 → fillParty=employee, employeeHide=false\n企业自定义字段（business）：先置 fillParty=cust、coercionFill=true，再：\n  hide → employeeHide=true；view → employeeHide=false；fill_in → fillParty=employee",
+   "note": "① 企业自定义字段 coercionFill 恒 true（PRD 没有）；② 企业自定义字段 fillParty 永远不是 admin；③ view 分支不改 employeeHide，靠前端传值——前端不传就会被上一状态污染。",
    "ask": "这张表是否直接进 PRD（研发要的正是它）？",
-   "evidence": "FormFieldServiceImpl.handleSystemField() / handleCustomField() 原文",
+   "evidence": "FieldServiceImpl.handleNonBusinessField() / handleBusinessField() 原文",
    "rules": [
     "R-OPS-FIELD-08"
    ]
@@ -1961,19 +2018,19 @@ window.PRD_DATA = {
   },
   {
    "id": "F-11",
-   "title": "合作方是三档，第三档「无需指定合作方」用例没写",
-   "area": "合作方",
+   "title": "服务方是三档，第三档「无需指定服务方」用例没写",
+   "area": "服务方",
    "cls": "add",
    "sev": "P1",
    "src": [
     "api",
     "be"
    ],
-   "old": "用例库只有「指定合作方 / 其他合作方」两档",
-   "now": "字典 definedFieldPartnerType = specify 指定合作方 / other 其他合作方 / none 无需指定合作方",
-   "note": "detail 实测里每个产品都有两个 fieldScopeConfig：[{partnerType:specify},{partnerType:other}]，没见到 none。可能 none 只对部分产品开放。",
+   "old": "用例库只有「指定服务方 / 其他服务方」两档",
+   "now": "字典 definedFieldSupplierType = specify 指定服务方 / other 其他服务方 / none 无需指定服务方",
+   "note": "detail 实测里每个产品都有两个 fieldScopeConfig：[{supplierType:specify},{supplierType:other}]，没见到 none。可能 none 只对部分产品开放。",
    "ask": "none 什么时候用？是所有产品都能选，还是特定产品？",
-   "evidence": "enum/listEnums → demo:definedFieldPartnerType",
+   "evidence": "enum/listEnums → demobackstage:definedFieldSupplierType",
    "rules": []
   },
   {
@@ -1989,7 +2046,7 @@ window.PRD_DATA = {
    ],
    "old": "PRD：「特殊命名：开启后可按国家给不同显示名」",
    "now": "① 是否包含特殊命名（必填，是/否，默认否，只能切换不能取消）\n② 范围：所有工作国家/地区 / 指定工作国家/地区（可添加多个特殊命名组）\n③ 每组含：工作国家多选 + 特殊命名(英/中) + 提示文字(英/中) + 说明文字(英/中)\n④ 限制：特殊命名英文必填；国家下拉要排除已选；每组可删；文本框 250 字后端控制",
-   "note": "aliasNameConfig 在实测字段里全是空数组（本主办方没配过特殊命名），所以只有用例+字典两源，无实测样本。",
+   "note": "aliasNameConfig 在实测字段里全是空数组（本客户没配过特殊命名），所以只有用例+字典两源，无实测样本。",
    "ask": "这块要写多细？只写入口+范围，还是连 6 个输入框都列？",
    "evidence": "用例库「新增字段」特殊命名段全文；detail 里 specialFlag / aliasName / aliasNameScope / aliasNameConfig[]；字典 fieldAliasNameScope",
    "rules": []
@@ -2006,10 +2063,10 @@ window.PRD_DATA = {
     "ui"
    ],
    "old": "PRD 只说「5 个分组」",
-   "now": "三类：固定分组（template/fixed）5 个 + 服务自定义分组（service）+ 企业自定义分组（business）\n固定 5 组：基本信息 / 联系方式 / 参会信息 / 缴费信息 / 其他信息，各有 icon\n分组不可展开收起；企业自定义分组用固定图标",
-   "note": "本主办方没有 business 分组，企业自定义分组的样子只有用例描述。另：分组名中英文各最多 100 字符，中文为空则显示英文。",
-   "ask": "企业自定义分组要不要写进 PRD（本主办方没有样本，只能按用例写）？",
-   "evidence": "group/list 返回 6 组：5 个 type=fixed + 1 个 type=service（其他缴费信息，0 字段）；字典 defineFieldGroupType；每组带 icon 名（icon-jibenxinxi 等）",
+   "now": "三类：固定分组（template/fixed）5 个 + 服务自定义分组（service）+ 企业自定义分组（business）\n固定 5 组：基本信息 / 联系方式 / 工作信息 / 收款信息 / 其他信息，各有 icon\n分组不可展开收起；企业自定义分组用固定图标",
+   "note": "本客户没有 business 分组，企业自定义分组的样子只有用例描述。另：分组名中英文各最多 100 字符，中文为空则显示英文。",
+   "ask": "企业自定义分组要不要写进 PRD（本客户没有样本，只能按用例写）？",
+   "evidence": "group/list 返回 6 组：5 个 type=fixed + 1 个 type=service（其他收款信息，0 字段）；字典 defineFieldGroupType；每组带 icon 名（icon-jibenxinxi 等）",
    "rules": []
   },
   {
@@ -2022,8 +2079,8 @@ window.PRD_DATA = {
     "ima"
    ],
    "old": "PRD 无",
-   "now": "固定字段 + 服务自定义字段：必须「主办方端权限 ≠ 主办方隐藏」**且已提交**才出现在列表\n企业自定义字段：已提交 + 草稿都出现\n→ 主办方隐藏的系统字段在列表里根本看不到",
-   "note": "这条能解释「为什么同一主办方在不同人眼里字段数不一样」。配合后端 /list 强制 setFilterFieldCode([FIELD_PARTNER_CODE]) 过滤掉合作方类型字段。",
+   "now": "固定字段 + 服务自定义字段：必须「企业端权限 ≠ 客户隐藏」**且已提交**才出现在列表\n企业自定义字段：已提交 + 草稿都出现\n→ 客户隐藏的系统字段在列表里根本看不到",
+   "note": "这条能解释「为什么同一客户在不同人眼里字段数不一样」。配合后端 /list 强制 setFilterFieldCode([FIELD_SUPPLIER_CODE]) 过滤掉服务方类型字段。",
    "ask": "确认这条规则？它决定列表页的字段数口径。",
    "evidence": "用例库「字段列表」：字段来源段",
    "rules": [
@@ -2032,7 +2089,7 @@ window.PRD_DATA = {
   },
   {
    "id": "F-15",
-   "title": "列表还有「类型」列、右侧专属顾问卡片、拖动排序",
+   "title": "列表还有「类型」列、右侧服务经理卡片、拖动排序",
    "area": "列表",
    "cls": "add",
    "sev": "P2",
@@ -2042,9 +2099,9 @@ window.PRD_DATA = {
     "api"
    ],
    "old": "PRD 无",
-   "now": "列共 8 个：字段名称 / 状态 / 字段类型 / **类型** / 适用产品 / 主办方端权限控制 / 报名者端权限控制 / 操作\n「类型」列 = 固定字段（含服务自定义）/ 自定义字段\n右侧固定显示专属顾问 + 商务对接卡片（头像/中英文名/邮箱/微信/二维码/Skype/WhatsApp，无数据不显示）\n企业自定义字段可拖动排序；系统字段固定在最前且不可拖",
+   "now": "列共 8 个：字段名称 / 状态 / 字段类型 / **类型** / 适用产品 / 企业端权限控制 / 人员端权限控制 / 操作\n「类型」列 = 固定字段（含服务自定义）/ 自定义字段\n右侧固定显示服务经理 + 商务经理卡片（头像/中英文名/邮箱/微信/二维码/Skype/WhatsApp，无数据不显示）\n企业自定义字段可拖动排序；系统字段固定在最前且不可拖",
    "note": "PRD 之前把「字段类型」和「类型」混成一个概念了。",
-   "ask": "专属顾问卡片属于页面级还是模块级？它跟字段配置无关，要不要写进来？",
+   "ask": "服务经理卡片属于页面级还是模块级？它跟字段配置无关，要不要写进来？",
    "evidence": "实拍表头 8 列；字段 type 分布实测全 fixed；字典 defineFieldType",
    "rules": []
   },
@@ -2059,7 +2116,7 @@ window.PRD_DATA = {
     "api"
    ],
    "old": "PRD 无",
-   "now": "先按状态：合作中 > 未生效 > 未合作/终止合作；状态内按 线上课、线下课、企业内训、企业内训 固定序\n草稿字段无值显示「-」；列固定宽度，超出显示…并 hover 显示全部",
+   "now": "先按状态：合作中 > 未生效 > 未合作/终止合作；状态内按 代雇模式、独立顾问、薪酬管理、薪酬外包 固定序\n草稿字段无值显示「-」；列固定宽度，超出显示…并 hover 显示全部",
    "note": "",
    "ask": "排序规则写进 PRD？",
    "evidence": "用例库「字段列表」适用产品段；productList 每项带 status + sort",
@@ -2067,8 +2124,8 @@ window.PRD_DATA = {
   },
   {
    "id": "F-17",
-   "title": "模板主办方机制：新主办方按模板生成分组+字段",
-   "area": "模板主办方",
+   "title": "模板客户机制：新客户按模板生成分组+字段",
+   "area": "模板客户",
    "cls": "add",
    "sev": "P1",
    "src": [
@@ -2076,16 +2133,16 @@ window.PRD_DATA = {
     "fe",
     "be"
    ],
-   "old": "PRD 无（只提过「引用模板配置」按钮名）",
-   "now": "① 新主办方创建时，按模板主办方的 template 类型生成「固定分组/固定字段」，service 类型生成「服务自定义分组/字段」\n② 触发场景：主办方管理新建主办方、商务合同发起审批成功、合同关联主办方不存在时自动建主办方\n③ 后台有「引用模板配置」按钮，可把模板字段刷给存量主办方",
-   "note": "这也解释了字典里 template 和 fixed 都映射「固定字段」——模板侧用 template，落地到主办方后变 fixed。",
+   "old": "PRD 无（只提过「引用模板客户配置」按钮名）",
+   "now": "① 新客户创建时，按模板客户的 template 类型生成「固定分组/固定字段」，service 类型生成「服务自定义分组/字段」\n② 触发场景：客户管理新建客户、商务合同发起审批成功、合同关联客户不存在时自动建客户\n③ 后台有「引用模板客户配置」按钮，可把模板字段刷给存量客户",
+   "note": "这也解释了字典里 template 和 fixed 都映射「固定字段」——模板侧用 template，落地到客户后变 fixed。",
    "ask": "模板机制写进本页 PRD，还是单独一页？",
-   "evidence": "用例库「新增主办方时，分组+字段初始化」；后端 initTenantFields(custId) / refTemplateToAllTenants(fieldIds) / migrateTemplateFields()；前端 refTemplate / refTemplateList 接口",
+   "evidence": "用例库「新增客户时，分组+字段初始化」；后端 assignmentCustField(custId) / refTemplateForAllCust(fieldIds) / processHistoryTemplateField()；前端 refTemplate / refTemplateList 接口",
    "rules": []
   },
   {
    "id": "F-18",
-   "title": "字段改动会回写「用户必填标识」，影响主办方端「需补充信息」标签",
+   "title": "字段改动会回写「用户必填标识」，影响企业端「需补充信息」标签",
    "area": "跨模块联动",
    "cls": "add",
    "sev": "P0",
@@ -2094,31 +2151,31 @@ window.PRD_DATA = {
     "be"
    ],
    "old": "PRD 无",
-   "now": "新增/编辑/删除字段后，对该主办方每个报名者：查出可见字段集，判断是否存在「必填但未填」\n  有 → 写 custom_field_required / admin_field_required = 1\n  无 → 写 0\n用途：主办方端报名者列表的「需补充信息」标签与「完善信息」入口",
-   "note": "这是本页唯一**影响其他端界面**的副作用，PRD 完全没写。不写，测试不会想到回归主办方端标签。",
+   "now": "新增/编辑/删除字段后，对该客户每个员工：查出可见字段集，判断是否存在「必填但未填」\n  有 → 写 business_field_required / backstage_field_required = 1\n  无 → 写 0\n用途：企业端人员列表的「需补充信息」标签与「完善信息」入口",
+   "note": "这是本页唯一**影响其他端界面**的副作用，PRD 完全没写。不写，测试不会想到回归企业端标签。",
    "ask": "确认补进 PRD，并列出受影响的端和页面？",
    "evidence": "用例库「新增/编辑/删除字段-更新用户必填标识」；后端 existRequiredField / existRequiredFieldBatch",
    "rules": []
   },
   {
    "id": "F-19",
-   "title": "「主办方隐藏」字段在报名管理 7 个页面显示专用 icon",
-   "area": "主办方隐藏",
+   "title": "「客户隐藏」字段在人员管理 7 个页面显示专用 icon",
+   "area": "客户隐藏",
    "cls": "add",
    "sev": "P1",
    "src": [
     "ima"
    ],
    "old": "PRD 无",
-   "now": "条件：主办方端权限 = 主办方隐藏 **且** 非企业自定义字段 → 在字段前显示「主办方隐藏」icon\nhover 提示「该字段对主办方隐藏」；详情页 icon 在字段**前**，编辑页在字段**后**\n涉及 7 个页面：报名管理（新增 step2 / 编辑 / 查看详情 / 重新报名）、报名审核（查看 / 去处理 / 同意加入并完善信息）\n另有一批非配置字段恒定显示该 icon：关联主办方和合作产品、合作方名称、合作方类型、报名日期",
-   "note": "注意排除条件：主办方端字段对**报名者**隐藏（participantHide）不算，只有对主办方隐藏才算。实测本主办方 110 字段里有 1 个 custPermissionConfig=hide，可用于验证。",
+   "now": "条件：企业端权限 = 客户隐藏 **且** 非企业自定义字段 → 在字段前显示「客户隐藏」icon\nhover 提示「该字段对客户隐藏」；详情页 icon 在字段**前**，编辑页在字段**后**\n涉及 7 个页面：人员管理（新增 step2 / 编辑 / 查看详情 / 重新入职）、入职审批（查看 / 去处理 / 同意入职并完善信息）\n另有一批非配置字段恒定显示该 icon：关联客户和合作产品、服务方名称、服务方类型、入职日期",
+   "note": "注意排除条件：企业端字段对**人员**隐藏（employeeHide）不算，只有对客户隐藏才算。实测本客户 110 字段里有 1 个 custPermissionConfig=hide，可用于验证。",
    "ask": "这 7 个页面的 icon 规则写在本页，还是写在各页面 PRD？",
-   "evidence": "用例库「报名者字段-主办方隐藏提示icon」全文（xmind）",
+   "evidence": "用例库「人员字段-客户隐藏提示icon」全文（xmind）",
    "rules": []
   },
   {
    "id": "F-20",
-   "title": "「其他」类型下的合作方/岗位/手机号各有特殊限制",
+   "title": "「其他」类型下的服务方/岗位/手机号各有特殊限制",
    "area": "其他类型",
    "cls": "add",
    "sev": "P1",
@@ -2128,10 +2185,10 @@ window.PRD_DATA = {
     "fe"
    ],
    "old": "PRD 无",
-   "now": "otherFieldType 三值：post 岗位 / mobile 手机号 / partner 合作方\n其中 partner：主办方端新增时不显示该类型；服务端新增时该项置灰不可新增",
-   "note": "与 F-14 呼应：合作方类型字段在列表被过滤，在新增页对主办方不可选。",
-   "ask": "合作方类型字段是内部专用吗？它到底给谁用？",
-   "evidence": "字典 otherFieldType；用例库「新增字段」其他类型段；detail 实测 other.type 有 mobile；后端 /list 强制过滤 FIELD_PARTNER_CODE",
+   "now": "otherFieldType 三值：post 岗位 / mobile 手机号 / supplier 服务方\n其中 supplier：企业端新增时不显示该类型；服务端新增时该项置灰不可新增",
+   "note": "与 F-14 呼应：服务方类型字段在列表被过滤，在新增页对客户不可选。",
+   "ask": "服务方类型字段是内部专用吗？它到底给谁用？",
+   "evidence": "字典 otherFieldType；用例库「新增字段」其他类型段；detail 实测 other.type 有 mobile；后端 /list 强制过滤 FIELD_SUPPLIER_CODE",
    "rules": []
   },
   {
@@ -2172,18 +2229,18 @@ window.PRD_DATA = {
   },
   {
    "id": "F-23",
-   "title": "选择合作方的列表有排序与过滤规则",
-   "area": "合作方列表",
+   "title": "选择服务方的列表有排序与过滤规则",
+   "area": "服务方列表",
    "cls": "add",
    "sev": "P2",
    "src": [
     "ima"
    ],
    "old": "PRD 无",
-   "now": "数据源：自营户 + 外部合作方；**自营户不查「杭州静嘉」**\n排序：自营户 > 外部合作方；外部合作方中含当前产品的在前；再按创建时间倒序\n搜索：合作方简称 / 签约主体 / 服务国家，模糊匹配",
-   "note": "只有用例单源，代码未核（在合作方模块，不在 field 模块）。",
+   "now": "数据源：自营户 + 外部供应商；**自营户不查「杭州静嘉」**\n排序：自营户 > 外部供应商；外部供应商中含当前产品的在前；再按创建时间倒序\n搜索：服务方简称 / 签约主体 / 服务国家，模糊匹配",
+   "note": "只有用例单源，代码未核（在供应商模块，不在 field 模块）。",
    "ask": "这块是弹窗逻辑，要不要写在本页？",
-   "evidence": "用例库「新增字段」指定合作方段",
+   "evidence": "用例库「新增字段」指定服务方段",
    "rules": []
   },
   {
@@ -2197,9 +2254,9 @@ window.PRD_DATA = {
    ],
    "old": "用例：编辑字段不改变状态；停用字段只有显式启用才变启用",
    "now": "后端 `@PostMapping({\"/save\", \"/edit\"})` 共用 saveField()，方法第一行 `req.setStatus(FieldStatusEnum.ENABLE)`\n→ 编辑一个**已停用**的字段，保存后会自动变成「启用」",
-   "note": "这是真缺陷，不是文档问题。影响：运营改错一个字，停用字段就重新生效，该字段又会出现在主办方端/报名者端表单里。",
+   "note": "这是真缺陷，不是文档问题。影响：运营改错一个字，停用字段就重新生效，该字段又会出现在企业端/人员端表单里。",
    "ask": "要报给研发修吗？（我可以拿一个停用字段实测确认）",
-   "evidence": "FormFieldController.java saveField 方法体；FormFieldServiceImpl.saveField 未再校验原状态",
+   "evidence": "FieldController.java saveField 方法体；FieldServiceImpl.saveField 未再校验原状态",
    "rules": [
     "R-OPS-FIELD-09"
    ]
@@ -2217,7 +2274,7 @@ window.PRD_DATA = {
    "now": "带 `@BackstageAuthPermission(permission = true)`（要权限点）：save/group、ref/template、group/list、save、edit、detail、edit/status、delete、group/delete\n只带 `@BackstageAuthPermission`（仅登录）：group/sort、ref/template/list、save/draft、field/sort、list、checkValueBeforeCommit",
    "note": "字段查询（/list）、拖动排序（/field/sort）、存草稿（/save/draft）任何能登录后台的账号都能调。存草稿能落库，等于能造脏数据。",
    "ask": "这是有意（草稿门槛低）还是漏加？",
-   "evidence": "FormFieldController.java 逐个方法的注解",
+   "evidence": "FieldController.java 逐个方法的注解",
    "rules": []
   },
   {
@@ -2230,11 +2287,11 @@ window.PRD_DATA = {
     "be",
     "ima"
    ],
-   "old": "用例：以当前主办方维度，字段名中/英文与特殊命名中/英文 4 个之间不能重复（不含草稿），同一字段内可重复",
-   "now": "代码在主办方维度查重之外，还查**系统占用字段名**：\n  主办方内已存在 → 报「当前主办方中%s：%s已存在」\n  命中系统占用名 → 报「%s：%s禁用」\n另一条硬规则：status=DRAFT 时才跳过校验，非草稿必校验",
+   "old": "用例：以当前客户维度，字段名中/英文与特殊命名中/英文 4 个之间不能重复（不含草稿），同一字段内可重复",
+   "now": "代码在客户维度查重之外，还查**系统占用字段名**：\n  客户内已存在 → 报「当前客户中%s：%s已存在」\n  命中系统占用名 → 报「%s：%s禁用」\n另一条硬规则：status=DRAFT 时才跳过校验，非草稿必校验",
    "note": "「不能与系统占用字段重名」用例完全没提，但它会拦住运营起一样的名字。",
    "ask": "「系统占用字段名」指哪些？要不要写进 PRD？",
-   "evidence": "FormFieldServiceImpl.checkFieldExistsName() 里 checkFieldExistsNameByLan + checkSysFieldExistsNameByLan 两道；saveField 里 `if (FieldStatusEnum.DRAFT != req.getStatus())` 才调校验",
+   "evidence": "FieldServiceImpl.checkFieldExistsName() 里 checkFieldExistsNameByLan + checkSysFieldExistsNameByLan 两道；saveField 里 `if (FieldStatusEnum.DRAFT != req.getStatus())` 才调校验",
    "rules": [
     "R-OPS-FIELD-02",
     "R-OPS-FIELD-11"
@@ -2251,7 +2308,7 @@ window.PRD_DATA = {
     "ima"
    ],
    "old": "用例：所属分组回显优先中文，无中文显示英文",
-   "now": "首次进入 add 页，下拉框显示 `511585896383333?customerId=300000000000001`（id + 查询串），约 10 秒后（分组数据返回）才变成「基本信息」",
+   "now": "首次进入 add 页，下拉框显示 `DEMO_PROJECT_ID?customerId=DEMO_CUSTOMER_ID`（id + 查询串），约 10 秒后（分组数据返回）才变成「基本信息」",
    "note": "不确定是纯加载时序还是真 bug——如果网络慢，运营会看到这个串。属于体验问题，不影响数据。",
    "ask": "要报吗？我可以在慢网络下再复现一次确认。",
    "evidence": "实拍 /tmp/add1.png（裸 ID）与 /tmp/s1_fillin.png（正常「基本信息」）",
@@ -2259,7 +2316,7 @@ window.PRD_DATA = {
   },
   {
    "id": "F-28",
-   "title": "企业自定义字段的 fill_in 实际含义是「报名者填写」",
+   "title": "企业自定义字段的 fill_in 实际含义是「人员填写」",
    "area": "语义不一致",
    "cls": "risk",
    "sev": "P2",
@@ -2267,17 +2324,17 @@ window.PRD_DATA = {
     "be",
     "ima"
    ],
-   "old": "列表「主办方端权限控制」列对企业自定义字段恒显示「可填写」",
-   "now": "后端 handleCustomField：fill_in 分支把 fillParty 设成 **participant**，且 coercionFill 恒 true。也就是说企业自建字段的「可填写」= 报名者填",
-   "note": "界面上「主办方端权限控制：可填写」读起来像「主办方可填」，实际是「报名者可填」。同一个词在两个字段类型上含义相反，是易错点。",
+   "old": "列表「企业端权限控制」列对企业自定义字段恒显示「可填写」",
+   "now": "后端 handleBusinessField：fill_in 分支把 fillParty 设成 **employee**，且 coercionFill 恒 true。也就是说企业自建字段的「可填写」= 人员填",
+   "note": "界面上「企业端权限控制：可填写」读起来像「客户可填」，实际是「人员可填」。同一个词在两个字段类型上含义相反，是易错点。",
    "ask": "这是设计如此，还是命名遗留？PRD 里我要不要点出这个坑？",
-   "evidence": "handleCustomField() 全文",
+   "evidence": "handleBusinessField() 全文",
    "rules": []
   },
   {
    "id": "Q-01",
-   "title": "合作方类型字段（other=partner）到底给谁用？",
-   "area": "合作方字段归属",
+   "title": "服务方类型字段（other=supplier）到底给谁用？",
+   "area": "服务方字段归属",
    "cls": "ask",
    "sev": "P0",
    "src": [
@@ -2286,10 +2343,10 @@ window.PRD_DATA = {
     "fe"
    ],
    "old": "——",
-   "now": "代码四处打压它：/list 强制过滤、新增页主办方端不显示、服务端置灰不可新增",
+   "now": "代码四处打压它：/list 强制过滤、新增页企业端不显示、服务端置灰不可新增",
    "note": "如果它是历史遗留，PRD 该写「已停用」；如果还在用，要说清入口在哪。",
    "ask": "这个类型现在还有人用吗？入口在哪？",
-   "evidence": "FormFieldController.fieldList: `req.setFilterFieldCode(Collections.singletonList(FieldConstant.FIELD_PARTNER_CODE))`；用例库「其他类型 → 合作方」",
+   "evidence": "FieldController.fieldList: `req.setFilterFieldCode(Collections.singletonList(FieldConstant.FIELD_SUPPLIER_CODE))`；用例库「其他类型 → 服务方」",
    "rules": [
     "R-OPS-FIELD-00"
    ]
@@ -2305,7 +2362,7 @@ window.PRD_DATA = {
     "ima"
    ],
    "old": "——",
-   "now": "停用文案：「停用后，报名信息中将隐藏该字段，不会影响已填写的内容」\n删除文案：「删除后该字段所有已填写的数据将被清空，删除后不可恢复」\n但存量值在库里是留着还是标记失效？重新启用后会不会复活？",
+   "now": "停用文案：「停用后，人员信息中将隐藏该字段，不会影响已填写的内容」\n删除文案：「删除后该字段所有已填写的数据将被清空，删除后不可恢复」\n但存量值在库里是留着还是标记失效？重新启用后会不会复活？",
    "note": "PRD 必须写清，因为这是不可逆操作。",
    "ask": "停用→重新启用，之前填的值还在吗？删除是物理删还是逻辑删？",
    "evidence": "实拍停用二次确认弹窗文案；用例库 停用/删除段",
@@ -2324,7 +2381,7 @@ window.PRD_DATA = {
    "now": "后端有一条：`if (!specialFlag) { 物理删除关联数据; 重写产品配置 }`，即**特殊字段不允许改产品范围和字段类型**，普通字段可以改",
    "note": "普通字段把「文本」改成「选项」，存量数据怎么办？代码里没看到迁移逻辑。",
    "ask": "类型能改吗？改了存量值怎么处理？",
-   "evidence": "FormFieldServiceImpl.saveField 中 `// 如果是特殊字段，不允许修改产品范围和字段类型`",
+   "evidence": "FieldServiceImpl.saveField 中 `// 如果是特殊字段，不允许修改产品范围和字段类型`",
    "rules": []
   },
   {
@@ -2337,10 +2394,10 @@ window.PRD_DATA = {
     "be"
    ],
    "old": "——",
-   "now": "后端有 filterInboundFields / filterElectronicInboundEntrySignFields / queryInboundSceneHiddenFieldIds / isHiddenByInboundScene —— inbound 与电子签加入场景各有隐藏名单",
+   "now": "后端有 filterInboundFields / filterElectronicInboundEntrySignFields / queryInboundSceneHiddenFieldIds / isHiddenByInboundScene —— inbound 与电签入职场景各有隐藏名单",
    "note": "名单来源没看到（可能在配置表或常量里），这是本页之外的规则，但它决定了「同一字段在不同场景是否出现」。",
    "ask": "inbound 隐藏名单在哪配？要不要写进 PRD？",
-   "evidence": "FormFieldServiceImpl 上述四个方法",
+   "evidence": "FieldServiceImpl 上述四个方法",
    "rules": []
   },
   {
@@ -2354,7 +2411,7 @@ window.PRD_DATA = {
     "be"
    ],
    "old": "——",
-   "now": "已确认本页直接产生的外部影响有 4 条：\n① 回写报名者必填标识 → 主办方端「需补充信息」\n② 主办方端权限=隐藏 → 报名管理 7 个页面出 icon\n③ 模板机制 → 新建主办方自动生成分组字段\n④ 外部导入/电子签场景隐藏名单",
+   "now": "已确认本页直接产生的外部影响有 4 条：\n① 回写员工必填标识 → 企业端「需补充信息」\n② 客户端权限=隐藏 → 人员管理 7 个页面出 icon\n③ 模板机制 → 新建客户自动生成分组字段\n④ inbound/电签场景隐藏名单",
    "note": "四条都写在字段配置页会很长；都不写，测试就测不到联动。",
    "ask": "写法选哪种：A 全部写在页内（长但闭环）／B 页内只写「影响」一句，细节写进各自页面／C 单独出一页「字段配置的跨端影响」？",
    "evidence": "见 F-17 / F-18 / F-19 / Q-04",
@@ -2365,23 +2422,23 @@ window.PRD_DATA = {
   {
    "id": "TC-FIELD-01",
    "group": "列表",
-   "title": "系统字段只显示已提交且主办方端未隐藏的",
-   "pre": "某主办方有系统字段 A（权限=主办方隐藏，已提交）、B（权限=主办方可查看，已提交）、C（草稿）",
+   "title": "系统字段只显示已提交且企业端未隐藏的",
+   "pre": "某客户有系统字段 A（权限=客户隐藏，已提交）、B（权限=客户可查看，已提交）、C（草稿）",
    "steps": [
-    "进入报名字段配置列表",
+    "进入人员字段配置列表",
     "看这三个字段是否出现"
    ],
-   "expect": "只有 B 出现；A 因主办方隐藏被过滤，C 是系统字段且未提交，也不出现",
+   "expect": "只有 B 出现；A 因客户隐藏被过滤，C 是系统字段且未提交，也不出现",
    "rules": [
     "R-OPS-FIELD-07"
    ],
-   "src": "用例库《报名字段配置.xmind》"
+   "src": "用例库《人员字段配置.xmind》"
   },
   {
    "id": "TC-FIELD-02",
    "group": "列表",
    "title": "企业自定义字段的草稿也要显示",
-   "pre": "该主办方自建字段 D，状态=草稿",
+   "pre": "该客户自建字段 D，状态=草稿",
    "steps": [
     "进入列表",
     "找 D"
@@ -2390,13 +2447,13 @@ window.PRD_DATA = {
    "rules": [
     "R-OPS-FIELD-07"
    ],
-   "src": "用例库《报名字段配置.xmind》"
+   "src": "用例库《人员字段配置.xmind》"
   },
   {
    "id": "TC-FIELD-03",
    "group": "列表",
    "title": "按分组与状态筛选",
-   "pre": "该主办方有 6 个分组、110 个字段",
+   "pre": "该客户有 6 个分组、110 个字段",
    "steps": [
     "分组选「证件信息」",
     "状态选「启用」"
@@ -2419,7 +2476,7 @@ window.PRD_DATA = {
    "rules": [
     "R-OPS-FIELD-10"
    ],
-   "src": "用例库《报名字段配置.xmind》"
+   "src": "用例库《人员字段配置.xmind》"
   },
   {
    "id": "TC-FIELD-05",
@@ -2427,15 +2484,15 @@ window.PRD_DATA = {
    "title": "权限三档自动决定填写方与两个开关",
    "pre": "新建字段，字段类型=文本",
    "steps": [
-    "主办方端权限选「主办方可填写」",
-    "看下方「字段填写方」「报名者端是否可见」「是否需要主办方审核」「是否强制填写」"
+    "企业端权限选「客户可填写」",
+    "看下方「字段填写方」「人员端是否可见」「是否需要客户审核」「是否强制填写」"
    ],
-   "expect": "填写方自动变成「报名者填写」且不可改；此时显示「是否需要主办方审核」，不显示「报名者端是否可见」；「是否强制填写」恒显示",
+   "expect": "填写方自动变成「人员填写」且不可改；此时显示「是否需要客户审核」，不显示「人员端是否可见」；「是否强制填写」恒显示",
    "rules": [
     "R-OPS-FIELD-08",
     "R-OPS-FIELD-05"
    ],
-   "src": "用例库《报名字段配置.xmind》"
+   "src": "用例库《人员字段配置.xmind》"
   },
   {
    "id": "TC-FIELD-06",
@@ -2443,14 +2500,14 @@ window.PRD_DATA = {
    "title": "显示配置选「均不显示」时必填配置整块消失",
    "pre": "新建字段，走到第二步",
    "steps": [
-    "适用地区显示配置选「所有均不显示」",
+    "工作国家显示配置选「所有均不显示」",
     "看必填项配置那一块"
    ],
    "expect": "必填项配置整块不渲染；保存后该字段的必填配置为空，不是「全部非必填」",
    "rules": [
     "R-OPS-FIELD-06"
    ],
-   "src": "用例库《报名字段配置.xmind》"
+   "src": "用例库《人员字段配置.xmind》"
   },
   {
    "id": "TC-FIELD-07",
@@ -2465,7 +2522,7 @@ window.PRD_DATA = {
    "rules": [
     "R-OPS-FIELD-04"
    ],
-   "src": "用例库《报名字段配置.xmind》"
+   "src": "用例库《人员字段配置.xmind》"
   },
   {
    "id": "TC-FIELD-08",
@@ -2485,23 +2542,23 @@ window.PRD_DATA = {
   {
    "id": "TC-FIELD-09",
    "group": "提交校验",
-   "title": "同主办方内名称四者不能互重",
-   "pre": "该主办方已有字段「身份证号」（中文名）与「Passport」（英文名）",
+   "title": "同客户内名称四者不能互重",
+   "pre": "该客户已有字段「护照号」（中文名）与「Passport」（英文名）",
    "steps": [
-    "新建字段，中文名填「身份证号」",
+    "新建字段，中文名填「护照号」",
     "点提交"
    ],
-   "expect": "报「当前主办方中文本：身份证号已存在」；英文名或特殊命名撞了也报同一条格式的错误",
+   "expect": "报「当前客户中文本：护照号已存在」；英文名或特殊命名撞了也报同一条格式的错误",
    "rules": [
     "R-OPS-FIELD-02"
    ],
-   "src": "用例库《报名字段配置.xmind》"
+   "src": "用例库《人员字段配置.xmind》"
   },
   {
    "id": "TC-FIELD-10",
    "group": "提交校验",
    "title": "草稿不参与重名校验",
-   "pre": "该主办方有一个草稿字段，中文名「紧急联系人」",
+   "pre": "该客户有一个草稿字段，中文名「紧急联系人」",
    "steps": [
     "新建字段，中文名同样填「紧急联系人」",
     "先点「存草稿」，再点提交"
@@ -2510,7 +2567,7 @@ window.PRD_DATA = {
    "rules": [
     "R-OPS-FIELD-02"
    ],
-   "src": "用例库《报名字段配置.xmind》"
+   "src": "用例库《人员字段配置.xmind》"
   },
   {
    "id": "TC-FIELD-11",
@@ -2541,7 +2598,7 @@ window.PRD_DATA = {
    "rules": [
     "R-OPS-FIELD-03"
    ],
-   "src": "用例库《报名字段配置.xmind》",
+   "src": "用例库《人员字段配置.xmind》",
    "gap": "用例只写了禁 *，实测 # 也禁——以线上为准，用例需补"
   },
   {
@@ -2572,13 +2629,13 @@ window.PRD_DATA = {
    "expect": "提示「当前分组内还有字段，请先删除组内字段后再删除分组」，分组不消失",
    "rules": [],
    "norule": "前端拦截规则，后端无对应校验；未单独立规则",
-   "src": "用例库《报名字段配置.xmind》"
+   "src": "用例库《人员字段配置.xmind》"
   },
   {
    "id": "TC-FIELD-15",
    "group": "启停与删除",
    "title": "删字段的二次确认要写明数据不可恢复",
-   "pre": "字段 F 已启用，且已有 20 名报名者填过",
+   "pre": "字段 F 已启用，且已有 20 名人员填过",
    "steps": [
     "点删除",
     "读弹窗文案"
@@ -2586,18 +2643,18 @@ window.PRD_DATA = {
    "expect": "文案为「删除后该字段所有已填写的数据将被清空，删除后不可恢复！」；确认后字段与其数据一起消失",
    "rules": [],
    "norule": "提示文案属交互规范，挂在第 7 段异常边界，不单独立规则",
-   "src": "用例库《报名字段配置.xmind》"
+   "src": "用例库《人员字段配置.xmind》"
   }
  ],
  "code": {
   "plain": [
    {
     "q": "列表里到底显示哪些字段？我刚建的草稿怎么看不见？",
-    "a": "分两种。系统自带的字段要满足两个条件才显示：主办方端权限不是「主办方隐藏」、而且已经提交过；主办方自己建的字段宽松些，草稿也会列出来，好让人知道还没提交。所以「看不见」通常不是丢了，是被这两条过滤掉了。"
+    "a": "分两种。系统自带的字段要满足两个条件才显示：企业端权限不是「客户隐藏」、而且已经提交过；客户自己建的字段宽松些，草稿也会列出来，好让人知道还没提交。所以「看不见」通常不是丢了，是被这两条过滤掉了。"
    },
    {
-    "q": "主办方端权限我选「主办方可填写」，为什么报名者端那个字段就不见了？",
-    "a": "因为三档权限不是单独一个开关，它一次决定四件事：填写方是谁、报名者端是否隐藏、是否强制填写、要不要主办方审核。选「主办方可填写」意味着这题由主办方来答，报名者端自然不显示。页面上后面那几个开关只是把这个结果显示出来，不能反着改。"
+    "q": "企业端权限我选「客户可填写」，为什么人员端那个字段就不见了？",
+    "a": "因为三档权限不是单独一个开关，它一次决定四件事：填写方是谁、人员端是否隐藏、是否强制填写、要不要客户审核。选「客户可填写」意味着这题由客户来答，人员端自然不显示。页面上后面那几个开关只是把这个结果显示出来，不能反着改。"
    },
    {
     "q": "运营改字段配置，会不会把已经填了几年的数据改掉？",
@@ -2613,14 +2670,14 @@ window.PRD_DATA = {
    },
    {
     "q": "字段总数到底是多少个？文档里写 110 对吗？",
-    "a": "110 只是某天某个主办方的快照。字段集是「活动形式 × 票种」算出来的，换个主办方就不是这个数，所以文档里任何一个总数都必须带上「某时点、某主办方」。"
+    "a": "110 只是某天某个客户的快照。字段集是「落地地区 × 服务产品」算出来的，换个客户就不是这个数，所以文档里任何一个总数都必须带上「某时点、某客户」。"
    }
   ],
   "fe": [
    {
     "where": "列表页 · 表格",
     "what": "按分组 + 状态查列表；系统字段与企业自定义字段走不同的过滤条件，在前端就分开了",
-    "path": "报名字段配置（列表）"
+    "path": "人员字段配置（列表）"
    },
    {
     "where": "新建弹窗 · 第一步",
@@ -2641,18 +2698,18 @@ window.PRD_DATA = {
   "be": [
    {
     "where": "保存字段",
-    "what": "四类名称（中英字段名、中英特殊命名）在当前主办方内查重；再查系统保留名；再查 * # 黑名单；全部通过后无条件把状态置为启用",
-    "path": "FormFieldController.saveField"
+    "what": "四类名称（中英字段名、中英特殊命名）在当前客户内查重；再查系统保留名；再查 * # 黑名单；全部通过后无条件把状态置为启用",
+    "path": "FieldController.saveField"
    },
    {
     "where": "字段列表查询",
-    "what": "系统字段带「已提交 + 权限≠主办方隐藏」条件；自定义字段不带状态条件",
-    "path": "FormFieldController.list"
+    "what": "系统字段带「已提交 + 权限≠客户隐藏」条件；自定义字段不带状态条件",
+    "path": "FieldController.list"
    },
    {
     "where": "状态变更",
     "what": "启用 / 停用只改状态位，不碰已填数据；删除走物理删除，级联清掉填写内容",
-    "path": "FormFieldController.editStatus / delete"
+    "path": "FieldController.editStatus / delete"
    },
    {
     "where": "必填配置",
@@ -2663,7 +2720,7 @@ window.PRD_DATA = {
   "notes": [
    "删除是真删，没有回收站。运营误删只能靠数据库恢复，建议后续加软删除，但本期不改。",
    "系统保留名清单目前写在代码常量里，业务方拿不到全量列表（见 Q-06），运营撞上了才知道被占。",
-   "同一主办方并发新建两个同名字段时，查重是「先查后写」，理论上能同时通过；实际运营单人操作，暂不处理。"
+   "同一客户并发新建两个同名字段时，查重是「先查后写」，理论上能同时通过；实际运营单人操作，暂不处理。"
   ]
  }
 };
@@ -2715,11 +2772,78 @@ function head(){
 }
 
 /* ---------- 人读：8 段 ---------- */
+function figButtons(ids){
+  /* 这一段讲到的原型帧。写文档时人是从左往右读的，回头找图要自己猜是哪一屏——
+     把对应帧直接挂成按钮，点一下左边就切过去。 */
+  if (!ids || !ids.length) return '';
+  var frames = (D.prototype && D.prototype.frames) || [], m = {};
+  frames.forEach(function(f, i){ m[f.id] = i; });
+  var ok = ids.filter(function(id){ return m[id] !== undefined; });
+  if (!ok.length) return '';
+  return '<span class="figjump"><i>原型</i>'
+    + ok.map(function(id){
+        return '<button class="fj" data-fi="' + m[id] + '" title="切到原型 ' + esc(id) + '">'
+          + esc(id) + '</button>';
+      }).join('') + '</span>';
+}
+
+/* ---------- 反向定位：改动块 → 原型帧 ----------
+   原型上点粉块能连到叙事的「本次改动」，反过来没有入口：读者看完为什么改，
+   要回去指那处长什么样，只能自己猜是第几帧。这里按 data-chg 编号反查帧，
+   把「回原型 P1」挂到改动块右上角。 */
+function chgFrames(code){
+  var out = [];
+  ((D.prototype && D.prototype.frames) || []).forEach(function(f, i){
+    var h = f.html || "";
+    if (h.indexOf('data-chg="' + code + '"') >= 0 || h.indexOf("data-chg='" + code + "'") >= 0) out.push(i);
+  });
+  return out;
+}
+function linkChgBack(){
+  var doc = document.getElementById("doc");
+  if (!doc) return;
+  var frames = (D.prototype && D.prototype.frames) || [];
+  Array.prototype.forEach.call(doc.querySelectorAll(".dchg[data-chg], .dwip[data-chg]"), function(box){
+    if (box.querySelector(".dchg-px")) return;        // 作者自己写了定位条，不重复插
+    var code = box.getAttribute("data-chg");
+    var idx = chgFrames(code);
+    if (!idx.length) return;                          // 纯规则改动、原型上没落点：不挂链接
+    var bd = box.querySelector(".dchg-bd");
+    if (!bd) return;
+    // 标题和入口放进同一个头部容器，链接自然排在标题右边
+    var hd = document.createElement("div");
+    hd.className = "dchg-hd";
+    box.insertBefore(hd, box.firstChild);
+    hd.appendChild(bd);
+    idx.slice(0, 2).forEach(function(i){
+      var a = document.createElement("a");
+      a.className = "dchg-px";
+      a.setAttribute("data-back-chg", code);
+      a.setAttribute("data-back-fi", i);
+      a.title = "跳到原型 " + frames[i].id + " 上的这处改动";
+      a.textContent = "看原型 " + frames[i].id + " →";
+      hd.appendChild(a);
+    });
+  });
+}
+function jumpChgBack(code, fi){
+  var pp = document.getElementById("paneProto");
+  // 在看用例/代码/核查栏时原型栏是藏着的，跳过去什么也看不见——先切回双栏
+  if (!pp || pp.classList.contains("hide")) goMode("both");
+  showFrame(fi);
+  wireTo(code);                                  // 复用正向那套：高亮 + 滚动 + 画线
+  var el = document.querySelector('#pwrap [data-chg="' + code + '"]');
+  if (el) el.scrollIntoView({block: "center", behavior: "auto"});
+  // 帧刚换完，尺寸还没稳定，下一帧再补一次线，否则线可能落在旧位置
+  requestAnimationFrame(function(){ paint(code); });
+}
+
 function renderSections(){
   var out = [];
   (D.sections||[]).forEach(function(sec){
     out.push('<h2>' + sec.n + '. ' + esc(sec.title)
-      + (sec.sub ? '<em>' + esc(sec.sub) + '</em>' : '') + '</h2>');
+      + (sec.sub ? '<em>' + esc(sec.sub) + '</em>' : '')
+      + figButtons(sec.frames) + '</h2>');
     if (sec.html) out.push(raw(sec.html));
     if (sec.dialogs || (sec.n === 3 && D.dialogs)) {
       out.push('<h3 class="sub3">本模块包含的页面与弹窗</h3>' + dialogTable(D.dialogs));
@@ -2908,7 +3032,8 @@ function stateMachine(t){
     h.push('<div class="tw"><table><tr><th style="width:42px">ID</th><th style="width:120px">从 → 到</th>'
       + '<th style="width:130px">触发</th><th>条件 / 后效</th></tr>');
     rows.forEach(function(r){
-      h.push('<tr><td class="mono">' + esc(r.id) + '</td><td class="mono">' + esc(r.from)
+      // id 是跨模块引用的落点：正文/报告里写「T17」时要能跳过来（rid 只在模块内唯一）
+      h.push('<tr id="tr-' + esc(r.id) + '"><td class="mono">' + esc(r.id) + '</td><td class="mono">' + esc(r.from)
         + ' → ' + esc(r.to) + '</td><td>' + raw(r.trigger||"—") + '</td><td>'
         + raw(r.guard||"—") + '</td></tr>');
     });
@@ -3128,9 +3253,16 @@ function renderProto(){
 
   if (!PROTO.frames.length) {
     tabs.innerHTML = "";
-    wrap.innerHTML = '<div class="px-empty" style="background:#fff;border:1px dashed #D6E2F0;'
-      + 'border-radius:10px;padding:60px 20px">本模块未附原型帧<br>'
-      + '<span style="font-size:11.5px">数据里 prototype.frames 为空 —— 交付前必须补</span></div>';
+    /* pwrap 是 absolute 定位、宽度随内容，直接写 width:100% 会塌成一条。
+       用画布宽度撑开一层，靠 text-align 居中 */
+    var _vw = PROTO.vw || 1440;
+    wrap.innerHTML = '<div style="width:' + _vw + 'px;padding:100px 0;text-align:center">'
+      + '<div style="display:inline-block;width:460px;background:#fff;border:1px dashed #D6E2F0;'
+      + 'border-radius:10px;padding:56px 28px;color:#5C6F84;font-size:13px;line-height:1.9">'
+      + '本模块未附原型帧<br>'
+      + '<span style="font-size:11.5px;color:#93A3B5;line-height:1.8">确实没有界面的模块'
+      + '（定时任务、纯配置、只跑批的后台服务）可以留空；<br>有界面的，交付前必须补</span>'
+      + '</div></div>';
     document.getElementById("protoHd").textContent = "无原型";
     document.getElementById("protoZoom").textContent = "";
     document.getElementById("pnote").innerHTML = "";
@@ -3145,6 +3277,90 @@ function renderProto(){
   showFrame(0);
 }
 
+/* ---------- 帧高度 ----------
+   两条都会让底部内容被 overflow:hidden 切掉：
+   ① 弹窗/抽屉是 position:absolute，不进 scrollHeight，只按 scrollHeight 算就漏了它们；
+   ② 首帧测量常早于字体就位，字体一换行高就变，量好的高度又短了。 */
+function overlayBottom(px){
+  var bottom = 0;
+  Array.prototype.forEach.call(px.querySelectorAll(".px-modal,.px-dlg,.px-drawer"), function(el){
+    if (!el.offsetHeight) return;
+    var y = 0, n = el;
+    while (n && n !== px) { y += n.offsetTop; n = n.offsetParent; }
+    if (!n) return;                       // 不属于这一帧
+    bottom = Math.max(bottom, y + el.offsetHeight);
+  });
+  return bottom;
+}
+function frameNeedH(px){
+  /* .px 有 min-height:100%，长内容会自己撑高；浮层再单独取一次最低点。
+     不加额外 padding —— 遮罩的 inset:0 会跟着画布长，加了就每渲染一次长一点。 */
+  return Math.max(PROTO.vh, Math.ceil(px.offsetHeight || 0), Math.ceil(overlayBottom(px)));
+}
+function fitFrameH(fr, px){
+  if (!fr || !px) return 0;
+  var need = frameNeedH(px);
+  if (Math.abs((parseInt(fr.style.height, 10) || 0) - need) > 1) fr.style.height = need + "px";
+  return need;
+}
+/* 字体与图片落定后再量一次：首帧量早了，字一换行就露馅 */
+function settleFrame(fr, px){
+  if (!fr || !px) return;
+  function again(){
+    if (!fr.isConnected) return;
+    fitFrameH(fr, px);
+    fitProto();
+    reportClips();
+  }
+  requestAnimationFrame(function(){ requestAnimationFrame(again); });
+  if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
+    document.fonts.ready.then(again).catch(function(){});
+  }
+  var left = 0;
+  Array.prototype.forEach.call(px.querySelectorAll("img"), function(im){
+    if (im.complete) return;
+    left++;
+    var f = function(){ im.removeEventListener("load", f); im.removeEventListener("error", f); if (--left <= 0) again(); };
+    im.addEventListener("load", f);
+    im.addEventListener("error", f);
+  });
+  setTimeout(again, 900);                 // 兜底：图片挂了/字体永不 ready 也停不下来
+}
+
+/* ---------- 裁切自检 ----------
+   「底部按钮只截了一半」这类问题，肉眼要逐帧盯才看得出来，但几何上很好判：
+   凡 overflow:hidden 的盒子，内容比盒子高/宽就是被切了。折进 fit 流程里跑，
+   产物的 body[data-clip] 直接给出结果，shot_verify 不用再另写一套判断。 */
+function clipScan(){
+  var wrap = document.getElementById("pwrap"), out = [];
+  if (!wrap) return out;
+  Array.prototype.forEach.call(
+    wrap.querySelectorAll(".px,.px-modal,.px-dlg,.px-drawer,.px-card,.px-main,.px-body,.px-cell"), function(el){
+      var st = getComputedStyle(el);
+      if (st.overflowY !== "hidden" && st.overflow !== "hidden") return;
+      var dy = el.scrollHeight - el.clientHeight;
+      var dx = el.scrollWidth - el.clientWidth;
+      if (dy <= 2 && dx <= 2) return;
+      out.push({
+        cls: (el.className || "").split(" ")[0],
+        axis: dy > 2 ? "竖向" : "横向",
+        over: dy > 2 ? dy : dx,
+        text: (el.textContent || "").replace(/\s+/g, " ").trim().slice(0, 22)
+      });
+    });
+  return out;
+}
+function reportClips(){
+  var c = clipScan();
+  document.body.setAttribute("data-clip", c.length ? "1" : "0");
+  window.__clipDetail = c;
+  if (c.length && window.console) {
+    console.warn("[PRD] 有 " + c.length + " 处内容被 overflow:hidden 裁掉", c);
+  }
+  return c;
+}
+window.clipScan = clipScan;
+
 function showFrame(i){
   var f = PROTO.frames[i];
   if (!f) return;
@@ -3158,8 +3374,8 @@ function showFrame(i){
   // 详情页比设计稿长得多，画布按内容撑开；否则长页面会被裁掉
   var fr = wrap.firstElementChild, px = fr && fr.firstElementChild;
   if (px) {
-    var need = Math.max(PROTO.vh, Math.ceil(px.scrollHeight));
-    fr.style.height = need + "px";
+    fitFrameH(fr, px);
+    settleFrame(fr, px);      // 字体/图片到位后再量一次，首帧常常量早了
   }
   var hd = PROTO.frames.length + " 个页面态 · 当前 " + f.id + " " + f.name
     + (f.state ? " · " + f.state : "");
@@ -3168,6 +3384,7 @@ function showFrame(i){
   document.getElementById("pnote").innerHTML = (f.note ? raw(f.note) : "");
   paintCols();
   markDraft();
+  linkChgBack();          // 叙事里的改动块要挂「回原型」；doc 已经渲染完才轮到 showFrame
   fillPChg();
   fitProto();
   if (PROTO.ro) PROTO.ro.disconnect();
@@ -3215,7 +3432,7 @@ function fillPChg(){
     var t = bd ? bd.textContent.trim() : "";
     var code = el.getAttribute("data-chg");
     var wip = el.classList.contains("px-wip");
-    // 徽标文字通常是「改⑩ 结算信息：补支付方式」，拆成编号 + 说明
+    // 徽标文字通常是「改⑩ 打款信息：补支付协议」，拆成编号 + 说明
     var m = t.match(/^(改[①-⑳0-9]+|新增|删[除]?)\s*[·：]?\s*(.*)$/);
     add(code, m ? (m[2] || m[1]) : (t || code), wip, el.getAttribute("data-draft"));
   });
@@ -3255,43 +3472,18 @@ function fillPChg(){
   if (!out.length) { box.className = "pchg"; box.innerHTML = ""; return; }
   box.className = "pchg on";
 
-  function chip(o, isOld){
-    return '<a class="chg-jump' + (o.w ? " wip" : "") + (isOld ? " old" : "")
-         + '" data-chg="' + o.c + '" data-draft="' + (o.d || "") + '">'
-         + '<b>' + esc(o.c) + '</b>' + esc(o.t)
-         + (isOld ? '<i>' + (o.d ? o.d + " 稿" : "未标稿次") + '</i>' : '') + '</a>';
+  // 一条平铺：改动只相对于 4.9 基线，不区分本稿 / 前稿。
+  function chip(o){
+    var t = (o.t || "").replace(/^(改[①-⑳0-9]+|新增|删除?)\s*[·：]?\s*/, "");
+    return '<a class="chg-jump' + (o.w ? " wip" : "") + '" data-chg="' + o.c + '">'
+         + '<b>' + esc(o.c) + '</b>' + esc(t) + '</a>';
   }
-  var cur = PROTO.draft;
-  if (!cur) {                                   // 没有稿次信息：老样式，一条平铺
-    box.innerHTML = '<span class="pk">本帧改动</span>' + out.map(function(o){ return chip(o, false); }).join("");
-    return;
-  }
-  // 有稿次：分两段。读者第一眼看到的必须是「这一稿改的」，
-  // 前稿的降成灰虚线并标出稿次——否则 20 处累积改动会被读成 20 处本稿改动。
-  var curL = [], oldL = [];
-  out.forEach(function(o){ (o.d === cur ? curL : oldL).push(o); });
-  var html = "";
-  if (curL.length) {
-    html += '<span class="pk">本稿 ' + curL.length + '</span>'
-          + curL.map(function(o){ return chip(o, false); }).join("");
-  }
-  if (oldL.length) {
-    html += '<span class="pk sep">前稿 ' + oldL.length + '</span>'
-          + oldL.map(function(o){ return chip(o, true); }).join("");
-  }
-  box.innerHTML = html;
+  box.innerHTML = '<span class="pk">本帧改动 ' + out.length + '</span>'
+                + out.map(chip).join("");
 }
 
-/* 给每个带稿次的标注打 .old 标记。「只看本稿」和胶囊分组都靠它，
-   不在 CSS 里比数字——样式表不知道本稿是第几稿。 */
-function markDraft(){
-  var cur = PROTO.draft;
-  if (!cur) return;
-  Array.prototype.forEach.call(document.querySelectorAll("[data-chg][data-draft]"), function(el){
-    var d = parseInt(el.getAttribute("data-draft"), 10) || 0;
-    if (d) el.classList.toggle("old", d !== cur);
-  });
-}
+/* 稿次不分层：标注一视同仁，全部实心。保留函数名给启动段调用。 */
+function markDraft(){}
 
 /* 只看本稿：跨帧、跨模块保持。切页面态时 #pwrap 被整体替换，
    所以状态放在 body 上，而不是某个具体元素上。 */
@@ -3523,6 +3715,9 @@ function applyLayout(){
   var t = MODE_TIP[m] || MODE_TIP.human;
   var r2 = document.getElementById("r2");
   if (r2) r2.innerHTML = t[0] + '<span>' + t[1] + '</span>';
+  /* 切栏 / 切页签之后布局整个变了，旧的连线留在 SVG 里会挂在新位置上，
+     指向两个毫不相干的块——比不画更糟。每次重排一律清掉。 */
+  wireOff();
   fitProto();
 }
 
@@ -3556,6 +3751,23 @@ function bind(){
   });
 
   // 原型页签
+  // 原型帧之间跳转：图里某个按钮带 data-goto-frame="P2"，点了直接换到那一帧。
+  // 纯原型模式下最有用——演示时能点着页面走，不用回到上面点页签。
+  document.addEventListener("click", function(e){
+    if (!e.target || !e.target.closest) return;
+    var gf = e.target.closest("[data-goto-frame]");
+    if (!gf) return;
+    if (e.preventDefault) e.preventDefault();
+    var want = gf.dataset.gotoFrame, idx = -1;
+    (PROTO.frames || []).forEach(function(f, i){ if (f.id === want) idx = i; });
+    if (idx >= 0) {
+      var pp = document.getElementById("paneProto");
+      if (pp && pp.classList.contains("hide")) goMode("proto");
+      showFrame(idx);
+    }
+    return;
+  });
+
   document.addEventListener("click", function(e){
     var t = (e.target && e.target.closest) ? e.target.closest("[data-fi]") : null;
     if (t) {
@@ -3743,7 +3955,8 @@ function wireTo(id, keep){
 }
 document.addEventListener('click', function(e){
   var b = e.target.closest('[data-chg]');
-  if (!b) return;
+  // 点在别处 = 收起连线。旧版只在切栏时清，读者随手点一下空白，那条虚线会一直挂着
+  if (!b) { wireOff(); return; }
   var id = b.getAttribute('data-chg');
   if (!id) return;
   // 原型里点粉块任意位置都算（块就是标记本体）；
@@ -3754,6 +3967,15 @@ document.addEventListener('click', function(e){
   e.preventDefault();
   wireTo(id);
 }, true);
+/* 改动块上的「回原型 P1」：先挡住冒泡，否则上面那个 capture 处理器
+   会把这次点击当成「点了别处」而清掉连线 */
+document.addEventListener('click', function(e){
+  var b = e.target.closest ? e.target.closest('[data-back-chg]') : null;
+  if (!b) return;
+  e.preventDefault();
+  e.stopPropagation();
+  jumpChgBack(b.getAttribute('data-back-chg'), parseInt(b.getAttribute('data-back-fi'), 10));
+});
 // 面板滚动后线会错位：跟着重画，而不是抹掉——否则读者一滚就没了
 function repaint(){ if (CUR) paint(CUR); }
 window.addEventListener('resize', repaint);

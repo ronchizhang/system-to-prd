@@ -80,6 +80,14 @@ body:not(.both) .pane.facts .pane-hd{display:none}
 .doc h2::before{content:"";position:absolute;left:0;top:4px;bottom:4px;width:3px;
   border-radius:2px;background:var(--blue)}
 .doc h2 em{font-style:normal;font-size:11px;font-weight:500;color:#9AAABA;margin-left:8px}
+/* 段标题右侧的「这一段对应哪几屏」按钮：1234 直接点，不用回左边自己找 */
+.doc h2 .figjump{float:right;display:inline-flex;align-items:center;gap:4px;
+  margin-top:-1px;font-weight:400}
+.doc h2 .figjump i{font-style:normal;font-size:10px;color:#9AAABA;letter-spacing:.04em}
+.doc h2 .figjump .fj{font:inherit;font-size:10.5px;font-weight:600;line-height:1;
+  padding:3px 8px;border:1px solid #C9DAEC;background:#F5F9FD;color:#346FC5;
+  border-radius:9px;cursor:pointer}
+.doc h2 .figjump .fj:hover{background:#E7F1FC;border-color:#9CC3EE;color:#185FA5}
 .doc h3{font-size:13.5px;font-weight:700;color:#3D5B7A;margin:20px 0 9px}
 .doc p{margin:0 0 12px;line-height:1.9}
 .doc b{color:var(--deep);font-weight:700}
@@ -262,6 +270,20 @@ td.c{text-align:center}
 .fcard.hl{box-shadow:0 0 0 2px #1E6FD9, 0 4px 18px rgba(30,111,217,.18);border-color:#7FB3EE}
 .rule.hl{box-shadow:0 0 0 2px #1E6FD9, 0 4px 18px rgba(30,111,217,.18)}
 .fcard,.rule{transition:box-shadow .2s,border-color .2s}
+/* 交叉引用：正文里出现的规则号 / 迁移号 / 事实号 / 模块名，点了能到。
+   样式刻意做轻——一段话里出现七八个引用是常态，全做成蓝色实心头会盖过正文。 */
+a.xref{color:#1B64C0;text-decoration:none;border-bottom:1px dashed rgba(27,100,192,.45);
+  cursor:pointer;transition:background .12s,border-color .12s;
+  white-space:nowrap}
+a.xref:hover{background:#EAF2FD;border-bottom-color:#1B64C0}
+a.xref code,a.xref .mono{color:inherit}
+code a.xref,pre a.xref{color:#B0244F;border-bottom:1px dotted rgba(176,36,79,.5)}
+code a.xref:hover{background:#FFF0F5}
+/* 模块名引用：颜色跟正文一致，只靠一条浅虚线暗示可点 */
+a.xref.mod{color:inherit;border-bottom:1px dotted #8FA9C2;white-space:normal}
+a.xref.mod:hover{color:#1B64C0;background:#F2F8FF;border-bottom-color:#1B64C0}
+/* 状态机迁移行作为落点：跳过来时整行闪一下，不然滚到表中间不知道看哪 */
+tr.hl td{background:#FFF8E1;transition:background .2s}
 .doc .tw table.mono td.mono{font-family:var(--mono,monospace);font-size:11.5px;white-space:nowrap}
 
 /* ==================================================================
@@ -289,6 +311,12 @@ td.c{text-align:center}
   100% {box-shadow:0 0 0 0 rgba(30,111,217,0)}
 }
 @media (prefers-reduced-motion:reduce){ .dchg.landed,.spc.landed{animation:none} }
+
+/* 操作日志的「操作前 / 操作后」两块标签：创建记录的前一块是空的，照系统留白，不加占位文字 */
+.px-cmp-lb{font-size:12px;color:#8A9AAB;margin:0 0 8px;letter-spacing:.02em}
+.px-cmp-lb.gap{margin-top:16px}
+.px-cmp-empty{height:44px;margin:0 0 16px;border-radius:4px;background:#FBFCFE}
+.px-cmp-sep{height:1px;background:#F0F5FA;margin:0 0 14px}
 
 /* ---------- 用例栏 ---------- */
 .cases-body{padding:22px 26px 80px;max-width:1080px;margin:0 auto}
@@ -339,6 +367,9 @@ td.c{text-align:center}
 /* ---------- 原型区 ---------- */
 .pane.proto{background:#EEF3F9;border-right:1px solid var(--line)}
 body.both .pane.proto{flex:0 0 50%}
+/* 纯原型：只留图，占满整屏，去掉右分隔线。演示/评审时投屏用 */
+body.proto .pane.proto{flex:1 1 100%;border-right:0}
+body.proto .pane-hd .k{color:#1E6FD9}
 .ptabs{display:flex;gap:5px;padding:8px 12px;overflow-x:auto;background:#fff;
   border-bottom:1px solid var(--line);flex:0 0 auto;flex-wrap:wrap}
 .ptab{border:1px solid #E3EAF3;background:#fff;border-radius:6px;padding:4px 10px;font-size:11.5px;
@@ -353,7 +384,7 @@ body.both .pane.proto{flex:0 0 50%}
   box-shadow:0 2px 16px rgba(24,64,120,.13);border:1px solid #DCE6F2}
 /* 所有帧统一按设计尺寸的画布，切换时不跳动 */
 .pframe>
-.pnote{max-width:980px;margin:9px auto 0;font-size:11px;color:#8CA0B4;line-height:1.7}
+.pnote{max-width:min(980px,100%);margin:9px auto 0;font-size:11px;color:#8CA0B4;line-height:1.7}
 .pnote code{font-family:var(--mono);font-size:10.5px;background:#E6EEF7;color:#3D6288;
   padding:1px 5px;border-radius:3px;margin-right:3px;white-space:nowrap}
 
@@ -361,6 +392,11 @@ body.both .pane.proto{flex:0 0 50%}
 .px{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",Arial,sans-serif;
   font-size:14px;color:#1F2A37;background:#F5F7FA;display:flex;flex-direction:column;
   width:1440px;min-height:600px;line-height:1.5;position:relative;overflow:hidden}
+/* 画布要撑满外层框：弹窗/抽屉是 position:absolute + inset:0，锚的是 .px 的盒子。
+   .px 停在 min-height:600 而外层框 900 时，遮罩只盖住上面 600，弹窗底部按钮正好
+   被 overflow:hidden 切掉一半（2026-11-06 字段详情帧就是这么被看出来的）。
+   :not(.full) —— .px.full 是整页长帧，高度必须跟着内容走。 */
+.pframe > .px:not(.full){min-height:100%}
 /* 高弹窗帧用：弹窗本身很高时，画布跟着加高，否则底部按钮会被 overflow:hidden 切掉 */
 .px.tall{min-height:680px}
 /* 整页帧：长页面不要拆成多帧，一页一帧、画布跟着内容长高。
@@ -427,7 +463,7 @@ body.both .pane.proto{flex:0 0 50%}
 .px-table.wide{table-layout:auto;width:max-content;min-width:100%}
 .px-table.wide th,.px-table.wide td{overflow:visible;text-overflow:clip}
 /* 快照按协议分组：每组一张小表，表头只列该协议需要的字段。
-   为什么不用一张并集宽表：并集表里同一列名在不同协议下含义不同（银行编码在 通道A 是 Routing，
+   为什么不用一张并集宽表：并集表里同一列名在不同协议下含义不同（银行编码在 清算网络A 是 Routing，
    在本地清算是分行号），空着的格子读不出「不需要」还是「没填」 */
 .px-grp{border:1px solid #E9EFF6;border-radius:8px;overflow:hidden;margin-top:9px;background:#fff}
 .px-grp-hd{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#F7FAFD;
@@ -447,7 +483,7 @@ body.both .pane.proto{flex:0 0 50%}
 .px-table .pw5{width:15%}
 .px-table .pw6{width:18%}
 .px-table .pw7{width:22%}
-/* 向导型页面（两步流程）的步骤条。实拍是居中圆点 + 编号 + 连线 */
+/* 向导型页面（新增人员这类两步流程）的步骤条。实拍是居中圆点 + 编号 + 连线 */
 .px-steps{display:flex;align-items:center;justify-content:center;gap:12px;margin:2px 0 20px}
 .px-step{display:flex;align-items:center;gap:7px;font-size:13px;color:#8CA0B4}
 .px-step.on{color:#1E6FD9;font-weight:600}
@@ -479,7 +515,7 @@ body.both .pane.proto{flex:0 0 50%}
 .px-tab{padding:9px 0;font-size:13.5px;color:#5C6F84;border-bottom:2px solid transparent}
 .px-tab.on{color:#1E6FD9;font-weight:600;border-bottom-color:#1E6FD9}
 .px-empty{padding:40px;text-align:center;color:#9AAABA;font-size:13px}
-/* 列表底栏：左边批量动作、右边分页。真实后台的列表页就是这样一排 */
+/* 列表底栏：左边批量动作、右边分页。真实后台（单据工作台）就是这样一排 */
 .px-lfoot{display:flex;align-items:center;padding:12px 4px 0;margin-top:4px}
 .px-lfoot .px-pager{padding:0;flex:0 0 auto}
 .px-pager{display:flex;align-items:center;gap:8px;justify-content:flex-end;padding:12px 4px 0;
@@ -581,9 +617,9 @@ body.both .pane.proto{flex:0 0 50%}
 /* 状态格下面的一行小字：失败原因 / 未发起提示 */
 .px-fail{display:inline-block;margin-top:3px;font-size:10.5px;line-height:1.5;color:#B45309}
 .px-fail.red{color:#C62828}
-/* 协议分组：一张结算单里，不同的人可能走不同支付网络，字段各不相同。
+/* 协议分组：一张出款单里，不同的人可能走不同清算网络，字段各不相同。
    按协议拆成若干组，每组一张小表，列只保留该协议真正要的字段——
-   一张并集宽表会把「银行代码」在通道A 是 routing number、在通道B 是 IBAN 混成一列，诱导填错 */
+   一张并集宽表会把「银行代码」在 清算网络A 是 routing number、在 清算网络E 是 银行代码 混成一列，诱导填错 */
 .px-grp{border:1px solid #E3EAF3;border-radius:8px;margin:9px 0;overflow:hidden;background:#fff}
 .px-grp-hd{display:flex;align-items:center;gap:8px;padding:8px 11px;background:#F7FAFD;
   border-bottom:1px solid #E8EFF7;font-size:12px;color:#41566E}
@@ -592,7 +628,7 @@ body.both .pane.proto{flex:0 0 50%}
 .px-grp-hd .px-sp{flex:1}
 .px-grp .px-table th{font-size:11px;padding:7px 9px;background:#FBFDFF}
 .px-grp .px-table td{font-size:11.5px;padding:8px 9px}
-/* 一次结算的批次汇总条：几人 / 多少钱 / 分几批 */
+/* 一次出款的批次汇总条：几人 / 多少钱 / 分几批 */
 .px-batch{display:flex;gap:16px;flex-wrap:wrap;align-items:center;background:#F3F8FD;
   border:1px solid #DCE8F5;border-radius:7px;padding:9px 12px;margin:2px 0 6px;font-size:12.5px;color:#1F2A37}
 .px-batch i{font-style:normal;color:#8FA3B8;margin-right:5px}
@@ -638,7 +674,7 @@ body.both .pane.proto{flex:0 0 50%}
 .px-alert.danger{background:#FEF3F2;border:1px solid #FDA29B;color:#912018}
 .px-alert.danger .ico{background:#D92D20}
 .px-alert.danger b{color:#7A271A}
-/* 表单只读 / 警示态：表单页大量用「自动带出不可改」字段，样式统一在这里，
+/* 表单只读 / 警示态：新增人员这类页面大量用「自动带出不可改」字段，样式统一在这里，
    页面里不许再写内联 style（否则每个人画出来都不一样） */
 .px-fctrl.ro{background:#FAFBFD;color:#8FA3B8}
 .px-fctrl.pick{justify-content:space-between}
@@ -659,8 +695,8 @@ body.both .pane.proto{flex:0 0 50%}
 .px-v{color:#1F2A37}
 /* 不可选那一格里的名字：看着像链接、其实是灰的，悬停给原因 */
 .px-dislink{color:#9AAABA;border-bottom:1px dashed #C9D6E4;cursor:help}
-/* 展开行：该报名者按这条通道收到的全部字段。放在行下方而不是另起弹窗，
-   因为要跟同行的人对照——"他走通道A只要四项，这个人走通道B要八项" */
+/* 展开行：该人员按这个协议收到的全部字段。放在行下方而不是另起弹窗，
+   因为要跟同行的人对照——"他走 清算网络FA 只要四项，这个人走 清算网络S 要八项" */
 .px-exprow td{background:#FBFDFF;border-top:1px dashed #DCE8F5}
 .px-exp-hd{display:flex;align-items:center;gap:8px;font-size:11.5px;color:#41566E;margin-bottom:8px}
 .px-flist{display:grid;grid-template-columns:repeat(4,1fr);gap:6px 14px}
@@ -668,7 +704,7 @@ body.both .pane.proto{flex:0 0 50%}
   background:#fff;border:1px solid #E8EFF7;border-radius:5px;padding:5px 8px}
 .px-flist i{font-style:normal;color:#8FA3B8;display:block;font-size:10px;margin-bottom:2px}
 /* 字段缺失标记：必须是「弱提示」不是「错误」——它只说明这条腿上该协议当前要的字段没填全，
-   不说明钱付不出去（付不付得掉要 示例通道 判）。红色会让人误判成已失败。 */
+   不说明钱付不出去（付不付得掉要 XPay 判）。红色会让人误判成已失败。 */
 .miss{color:#A9660E;background:#FFF6E5;border:1px dashed #EFC98B;border-radius:4px;
   padding:0 5px;font-weight:600;font-size:11px;line-height:16px;display:inline-block;cursor:help}
 .px-tips.miss-tip>.px-tip{min-width:300px;max-width:380px}
@@ -679,7 +715,7 @@ body.both .pane.proto{flex:0 0 50%}
 .px-table th.w-s{width:84px}
 .px-table th.w-n{width:178px}
 .px-table th.w-dt{width:104px}
-/* 允许换行的单元格：金额、名单这类「一条里有多段」的内容，宁可换行也不截断。
+/* 允许换行的单元格：金额、人员名单这类「一条里有多段」的内容，宁可换行也不截断。
    截断会让读的人以为只有一笔/一人。 */
 .px-table td.wrap{white-space:normal;word-break:break-word;text-overflow:clip;line-height:1.5}
 .px-table th.w-c{width:46px}
@@ -699,7 +735,7 @@ body.both .pane.proto{flex:0 0 50%}
 .px-table th.w-m{width:216px}
 .px-table th.w-l{width:24%}
 .px-table th.w-xl{width:28%}
-/* 流程卡片：申请单那种一格一格的豆腐块。一条业务申请拆成 N 张处理单 = N 格 */
+/* 流程卡片：财务请款申请那种一格一格的豆腐块。一条业务请款拆成 N 条财务请款 = N 格 */
 .px-fcard{border:1px solid #EDF0F3;border-radius:8px;background:#fff;
   padding:16px 20px 14px;margin:0 0 12px}
 .px-fcard:last-child{margin-bottom:0}
@@ -745,7 +781,9 @@ body.both .pane.proto{flex:0 0 50%}
 .px-modal-hd{padding:14px 18px;font-size:15px;font-weight:600;border-bottom:1px solid #EFF3F8;
   display:flex;align-items:center}
 .px-modal-hd .x{margin-left:auto;color:#9AAABA;font-size:16px}
-.px-modal-bd{padding:18px}
+/* 内容比 700 还高的弹窗：让正文自己滚，别把底部按钮挤出盒子——
+   .px-modal 是 overflow:hidden，flex 子项不给 min-height:0 时正文会把 footer 顶出去 */
+.px-modal-bd{padding:18px;flex:1 1 auto;min-height:0;overflow:auto}
 .px-modal-ft{padding:12px 18px;border-top:1px solid #EFF3F8;display:flex;justify-content:flex-end;gap:9px}
 .px-drawer{position:absolute;right:0;top:0;bottom:0;width:520px;background:#fff;
   box-shadow:-8px 0 30px rgba(15,23,36,.2);display:flex;flex-direction:column}
@@ -829,7 +867,7 @@ body.both .pane.proto{flex:0 0 50%}
    缩到 40% 就完全看不出——实测过，用户直接说「没有粉色提示」 */
 .px-table td.chg-col{box-shadow:inset 1.5px 0 0 rgba(240,98,146,.55),inset -1.5px 0 0 rgba(240,98,146,.55)}
 /* 改动列的单元格内容比普通列多（账户名 + 标签 + 协议），基础样式是 nowrap + 省略号，
-   硬撑着不换行就会把「全球雇佣香港B-通道C」截成「…通道C…」。改动列一律允许换行 */
+   硬撑着不换行就会把「雇佣服务某地区B-XPay」截成「…XPay…」。改动列一律允许换行 */
 .px-table td.chg-col{white-space:normal;word-break:break-word;overflow-wrap:anywhere;
   text-overflow:clip;line-height:1.55}
 .px-table th.chg-col{position:relative;
@@ -864,15 +902,13 @@ body.both .pane.proto{flex:0 0 50%}
   border-radius:8px;padding:1px 5px;margin-right:4px}
 .pchg a.wip{border-style:dashed;border-color:#B7CBE0;color:#4B6580;background:#F7FAFD}
 .pchg a.wip b{background:#7A9CBE}
-/* 前稿的改动：编号一直在累积，读的人常常只关心「这一稿动了什么」。
-   前稿的胶囊降成灰虚线 + 标出稿次，本稿保持实心粉。 */
+/* 改动胶囊：一条平铺，全部实心。 */
 .pchg a.old{opacity:.62;border-style:dashed;border-color:#E0CFD5;color:#8A6B76;background:#FDFBFC}
 .pchg a.old b{background:#C9A9B5}
 .pchg a i{font-style:normal;font-family:var(--mono);font-size:9px;opacity:.75;margin-left:5px}
 .pchg .pk.sep{color:#9AA7B5;font-weight:600;padding-left:4px}
 
-/* 只看本稿：把所有非本稿的标注一起收起来。
-   只在 JS 里打 .old，不在 CSS 里比数字——样式表不知道本稿是第几稿 */
+/* 标注一视同仁：不再按稿次压暗。 */
 .ocbtn{font:600 10.5px/1 -apple-system,"PingFang SC","Microsoft YaHei";color:#B01D53;
   background:#FFF5F8;border:1px solid #F5B9CE;border-radius:10px;padding:3px 9px;
   cursor:pointer;white-space:nowrap;margin-left:8px}
@@ -897,41 +933,6 @@ body.onlycur .doc .dwip.old > .dchg-bd{display:none}
 .wire circle{fill:#EC407A}
 @keyframes wireRun{to{stroke-dashoffset:-11}}
 
-/* 改动对照：改前 / 改后 并排。
-   原型里那块粉色只说明「这里改了」，说不出「原来长什么样」——
-   而评审时最先被问的恰恰是「原来是什么」。所以每一处改动配一张对照卡。 */
-.ccase{margin:6px 0 20px}
-.ccase-hd{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:10px}
-.ccase-hd b{font-size:13.5px;color:#B0244F}
-.ccase-hd span{font-size:11.5px;color:#9A7B86}
-.cc{background:#fff;border:1px solid #F3D6E1;border-radius:10px;padding:11px 13px 10px;
-  margin:9px 0;cursor:pointer;transition:box-shadow .18s,border-color .18s}
-.cc:hover{border-color:#EC9BB8;box-shadow:0 3px 12px rgba(236,64,122,.10)}
-.cc.on{border-color:#EC407A;box-shadow:0 0 0 2px rgba(236,64,122,.22),0 6px 18px rgba(236,64,122,.16)}
-.cc-hd{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;margin-bottom:9px}
-.cc-no{font:600 10px/1 -apple-system,"PingFang SC";color:#fff;background:#EC407A;
-  border-radius:9px;padding:3px 7px;flex:none}
-.cc-tt{font-size:12.5px;font-weight:600;color:#3A2A31}
-.cc-where{font-size:10.5px;color:#9A7B86;font-family:var(--mono)}
-.cc-row{display:grid;grid-template-columns:1fr 16px 1fr;gap:7px;align-items:stretch}
-.cc-ar{display:flex;align-items:center;justify-content:center;color:#E0A8BD;font-size:12px}
-.cc-side{border-radius:7px;padding:8px 9px;min-width:0}
-.cc-side.bf{background:#F7F8FA;border:1px solid #E7EAF0}
-.cc-side.af{background:#FFF5F8;border:1px solid #F7CBDA}
-.cc-tag{display:block;font:600 9.5px/1 -apple-system,"PingFang SC";letter-spacing:.04em;
-  color:#8A93A0;margin-bottom:6px}
-.cc-side.af .cc-tag{color:#B0244F}
-.cc-li{font-size:11.5px;line-height:1.8;color:#4A3B42;display:flex;gap:5px;word-break:break-word}
-.cc-li em{font-style:normal;font-family:var(--mono);font-size:10px;color:#C3CAD3;flex:none;width:8px}
-.cc-li.add{color:#B0244F;font-weight:600;background:rgba(255,77,121,.09);border-radius:3px}
-.cc-li.add em{color:#EC407A}
-.cc-li.del{color:#A8AFB8;text-decoration:line-through}
-.cc-why{margin-top:8px;font-size:11px;line-height:1.75;color:#6E5A63;
-  border-top:1px dashed #F0DDE5;padding-top:7px}
-.cc-why b{color:#B0244F;font-weight:600;margin-right:5px}
-/* 只看当前态时，前稿的对照卡一起收起来，跟原型和叙事保持一致 */
-body.onlycur .cc.old{display:none}
-
 /* 叙事里的改动块 */
 .doc .dchg{position:relative;background:#FFF5F8;border-left:3px solid #F06292;
   padding:12px 14px 11px 16px;border-radius:0 8px 8px 0;margin:13px 0;transition:box-shadow .2s}
@@ -939,6 +940,28 @@ body.onlycur .cc.old{display:none}
   color:#fff;background:#EC407A;border-radius:9px;padding:3px 8px;cursor:pointer;white-space:nowrap;
   box-shadow:0 2px 6px rgba(236,64,122,.3)}
 .doc .dchg.wired{box-shadow:0 0 0 2px rgba(236,64,122,.3),0 6px 18px rgba(236,64,122,.18)}
+/* 改动块头部：标题 + 看原型入口。
+   原来只有右上角一个浮动的「回原型」按钮，读者容易看不见；这里把入口挪到标题右边，
+   帧号直接写在链接上（看原型 P3 →），看完一段改动就知道该翻哪一帧。
+   .dchg 和 .dwip 共用一套（两者都可能带 data-chg）。 */
+.doc .dchg-hd{position:absolute;top:-9px;left:12px;display:flex;align-items:center;gap:6px;
+  max-width:calc(100% - 22px);flex-wrap:wrap}
+.doc .dchg-hd > .dchg-bd{position:static}
+.doc .dchg-px{font:500 10px/1 -apple-system,"PingFang SC";color:#9AA7B4;text-decoration:none;
+  white-space:nowrap;border:1px solid #E3E9F0;border-radius:9px;padding:3px 7px;background:#fff;
+  transition:color .15s,border-color .15s,background .15s}
+.doc .dchg-px:hover{color:#1E6FD9;border-color:#BBD3F0;background:#F5F9FF}
+/* 改动块右上角：反向跳回原型。原型→文字有连线，文字→原型原先没有入口，
+   读者看完「为什么改」通常要回去指那处长什么样，只能自己翻帧。 */
+.doc .dchg > .dchg-back,.doc .dwip > .dchg-back{position:absolute;top:-10px;right:10px;display:inline-flex;
+  align-items:center;gap:4px;padding:1px 2px 1px 0}
+.doc .dchg > .dchg-back i,.doc .dwip > .dchg-back i{font-style:normal;font-size:10px;color:#BE6C90;letter-spacing:.04em}
+.doc .dwip > .dchg-back i{color:#7A9CBE}
+.doc .dchg > .dchg-back .fj,.doc .dwip > .dchg-back .fj{font-family:inherit;font-size:10.5px;font-weight:600;line-height:1;
+  padding:3px 8px;border:1px solid #F3BFD2;background:#fff;color:#BE185D;border-radius:9px;cursor:pointer}
+.doc .dwip > .dchg-back .fj{border-color:#C6D8EA;color:#2F6BA8}
+.doc .dchg > .dchg-back .fj:hover{background:#EC407A;border-color:#EC407A;color:#fff}
+.doc .dwip > .dchg-back .fj:hover{background:#4A7FB5;border-color:#4A7FB5;color:#fff}
 .doc .dwip{background:#F4F7FB;border-left:3px solid #93AECB;padding:11px 14px 10px 15px;
   border-radius:0 8px 8px 0;margin:12px 0;position:relative}
 .doc .dwip > .dchg-bd{position:absolute;top:-9px;left:12px;font:600 10px/1 -apple-system,"PingFang SC";
@@ -975,6 +998,7 @@ body.onlycur .cc.old{display:none}
     <span class="sp"></span>
     <div class="modes" id="modes">
       <button data-m="both" class="on">原型+文档</button>
+      <button data-m="proto">纯原型</button>
       <button data-m="cases">测试用例<span class="n" id="nCase"></span></button>
       <button data-m="code">代码逻辑</button>
       <button data-m="facts">核查<span class="n" id="nFact"></span></button>
@@ -992,7 +1016,6 @@ body.onlycur .cc.old{display:none}
       <span id="protoHd">本模块页面态</span>
       <span class="sp" style="flex:1"></span>
       <span id="protoZoom"></span>
-      <button class="ocbtn" style="display:none" onclick="toggleOnlyCur()">只看本稿</button>
     </div>
     <div class="ptabs" id="ptabs"></div>
     <div class="pchg" id="pchg"></div>
@@ -1008,7 +1031,6 @@ body.onlycur .cc.old{display:none}
       <span class="k">叙事</span>
       <span>业务 / PM / 测试 / 研发 · 叙事 + 图 + case · 8 段固定结构</span>
       <span class="sp" style="flex:1"></span>
-      <button class="ocbtn" style="display:none" onclick="toggleOnlyCur()">只看本稿</button>
 
     </div>
     <div class="pane-scroll">
@@ -1114,11 +1136,78 @@ function head(){
 }
 
 /* ---------- 人读：8 段 ---------- */
+function figButtons(ids){
+  /* 这一段讲到的原型帧。写文档时人是从左往右读的，回头找图要自己猜是哪一屏——
+     把对应帧直接挂成按钮，点一下左边就切过去。 */
+  if (!ids || !ids.length) return '';
+  var frames = (D.prototype && D.prototype.frames) || [], m = {};
+  frames.forEach(function(f, i){ m[f.id] = i; });
+  var ok = ids.filter(function(id){ return m[id] !== undefined; });
+  if (!ok.length) return '';
+  return '<span class="figjump"><i>原型</i>'
+    + ok.map(function(id){
+        return '<button class="fj" data-fi="' + m[id] + '" title="切到原型 ' + esc(id) + '">'
+          + esc(id) + '</button>';
+      }).join('') + '</span>';
+}
+
+/* ---------- 反向定位：改动块 → 原型帧 ----------
+   原型上点粉块能连到叙事的「本次改动」，反过来没有入口：读者看完为什么改，
+   要回去指那处长什么样，只能自己猜是第几帧。这里按 data-chg 编号反查帧，
+   把「回原型 P1」挂到改动块右上角。 */
+function chgFrames(code){
+  var out = [];
+  ((D.prototype && D.prototype.frames) || []).forEach(function(f, i){
+    var h = f.html || "";
+    if (h.indexOf('data-chg="' + code + '"') >= 0 || h.indexOf("data-chg='" + code + "'") >= 0) out.push(i);
+  });
+  return out;
+}
+function linkChgBack(){
+  var doc = document.getElementById("doc");
+  if (!doc) return;
+  var frames = (D.prototype && D.prototype.frames) || [];
+  Array.prototype.forEach.call(doc.querySelectorAll(".dchg[data-chg], .dwip[data-chg]"), function(box){
+    if (box.querySelector(".dchg-px")) return;        // 作者自己写了定位条，不重复插
+    var code = box.getAttribute("data-chg");
+    var idx = chgFrames(code);
+    if (!idx.length) return;                          // 纯规则改动、原型上没落点：不挂链接
+    var bd = box.querySelector(".dchg-bd");
+    if (!bd) return;
+    // 标题和入口放进同一个头部容器，链接自然排在标题右边
+    var hd = document.createElement("div");
+    hd.className = "dchg-hd";
+    box.insertBefore(hd, box.firstChild);
+    hd.appendChild(bd);
+    idx.slice(0, 2).forEach(function(i){
+      var a = document.createElement("a");
+      a.className = "dchg-px";
+      a.setAttribute("data-back-chg", code);
+      a.setAttribute("data-back-fi", i);
+      a.title = "跳到原型 " + frames[i].id + " 上的这处改动";
+      a.textContent = "看原型 " + frames[i].id + " →";
+      hd.appendChild(a);
+    });
+  });
+}
+function jumpChgBack(code, fi){
+  var pp = document.getElementById("paneProto");
+  // 在看用例/代码/核查栏时原型栏是藏着的，跳过去什么也看不见——先切回双栏
+  if (!pp || pp.classList.contains("hide")) goMode("both");
+  showFrame(fi);
+  wireTo(code);                                  // 复用正向那套：高亮 + 滚动 + 画线
+  var el = document.querySelector('#pwrap [data-chg="' + code + '"]');
+  if (el) el.scrollIntoView({block: "center", behavior: "auto"});
+  // 帧刚换完，尺寸还没稳定，下一帧再补一次线，否则线可能落在旧位置
+  requestAnimationFrame(function(){ paint(code); });
+}
+
 function renderSections(){
   var out = [];
   (D.sections||[]).forEach(function(sec){
     out.push('<h2>' + sec.n + '. ' + esc(sec.title)
-      + (sec.sub ? '<em>' + esc(sec.sub) + '</em>' : '') + '</h2>');
+      + (sec.sub ? '<em>' + esc(sec.sub) + '</em>' : '')
+      + figButtons(sec.frames) + '</h2>');
     if (sec.html) out.push(raw(sec.html));
     if (sec.dialogs || (sec.n === 3 && D.dialogs)) {
       out.push('<h3 class="sub3">本模块包含的页面与弹窗</h3>' + dialogTable(D.dialogs));
@@ -1307,7 +1396,8 @@ function stateMachine(t){
     h.push('<div class="tw"><table><tr><th style="width:42px">ID</th><th style="width:120px">从 → 到</th>'
       + '<th style="width:130px">触发</th><th>条件 / 后效</th></tr>');
     rows.forEach(function(r){
-      h.push('<tr><td class="mono">' + esc(r.id) + '</td><td class="mono">' + esc(r.from)
+      // id 是跨模块引用的落点：正文/报告里写「T17」时要能跳过来（rid 只在模块内唯一）
+      h.push('<tr id="tr-' + esc(r.id) + '"><td class="mono">' + esc(r.id) + '</td><td class="mono">' + esc(r.from)
         + ' → ' + esc(r.to) + '</td><td>' + raw(r.trigger||"—") + '</td><td>'
         + raw(r.guard||"—") + '</td></tr>');
     });
@@ -1527,9 +1617,16 @@ function renderProto(){
 
   if (!PROTO.frames.length) {
     tabs.innerHTML = "";
-    wrap.innerHTML = '<div class="px-empty" style="background:#fff;border:1px dashed #D6E2F0;'
-      + 'border-radius:10px;padding:60px 20px">本模块未附原型帧<br>'
-      + '<span style="font-size:11.5px">数据里 prototype.frames 为空 —— 交付前必须补</span></div>';
+    /* pwrap 是 absolute 定位、宽度随内容，直接写 width:100% 会塌成一条。
+       用画布宽度撑开一层，靠 text-align 居中 */
+    var _vw = PROTO.vw || 1440;
+    wrap.innerHTML = '<div style="width:' + _vw + 'px;padding:100px 0;text-align:center">'
+      + '<div style="display:inline-block;width:460px;background:#fff;border:1px dashed #D6E2F0;'
+      + 'border-radius:10px;padding:56px 28px;color:#5C6F84;font-size:13px;line-height:1.9">'
+      + '本模块未附原型帧<br>'
+      + '<span style="font-size:11.5px;color:#93A3B5;line-height:1.8">确实没有界面的模块'
+      + '（定时任务、纯配置、只跑批的后台服务）可以留空；<br>有界面的，交付前必须补</span>'
+      + '</div></div>';
     document.getElementById("protoHd").textContent = "无原型";
     document.getElementById("protoZoom").textContent = "";
     document.getElementById("pnote").innerHTML = "";
@@ -1544,6 +1641,90 @@ function renderProto(){
   showFrame(0);
 }
 
+/* ---------- 帧高度 ----------
+   两条都会让底部内容被 overflow:hidden 切掉：
+   ① 弹窗/抽屉是 position:absolute，不进 scrollHeight，只按 scrollHeight 算就漏了它们；
+   ② 首帧测量常早于字体就位，字体一换行高就变，量好的高度又短了。 */
+function overlayBottom(px){
+  var bottom = 0;
+  Array.prototype.forEach.call(px.querySelectorAll(".px-modal,.px-dlg,.px-drawer"), function(el){
+    if (!el.offsetHeight) return;
+    var y = 0, n = el;
+    while (n && n !== px) { y += n.offsetTop; n = n.offsetParent; }
+    if (!n) return;                       // 不属于这一帧
+    bottom = Math.max(bottom, y + el.offsetHeight);
+  });
+  return bottom;
+}
+function frameNeedH(px){
+  /* .px 有 min-height:100%，长内容会自己撑高；浮层再单独取一次最低点。
+     不加额外 padding —— 遮罩的 inset:0 会跟着画布长，加了就每渲染一次长一点。 */
+  return Math.max(PROTO.vh, Math.ceil(px.offsetHeight || 0), Math.ceil(overlayBottom(px)));
+}
+function fitFrameH(fr, px){
+  if (!fr || !px) return 0;
+  var need = frameNeedH(px);
+  if (Math.abs((parseInt(fr.style.height, 10) || 0) - need) > 1) fr.style.height = need + "px";
+  return need;
+}
+/* 字体与图片落定后再量一次：首帧量早了，字一换行就露馅 */
+function settleFrame(fr, px){
+  if (!fr || !px) return;
+  function again(){
+    if (!fr.isConnected) return;
+    fitFrameH(fr, px);
+    fitProto();
+    reportClips();
+  }
+  requestAnimationFrame(function(){ requestAnimationFrame(again); });
+  if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
+    document.fonts.ready.then(again).catch(function(){});
+  }
+  var left = 0;
+  Array.prototype.forEach.call(px.querySelectorAll("img"), function(im){
+    if (im.complete) return;
+    left++;
+    var f = function(){ im.removeEventListener("load", f); im.removeEventListener("error", f); if (--left <= 0) again(); };
+    im.addEventListener("load", f);
+    im.addEventListener("error", f);
+  });
+  setTimeout(again, 900);                 // 兜底：图片挂了/字体永不 ready 也停不下来
+}
+
+/* ---------- 裁切自检 ----------
+   「底部按钮只截了一半」这类问题，肉眼要逐帧盯才看得出来，但几何上很好判：
+   凡 overflow:hidden 的盒子，内容比盒子高/宽就是被切了。折进 fit 流程里跑，
+   产物的 body[data-clip] 直接给出结果，shot_verify 不用再另写一套判断。 */
+function clipScan(){
+  var wrap = document.getElementById("pwrap"), out = [];
+  if (!wrap) return out;
+  Array.prototype.forEach.call(
+    wrap.querySelectorAll(".px,.px-modal,.px-dlg,.px-drawer,.px-card,.px-main,.px-body,.px-cell"), function(el){
+      var st = getComputedStyle(el);
+      if (st.overflowY !== "hidden" && st.overflow !== "hidden") return;
+      var dy = el.scrollHeight - el.clientHeight;
+      var dx = el.scrollWidth - el.clientWidth;
+      if (dy <= 2 && dx <= 2) return;
+      out.push({
+        cls: (el.className || "").split(" ")[0],
+        axis: dy > 2 ? "竖向" : "横向",
+        over: dy > 2 ? dy : dx,
+        text: (el.textContent || "").replace(/\s+/g, " ").trim().slice(0, 22)
+      });
+    });
+  return out;
+}
+function reportClips(){
+  var c = clipScan();
+  document.body.setAttribute("data-clip", c.length ? "1" : "0");
+  window.__clipDetail = c;
+  if (c.length && window.console) {
+    console.warn("[PRD] 有 " + c.length + " 处内容被 overflow:hidden 裁掉", c);
+  }
+  return c;
+}
+window.clipScan = clipScan;
+
 function showFrame(i){
   var f = PROTO.frames[i];
   if (!f) return;
@@ -1557,8 +1738,8 @@ function showFrame(i){
   // 详情页比设计稿长得多，画布按内容撑开；否则长页面会被裁掉
   var fr = wrap.firstElementChild, px = fr && fr.firstElementChild;
   if (px) {
-    var need = Math.max(PROTO.vh, Math.ceil(px.scrollHeight));
-    fr.style.height = need + "px";
+    fitFrameH(fr, px);
+    settleFrame(fr, px);      // 字体/图片到位后再量一次，首帧常常量早了
   }
   var hd = PROTO.frames.length + " 个页面态 · 当前 " + f.id + " " + f.name
     + (f.state ? " · " + f.state : "");
@@ -1567,6 +1748,7 @@ function showFrame(i){
   document.getElementById("pnote").innerHTML = (f.note ? raw(f.note) : "");
   paintCols();
   markDraft();
+  linkChgBack();          // 叙事里的改动块要挂「回原型」；doc 已经渲染完才轮到 showFrame
   fillPChg();
   fitProto();
   if (PROTO.ro) PROTO.ro.disconnect();
@@ -1614,7 +1796,7 @@ function fillPChg(){
     var t = bd ? bd.textContent.trim() : "";
     var code = el.getAttribute("data-chg");
     var wip = el.classList.contains("px-wip");
-    // 徽标文字通常是「改⑩ 结算信息：补支付方式」，拆成编号 + 说明
+    // 徽标文字通常是「改⑩ 打款信息：补支付协议」，拆成编号 + 说明
     var m = t.match(/^(改[①-⑳0-9]+|新增|删[除]?)\s*[·：]?\s*(.*)$/);
     add(code, m ? (m[2] || m[1]) : (t || code), wip, el.getAttribute("data-draft"));
   });
@@ -1654,100 +1836,18 @@ function fillPChg(){
   if (!out.length) { box.className = "pchg"; box.innerHTML = ""; return; }
   box.className = "pchg on";
 
-  function chip(o, isOld){
-    return '<a class="chg-jump' + (o.w ? " wip" : "") + (isOld ? " old" : "")
-         + '" data-chg="' + o.c + '" data-draft="' + (o.d || "") + '">'
-         + '<b>' + esc(o.c) + '</b>' + esc(o.t)
-         + (isOld ? '<i>' + (o.d ? o.d + " 稿" : "未标稿次") + '</i>' : '') + '</a>';
+  // 一条平铺：改动只相对于 4.9 基线，不区分本稿 / 前稿。
+  function chip(o){
+    var t = (o.t || "").replace(/^(改[①-⑳0-9]+|新增|删除?)\s*[·：]?\s*/, "");
+    return '<a class="chg-jump' + (o.w ? " wip" : "") + '" data-chg="' + o.c + '">'
+         + '<b>' + esc(o.c) + '</b>' + esc(t) + '</a>';
   }
-  var cur = PROTO.draft;
-  if (!cur) {                                   // 没有稿次信息：老样式，一条平铺
-    box.innerHTML = '<span class="pk">本帧改动</span>' + out.map(function(o){ return chip(o, false); }).join("");
-    return;
-  }
-  // 有稿次：分两段。读者第一眼看到的必须是「这一稿改的」，
-  // 前稿的降成灰虚线并标出稿次——否则 20 处累积改动会被读成 20 处本稿改动。
-  var curL = [], oldL = [];
-  out.forEach(function(o){ (o.d === cur ? curL : oldL).push(o); });
-  var html = "";
-  if (curL.length) {
-    html += '<span class="pk">本稿 ' + curL.length + '</span>'
-          + curL.map(function(o){ return chip(o, false); }).join("");
-  }
-  if (oldL.length) {
-    html += '<span class="pk sep">前稿 ' + oldL.length + '</span>'
-          + oldL.map(function(o){ return chip(o, true); }).join("");
-  }
-  box.innerHTML = html;
+  box.innerHTML = '<span class="pk">本帧改动 ' + out.length + '</span>'
+                + out.map(chip).join("");
 }
 
-/* 改动对照面板：把「改前 / 改后」并排画出来。
-   数据必须来自 PRD_DATA.changes —— 不能从原型反推，因为原型里只剩改后的样子，
-   「改前」那一版已经不在 DOM 里了。这也是为什么 fillPChg 能自动生成改动条，
-   却生成不了对照卡。 */
-function fillChgCase(){
-  var host = document.getElementById("doc");
-  if (!host) return;
-  var prev = document.getElementById("ccase");
-  if (prev && prev.parentNode) prev.parentNode.removeChild(prev);
-  var list = (window.PRD_DATA && window.PRD_DATA.changes) || [];
-  if (!list.length) return;
-
-  function col(tag, arr, cls){
-    var rows = (arr || []).map(function(t){
-      t = String(t);
-      var k = "", body = t, mark = "·";
-      // 全角 ＋ － 也要认：数据是中文写的，输入法很容易打成全角，
-      // 只认半角的话「删除线」会静默失效，而作者以为标了
-      var c0 = t.charAt(0);
-      if (c0 === "+" || c0 === "＋") { k = "add"; body = t.slice(1); mark = "+"; }
-      else if (c0 === "-" || c0 === "－" || c0 === "—") { k = "del"; body = t.slice(1); mark = "−"; }
-      return '<div class="cc-li ' + k + '"><em>' + mark + '</em><span>' + esc(body) + '</span></div>';
-    }).join("");
-    return '<div class="cc-side ' + cls + '"><span class="cc-tag">' + tag + '</span>' + rows + '</div>';
-  }
-
-  var h = '<div class="ccase" id="ccase"><div class="ccase-hd"><b>本稿改动对照</b>'
-        + '<span>点原型里的粉色块，或点下面任意一张卡 —— 两边会互相对上</span></div>';
-  list.forEach(function(c){
-    var cur = PROTO.draft;
-    var isOld = c.draft && cur && c.draft !== cur;
-    h += '<div class="cc chg-jump' + (isOld ? " old" : "") + '" data-chg="' + esc(c.id) + '"'
-       + ' data-draft="' + (c.draft || "") + '" id="cc-' + esc(c.id) + '">'
-       + '<div class="cc-hd"><span class="cc-no">改' + esc(c.no || c.id) + '</span>'
-       + '<span class="cc-tt">' + esc(c.title || "") + '</span>'
-       + (c.where ? '<span class="cc-where">' + esc(c.where) + '</span>' : "")
-       + '</div><div class="cc-row">'
-       + col("改前", c.before, "bf")
-       + '<div class="cc-ar">→</div>'
-       + col("改后", c.after, "af")
-       + '</div>'
-       + (c.why ? '<div class="cc-why"><b>为什么改</b>' + esc(c.why) + '</div>' : "")
-       + '</div>';
-  });
-  h += '</div>';
-  host.insertAdjacentHTML("afterbegin", h);
-}
-
-/* 联动：wireTo 选了哪处改动，就把对应卡片点亮 */
-function markCase(id){
-  Array.prototype.forEach.call(document.querySelectorAll(".cc"), function(e){
-    var on = e.getAttribute("data-chg") === id;
-    e.classList.toggle("on", on);
-    if (on) landOn(e);
-  });
-}
-
-/* 给每个带稿次的标注打 .old 标记。「只看本稿」和胶囊分组都靠它，
-   不在 CSS 里比数字——样式表不知道本稿是第几稿。 */
-function markDraft(){
-  var cur = PROTO.draft;
-  if (!cur) return;
-  Array.prototype.forEach.call(document.querySelectorAll("[data-chg][data-draft]"), function(el){
-    var d = parseInt(el.getAttribute("data-draft"), 10) || 0;
-    if (d) el.classList.toggle("old", d !== cur);
-  });
-}
+/* 稿次不分层：标注一视同仁，全部实心。保留函数名给启动段调用。 */
+function markDraft(){}
 
 /* 只看本稿：跨帧、跨模块保持。切页面态时 #pwrap 被整体替换，
    所以状态放在 body 上，而不是某个具体元素上。 */
@@ -1979,6 +2079,9 @@ function applyLayout(){
   var t = MODE_TIP[m] || MODE_TIP.human;
   var r2 = document.getElementById("r2");
   if (r2) r2.innerHTML = t[0] + '<span>' + t[1] + '</span>';
+  /* 切栏 / 切页签之后布局整个变了，旧的连线留在 SVG 里会挂在新位置上，
+     指向两个毫不相干的块——比不画更糟。每次重排一律清掉。 */
+  wireOff();
   fitProto();
 }
 
@@ -2012,6 +2115,23 @@ function bind(){
   });
 
   // 原型页签
+  // 原型帧之间跳转：图里某个按钮带 data-goto-frame="P2"，点了直接换到那一帧。
+  // 纯原型模式下最有用——演示时能点着页面走，不用回到上面点页签。
+  document.addEventListener("click", function(e){
+    if (!e.target || !e.target.closest) return;
+    var gf = e.target.closest("[data-goto-frame]");
+    if (!gf) return;
+    if (e.preventDefault) e.preventDefault();
+    var want = gf.dataset.gotoFrame, idx = -1;
+    (PROTO.frames || []).forEach(function(f, i){ if (f.id === want) idx = i; });
+    if (idx >= 0) {
+      var pp = document.getElementById("paneProto");
+      if (pp && pp.classList.contains("hide")) goMode("proto");
+      showFrame(idx);
+    }
+    return;
+  });
+
   document.addEventListener("click", function(e){
     var t = (e.target && e.target.closest) ? e.target.closest("[data-fi]") : null;
     if (t) {
@@ -2073,7 +2193,6 @@ document.getElementById("aiBody").innerHTML = renderAI();
 renderCases();
 renderProto();
 markDraft();          // 叙事里的改动块也要按稿次分「本稿 / 前稿」
-fillChgCase();        // 改动对照卡：改前 / 改后 并排
 if (ONLYCUR) document.body.classList.add("onlycur");
 renderFacts();
 bind();
@@ -2183,29 +2302,25 @@ function wireTo(id, keep){
   if (!n.px.length || !n.doc.length) {
     // 只有一头存在（改③ 这种纯规则改动，页面上没有对应块）：只高亮能高亮的那头
     (n.doc.length ? n.doc : n.px).forEach(function(e){ e.classList.add('wired'); });
-    var box = document.getElementById('cc-' + id) || pickDocTarget(n.doc) || n.doc[0] || n.px[0];
+    var box = pickDocTarget(n.doc) || n.doc[0] || n.px[0];
     if (box) { box.scrollIntoView({block: 'center', behavior: 'auto'}); landOn(box); }
-    markCase(id);
     return;
   }
   // 滚动目标要挑「改动点正文块」，不能拿文档最上面索引里的那颗小标签——
   // 它们带同一个 data-chg，取 doc[0] 就会滚到文档最顶端（2026-11-03 业务方指出）
   var docTarget = pickDocTarget(n.doc);
-  var pxEl = n.px[0];
-  // 有「改前/改后」对照卡时优先滚到卡：读者点改动，要的是「原来长什么样」，
-  // 正文块说的还是改后的事，答不了这一问。
-  var docEl = document.getElementById('cc-' + id) || docTarget || n.doc[0];
+  var pxEl = n.px[0], docEl = docTarget || n.doc[0];
   pxEl.scrollIntoView({block: 'center', behavior: 'auto'});
   if (docEl) docEl.scrollIntoView({block: 'center', behavior: 'auto'});
   n.px.forEach(function(e){ e.classList.add('wired'); });
   n.doc.forEach(function(e){ e.classList.add('wired'); });
   if (docEl) landOn(docEl);
-  markCase(id);
   paint(id);
 }
 document.addEventListener('click', function(e){
   var b = e.target.closest('[data-chg]');
-  if (!b) return;
+  // 点在别处 = 收起连线。旧版只在切栏时清，读者随手点一下空白，那条虚线会一直挂着
+  if (!b) { wireOff(); return; }
   var id = b.getAttribute('data-chg');
   if (!id) return;
   // 原型里点粉块任意位置都算（块就是标记本体）；
@@ -2216,6 +2331,15 @@ document.addEventListener('click', function(e){
   e.preventDefault();
   wireTo(id);
 }, true);
+/* 改动块上的「回原型 P1」：先挡住冒泡，否则上面那个 capture 处理器
+   会把这次点击当成「点了别处」而清掉连线 */
+document.addEventListener('click', function(e){
+  var b = e.target.closest ? e.target.closest('[data-back-chg]') : null;
+  if (!b) return;
+  e.preventDefault();
+  e.stopPropagation();
+  jumpChgBack(b.getAttribute('data-back-chg'), parseInt(b.getAttribute('data-back-fi'), 10));
+});
 // 面板滚动后线会错位：跟着重画，而不是抹掉——否则读者一滚就没了
 function repaint(){ if (CUR) paint(CUR); }
 window.addEventListener('resize', repaint);

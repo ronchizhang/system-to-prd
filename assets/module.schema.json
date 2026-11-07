@@ -54,19 +54,19 @@
           "type": "string",
           "enum": [
             "管理后台",
-            "主办方端",
-            "报名者端"
+            "企业端",
+            "员工端"
           ]
         },
         "module": {
           "type": "string",
           "minLength": 2,
-          "hint": "模块名，如 报名字段配置"
+          "hint": "模块名，如 人员字段配置"
         },
         "menu": {
           "type": "string",
           "minLength": 2,
-          "hint": "三级菜单全路径，如 报名管理 / 报名字段配置"
+          "hint": "三级菜单全路径，如 人员管理 / 人员字段配置"
         },
         "route": {
           "type": "string",
@@ -171,6 +171,13 @@
           },
           "statemachine": {
             "type": "boolean"
+          },
+          "frames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "hint": "这一段讲到的原型帧编号，如 [\"P1\",\"P2\"]。渲染成段标题右侧的小按钮，点一下切到那一帧——读文档时不用自己回左边找图"
           }
         }
       }
@@ -541,8 +548,8 @@
         },
         "frames": {
           "type": "array",
-          "minItems": 1,
-          "hint": "至少 1 帧：主页面。有弹窗/二级页的，每个再补一帧",
+          "minItems": 0,
+          "hint": "主页面 + 每个弹窗/二级页各一帧。确实没有界面的模块（定时任务、纯配置、只跑批的后台服务）可以留空，渲染成「本模块未附原型帧」的空态；但交付说明里要写清为什么没有图，别拿它偷懒",
           "items": {
             "type": "object",
             "required": [
@@ -556,6 +563,16 @@
                 "type": "string",
                 "pattern": "^P\\d{1,2}$",
                 "hint": "P1 主页面、P2 新增、P3 弹窗……页签按这个顺序排"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "ui",
+                  "flow",
+                  "diagram",
+                  "explain"
+                ],
+                "hint": "帧的性质。ui=实拍界面（默认）；flow=流程/判定逻辑（SVG）；diagram=全景/分层图；explain=界面化说明页（要上线的页）。后三类是生成图，不要求 from，不参与一页一帧的尺寸推算。缺省按 ui 处理，老数据不用补这个字段。"
               },
               "name": {
                 "type": "string",
@@ -587,65 +604,9 @@
         }
       }
     },
-    "changes": {
-      "type": "array",
-      "hint": "本稿改动台账，一处一条；现状稿留空数组。每条写清改前改后，读者不必翻上一稿就能判断这次改得对不对",
-      "items": {
-        "type": "object",
-        "required": [
-          "id",
-          "title",
-          "before",
-          "after"
-        ],
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "pattern": "^C\\d{1,2}$",
-            "hint": "C1、C2……必须和原型里的 data-chg 一模一样，编号对不上就点不联动"
-          },
-          "no": {
-            "type": "string",
-            "hint": "圈码，如 ①。不填就直接显示 id"
-          },
-          "draft": {
-            "type": "integer",
-            "hint": "第几稿引入的，和原型标注的 data-draft 一致。比本稿小的会自动归到「前稿」并收起"
-          },
-          "title": {
-            "type": "string",
-            "minLength": 4,
-            "hint": "一句话说清改了什么，不要写成「优化体验」这种"
-          },
-          "where": {
-            "type": "string",
-            "hint": "落在哪个页面/弹窗的哪个位置，如「字段列表 · 表头」"
-          },
-          "before": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "hint": "改前的样子，一行一项。以 - 开头表示这一项被删掉"
-          },
-          "after": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "hint": "改后的样子，一行一项。以 + 开头表示这一项是新增"
-          },
-          "why": {
-            "type": "string",
-            "hint": "写动机不写动作——「为了让 X 不再发生」，而不是「改了 Y」。评审时被追问的就是这一句"
-          }
-        }
-      }
-    },
     "testcases": {
       "type": "array",
-      "hint": "测试用例规整。从 用例库库取回后统一成一种形态，一条一个功能点，标出它验证的是哪条业务规则。没有就留空数组，别编",
+      "hint": "测试用例规整。从 用例库取回后统一成一种形态，一条一个功能点，标出它验证的是哪条业务规则。没有就留空数组，别编",
       "items": {
         "type": "object",
         "required": [

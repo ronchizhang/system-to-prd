@@ -1,40 +1,15 @@
-# Install & run
+# 装这个包：三步，十分钟
 
-> Works with any agent that reads `SKILL.md` — Claude Code, WorkBuddy, Cursor rules, or a plain Python shell.
-> The scripts are the engine; the agent is just the driver. You can run every step by hand.
+> **当前版本 v6.7**（2026-11-06）。文档仍是**四栏，一栏一个读者**：业务方只看「原型 + 文档」，
+> 测试只看「测试用例」，研发只看「代码逻辑」，核查给所有人。
+> 6.3–6.7 补的是流程侧：合并先验来源、来源身份证、签字认内容指纹、单人封板、复杂逻辑允许画成图。
+> 装完想知道这一版改了什么，看包内 `SKILL.md` 末尾的版本记录。
 
-## English quick start
+这个 skill 做的事：**进测试环境，按五源核查，产出带原型的 PRD**。三种活：
 
-```bash
-git clone https://github.com/<you>/system-to-prd.git
-cp -r system-to-prd ~/.claude/skills/            # Claude Code
-# or: unzip system-to-prd.zip -d ~/.workbuddy/skills/
-python3 ~/.claude/skills/system-to-prd/scripts/doctor.py
-```
-
-Three things to connect before the first run (all optional — each missing one costs you a source, not the whole run):
-
-| Need | Why | If missing |
-|:--|:--|:--|
-| Browser control (Chrome with a debug port) | click through the test environment, capture real pages | prototypes can only be drawn from memory |
-| A test-case source (any searchable knowledge base, or an exported xmind) | check "does the case actually say that" | one source marked unverified |
-| A code host CLI or a local clone | read front-end / back-end truth | code sources marked unverified |
-
-Credentials are asked for on **every** run, never stored. `doctor.py` tells you exactly which of the above works.
-
----
-
-## 装这个包：三步，十分钟
-
-> **当前版本 v6.1**（2026-11-03）。这一版是结构性的：一份 PRD 拆成**四栏，一栏一个读者**。
-> 以前正文里同时有业务规则、接口地址、字段名、用例编号，三拨人读同一段，谁都读不顺。
-> 现在业务方只看「原型 + 文档」，测试只看「测试用例」，研发只看「代码逻辑」。
-> 装完想知道这版改了什么，看包内 `SKILL.md` 末尾的版本记录。
-
-这个 skill 做的事：**进测试环境，按五源核查，产出带原型的 PRD**。两种交付：
-
-- **现状 PRD** —— 系统现在怎么跑，照实记录，不标改动；
-- **迭代 PRD** —— 在上一稿基础上设计下一版，本次改动用粉色标注 + 锚点跳转，开工先确认终端/产品版本/稿次/改动范围。
+- **① 采集现状** —— 系统现在怎么跑，照实记录，**不标改动**；
+- **② 迭代** —— 在上一稿基础上挑几页改，改动粉色标注 + 锚点跳转，开工先确认终端/产品版本/稿次/改动范围；
+- **③ 合并** —— 多人各管一个模块，收成一份全量；拷回前**先验副本基于哪一版**，再验范围外一字未动。
 
 产出一个 HTML，顶栏**四栏，一栏一个读者**：
 
@@ -128,28 +103,16 @@ python ~/.workbuddy/skills/system-to-prd/scripts/launch_chrome.py
 
 ---
 
-## 三、开工前要准备的四样（不绑定任何产品）
+## 三、开工前要连的东西
 
-| 要什么 | 首选 | 没有就用 | 都没有会怎样 |
-|:--|:--|:--|:--|
-| **用例来源** | 知识库连接器（Notion / 飞书 / 语雀 / Confluence / 任意可搜的知识库） | 导出 `.xmind` / `.md` / `.csv` / `.xlsx` 丢进工作目录 | 少一个源，`sources` 里标 `未核` 并写原因 |
-| **代码来源** | 托管平台 CLI 或连接器（GitHub / GitLab / 自建 Git） | 本地 `git clone` 后 `harvest.py be --local <路径>` | 代码两源标 `未核`，交付说明写明未核代码 |
-| **浏览器控制** | Chrome 调试端口（`launch_chrome.py` 一条命令） | Playwright / 手动截图放进 `snapshot/` | 原型只能凭印象，必须标「非实拍」 |
-| **测试环境账号** | 后台 / 主办方端 / 报名者端 三套 | 有几套给几套，缺的端标「未核」 | 那一端什么都做不了 |
+| 要什么 | 为什么 | 没连会怎样 |
+|:--|:--|:--|
+| **用例库连接器** | 搜用例库，核对「用例是不是这么说的」 | 少一个源，`sources` 里 用例库 只能标未核 |
+| **代码仓库连接器** | 读后端代码，拿枚举真值和校验逻辑 | 少一个源，读码那段只能跳过 |
+| **浏览器控制** | 进测试环境点页面、实拍页面骨架 | 原型只能凭印象画、接口调不了 |
+| **测试环境三端账号** | 登录后台 / 企业端 / 员工端 | 什么都做不了 |
 
-**关键一点：这四样没有「必须先装好」的门槛。** 连接器能连就连，不能连就找导出文件，再不行让人把内容贴进对话——
-缺哪个源就在 `sources` 里如实标哪个，交付照样能出，只是强度不同。
-
-降级规则（写进硬约束，门禁会查）：
-
-- ≥4 源：正常出稿
-- 2–3 源：顶部标「本稿 N 源核查，缺 xx」
-- 1 源：出**单源稿**，版本号后加「（单源稿）」
-- 0 源：不许开工
-
-完整的换源对照表、三种接入方式（文件投放 / CLI / MCP）、最小验收标准见 `references/sources-adapters.md`。
-
-浏览器控制在 WorkBuddy 的「设置 → Agent → 浏览器控制」；连接器在「连接器」页里加。
+三样在 WorkBuddy 的「连接器」里连；浏览器控制在「设置 → Agent → 浏览器控制」。
 账号密码**每次开工现要**，skill 不会存。
 
 ---
@@ -186,7 +149,7 @@ python ~/.workbuddy/skills/system-to-prd/scripts/proto_from_snapshot.py \
 
 ---
 
-## 三·六、叙事按六段骨架写（v5.3 起，不用背，写了歪门禁会报）
+## 三·六、叙事按八段骨架写（v5.3 起，不用背，写了歪门禁会报）
 
 **判据先分清**：迭代 PRD 只写改动点；现状 PRD（system-to-PRD）才写全量功能。
 
@@ -258,7 +221,7 @@ python scripts/gate.py doc --root . --by 你的名字 --note "整份看过，可
 
 ## 四、第一次用：直接说这句话
 
-> 用 system-to-prd 给「报名管理 / 报名字段配置」跑一份 PRD，测试环境地址 xxx，账号 xxx
+> 用 system-to-prd 给「人员管理 / 人员字段配置」跑一份 PRD，测试环境地址 xxx，账号 xxx
 
 它会走七步：环境自检 → 圈边界 → 五源采集 → 闸门 1 事实清单 → 闸门 2 骨架确认 → 填数据 → 构建实拍 → 验收。
 
@@ -279,12 +242,12 @@ python scripts/gate.py doc --root . --by 你的名字 --note "整份看过，可
 
 ```bash
 python ~/.workbuddy/skills/system-to-prd/scripts/init_run.py \
-  --root ./prd-run --project "示例后台 全量 PRD" \
-  --module "管理后台|报名管理 / 报名字段配置|ops-person-field|你的名字"
+  --root ./prd-run --project "Demo Brand 全量 PRD" \
+  --module "管理后台|人员管理 / 人员字段配置|ops-person-field|你的名字"
 ```
 
 `--module` 格式：`系统|一级 / 二级 / 三级|全局唯一 key|负责人`。
-**key 不能和别人撞**，命名建议 `系统-模块`，如 `demo-form-field`、`demo-partner-config`。
+**key 不能和别人撞**，命名建议 `系统-模块`，如 `ops-person-field`、`ops-person-supplier`。
 
 **2. 填两个文件，别碰第三个**
 
@@ -332,7 +295,7 @@ system-to-prd/
 │   ├── module.schema.json        数据契约可读版
 │   └── example_module.json       完整样例：9 帧原型 + 15 条用例 + 代码栏 + 5 个实体，照着填
 ├── references/                   17 份参考，按需查不必通读
-│   ├── narrative.md              **叙事六段骨架 + 用例栏 / 代码栏 / 实体关系写法** + 可抄的 HTML + 反例
+│   ├── narrative.md              **叙事八段骨架 + 用例栏 / 代码栏 / 实体关系写法** + 可抄的 HTML + 反例
 │   ├── team-runbook.md           **同事操作卡**：六步 + 三红线 + 常见错误表
 │   ├── prototype-kit.md          原型组件清单：px- 全组件 + 页型配方
 │   ├── doc-8sections.md          四块结构、8 段逐段要求、事实清单字段
@@ -368,7 +331,7 @@ system-to-prd/
 | `doctor.py` 说找不到模板 | 解压时目录结构错了 | 重新解压，确认没有多套一层 |
 | 截图全黑或超时 | Chrome 没开调试端口 | `python scripts/launch_chrome.py` |
 | `连不上 CDP` | 9222 被别的程序占了 | `--port 9333` 换端口，同时给 `shot_verify.py --port 9333` |
-| 读后端代码失败 | 代码仓库 没连，或 `cnb` 不在 PATH | 先连代码仓库连接器；或 `harvest.py be --local <本地仓库路径>` |
+| 读后端代码失败 | 代码仓库 没连，或 `cnb` 不在 PATH | 先连 代码仓库连接器；或 `harvest.py be --local <本地仓库路径>` |
 | 验收报「有 N 处 TODO」 | 骨架没填完 | 正常，说明还没做完 |
 | 验收报「规则没挂依据」 | 规则的 `facts` 字段空着 | 填上真实存在的 `F-xx`，正文才能点回核查 |
 | 合并时报「规则编号重复」 | 和别人撞号了 | 改编号段，如 `R-OPS-FIELD-` / `R-OPS-CUST-` |

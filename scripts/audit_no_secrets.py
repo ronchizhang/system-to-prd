@@ -66,6 +66,10 @@ def is_placeholder(v):
         return True
     if any(ch in v for ch in "()（）"):  # 表达式片段或说明文字，不是字面量
         return True
+    # HTML 标记片段：典型来源是小标题「提现密码：改之前先看这条黄条</h3>」——
+    # 关键词+冒号后面跟的是标题文字，不是赋值。值里出现尖括号就说明它还在标签里。
+    if "<" in v or ">" in v:
+        return True
     return False
 
 

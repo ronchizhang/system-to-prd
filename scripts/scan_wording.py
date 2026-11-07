@@ -14,25 +14,25 @@
 
   W1 角色词    把系统名当角色名用。「管理后台」是系统，「运营」不是使用者。
   W2 稿次写法  用 V3.0 / V10.1 表示「第 N 稿」。
-  W3 量词入标签 「0 位结算成功报名者」被拆成 0 + 「位，结算成功报名者」。
+  W3 量词入标签 「0 位出款成功人员」被拆成 0 + 「位，出款成功人员」。
   W4 占位残留  TODO / __TODO__ / 【示例
   W5 双 V 重复 VV5.0（批量替换把 V 加两次）
   W6 旧口径残留 改了说法，但别处还留着旧说法（--term 旧=新 指定）
   W7 禁用词    「友好提示 / 视情况而定 / 类似 / 尽可能」这类，出现即说明没想清楚
 
-  T1 接口地址  正文里出现 POST /xxx、/demo/…——读者是业务方，不是研发
-  T2 字段名    驼峰 / 下划线字段名（paymentMethod、refund_channel）
-  T3 常量枚举名 Constant.TICKET_GROUP、TICKET_SWITCH_LOCK_FORMAT
+  T1 接口地址  正文里出现 POST /xxx、/demobackstage/…——读者是业务方，不是研发
+  T2 字段名    驼峰 / 下划线字段名（paymentMethod、local_clearing_system）
+  T3 常量枚举名 Constant.DEMO_FLAG、DEMO_LOCK_FORMAT
   T4 实现词    落库 / 幂等 / 序列化 / schema / 轮询 / 回调 …
 
 T 类只扫叙事正文与原型帧，且豁免 <table class="tech-map">（附录 B 就是放这些的地方）。
 页面路径不受 T1 影响：能在地址栏敲出来的是页面，要靠程序调的是接口，只有后者算泄漏。
 
-W6 的由来：业务方纠偏一次口径（比如「用款申请单是运营发起」），我只改了正文，
+W6 的由来：业务方纠偏一次口径（比如「请款单是运营发起」），我只改了正文，
 context、边界表、原型文案里还留着旧说法，被指出第二次。改口径必须全文扫，所以做成命令：
 
     python3 scripts/scan_wording.py --path modules/demo-pay.json \
-        --term "运营发起=服务团队发起" --term "运营审核=审批人审批"
+        --term "运营发起=服务人员发起" --term "运营审核=审批人审批"
 
 退出码：有命中 → 1；加 --warn 一律返回 0（只提示不拦）。
 """
@@ -85,10 +85,10 @@ TECH_IN_NARRATIVE = (".sections[", ".prototype.frames[")
 # 附录 B 是唯一豁免区：按 table 边界剥（table 不嵌套，比按 div 配对稳）
 TECH_MAP_RE = re.compile(r'<table[^>]*class="[^"]*tech-map[^"]*"[\s\S]*?</table>', re.I)
 TAG_RE = re.compile(r"<[^>]+>")
-# 路径整体摘掉再查字段名，否则 /activity/addPerson 会被当成驼峰字段
+# 路径整体摘掉再查字段名，否则 /personManage/addPerson 会被当成驼峰字段
 PATH_RE = re.compile(r"/[A-Za-z][\w{}$.\-]*(?:/[\w{}$.\-]+)*")
 API_CALL_RE = re.compile(r"\b(?:GET|POST|PUT|DELETE|PATCH)\s+/[\w/{}\-.$]+")
-GATEWAY_RE = re.compile(r"/demo/[\w/]+")
+GATEWAY_RE = re.compile(r"/demobackstage/[\w/]+")
 SNAKE_RE = re.compile(r"\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b")
 CAMEL_RE = re.compile(r"\b[a-z][a-z0-9]*[A-Z][A-Za-z0-9]*\b")
 CONST_RE = re.compile(r"\bConstant\.[A-Za-z_]+|\b[A-Z][A-Z0-9]{2,}(?:_[A-Z0-9]+)+\b")
@@ -115,7 +115,7 @@ QUOTED_RE = re.compile(r"「[^」]{0,80}」|“[^”]{0,80}”|\"[^\"\n]{0,80}\"
 
 
 def strip_quoted(s):
-    """引号里的是「提到某个词」，不是「用某个词」——例如「不得写成『运营发起用款申请』」。"""
+    """引号里的是「提到某个词」，不是「用某个词」——例如「不得写成『运营发起请款』」。"""
     return QUOTED_RE.sub("", s)
 
 
@@ -132,7 +132,7 @@ def scan_text(text, path, out):
     for m in ROLE_RE.finditer(t):
         i = m.start()
         out.append(("W1", path, t[max(0, i - 30):i + 30].replace("\n", " ").strip(),
-                    "「运营」不是角色。写清是谁：服务团队 / 交付团队 / 财务 / 出纳 / 系统"))
+                    "「运营」不是角色。写清是谁：服务人员 / 交付团队 / 财务 / 出纳 / 系统"))
 
     for m in VER_RE.finditer(text):
         if m.group(0) == PRODUCT_VER:
@@ -145,7 +145,7 @@ def scan_text(text, path, out):
         out.append(("W5", path, m.group(0), "版本号被加了两次（批量替换的典型后果）"))
 
     for m in UNIT_RE.finditer(text):
-        out.append(("W3", path, m.group(0), "量词和标点不要进标签：标签只留「结算成功报名者」，量词归数字那侧或删掉"))
+        out.append(("W3", path, m.group(0), "量词和标点不要进标签：标签只留「出款成功人员」，量词归数字那侧或删掉"))
 
     for m in TODO_RE.finditer(text):
         i = m.start()
@@ -242,7 +242,7 @@ def main():
     ap.add_argument("--max", type=int, default=60, help="每个检查项最多打印多少条（默认 60）")
     ap.add_argument("--all", dest="scan_all", action="store_true", help="连台账（CHANGELOG/FILELOG）一起扫")
     ap.add_argument("--term", action="append", default=[], metavar="旧=新",
-                    help="查旧口径残留，可多次给：--term \"运营发起=服务团队发起\"")
+                    help="查旧口径残留，可多次给：--term \"运营发起=服务人员发起\"")
     a = ap.parse_args()
 
     for t in a.term:

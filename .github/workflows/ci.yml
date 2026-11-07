@@ -26,5 +26,3 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Sample builds strict
         run: python scripts/build_module_prd.py --data assets/example_module.json --out build/prd.html --strict
-      - name: Iteration sample builds strict
-        run: python scripts/build_module_prd.py --data assets/example_iteration.json --out build/d2.html --strict

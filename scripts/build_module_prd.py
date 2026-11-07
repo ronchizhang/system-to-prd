@@ -22,15 +22,7 @@
   "apis": [{"method":"POST","path":"/x/y","purpose":"…","auth":"…","evidence":"…"}],
   "questions": [{"id":"Q-01","title":"…","why":"…","ask":"…"}],
   "dialogs": [{"type":"弹窗","name":"…","entry":"…","route":"…","covered":true}],
-  "layout": "yaml 文本",
-
-  // 只有迭代稿需要：改动台账。id 必须与原型上的 data-chg 同号，
-  // 漏一条 schema 就报错——因为漏了不白屏，只会少一张对照卡。
-  "changes": [{"id":"C1","no":"①","draft":2,"title":"列表新增一列",
-               "where":"字段列表 · 表头",
-               "before":["字段名称","状态"],
-               "after": ["字段名称","+报名者端可见","状态"],
-               "why":"主办方反复问这一列看不看得到，做成列就不用解释了"}]
+  "layout": "yaml 文本"
 }
 """
 
@@ -110,6 +102,53 @@ def _PY():
         return "python3"
 
 
+def build_with_nav(d, out, proto_css=None):
+    """--nav：给单页也装上左侧导航。
+
+    外壳（导航 CSS/HTML/JS、总览页、改动总览）**只在 merge_modules.py 里有一份**。
+    这里不复制任何一段，而是临时搭一个只装这一个模块的工作台，把活交给合并脚本——
+    这样「单页带导航」和「多页文档」就是同一条渲染路径，不会随时间长歪。
+    代价是每次多起一个 python 进程，几秒钟，换来的是永不漂移。
+    """
+    import shutil
+    import subprocess
+    import tempfile
+
+    mt = d.get("meta") or {}
+    key = mt.get("key") or "module"
+    root = tempfile.mkdtemp(prefix="prd-nav-")
+    try:
+        os.makedirs(os.path.join(root, "modules"), exist_ok=True)
+        with open(os.path.join(root, "modules", key + ".json"), "w", encoding="utf-8") as f:
+            json.dump(d, f, ensure_ascii=False, indent=1)
+        # run.json 只提供「顺序 + 项目名 + 稿次」，其余字段合并脚本有缺省
+        run = {
+            "project": mt.get("system") or mt.get("module") or "",
+            "draft": int(mt.get("draft") or 1),
+            "rev": int(mt.get("rev") or 0),
+            "modules": [{
+                "key": key,
+                "module": mt.get("module", ""),
+                "system": mt.get("system", ""),
+                "menu": mt.get("menu", ""),
+                "owner": mt.get("owner", ""),
+            }],
+        }
+        with open(os.path.join(root, "run.json"), "w", encoding="utf-8") as f:
+            json.dump(run, f, ensure_ascii=False, indent=2)
+        if proto_css and os.path.exists(proto_css):
+            shutil.copy(proto_css, os.path.join(root, "proto_extra.css"))
+
+        cmd = [sys.executable, os.path.join(HERE, "merge_modules.py"),
+               "--root", root, "--out", out, "--allow-unsigned"]
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        if r.returncode != 0:
+            sys.exit("✗ 带导航版构建失败（合并脚本）：\n%s%s" % (r.stdout or "", r.stderr or ""))
+        return r.stdout or ""
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
 def main():
     ap = argparse.ArgumentParser(description="数据 → 单文件模块 PRD")
     ap.add_argument("--data", required=True, help="模块数据 JSON")
@@ -118,7 +157,13 @@ def main():
                                     "给了就从台账同步事实清单，并写回模块数据，"
                                     "保证只有一份事实源")
     ap.add_argument("--template", default=TPL)
+    ap.add_argument("--proto-css", default=None,
+                    help="项目级原型补丁样式（帧专用 class）。默认自动找数据文件同级"
+                         "或其上级目录的 proto_extra.css；传空串可关闭")
     ap.add_argument("--strict", action="store_true", help="硬错误直接终止")
+    ap.add_argument("--nav", action="store_true",
+                    help="带左侧导航出（单页也当一份多页文档）。外壳与总览由 "
+                         "merge_modules.py 生成，产物与多页文档同一套渲染")
     a = ap.parse_args()
 
     if not os.path.exists(a.data):
@@ -145,6 +190,30 @@ def main():
     check(d, a.strict)
 
     tpl = open(a.template, encoding="utf-8").read()
+
+    # 项目级原型补丁样式：帧里用了模板没有的 class（粉色改动行、弹窗遮罩、详情
+    # 左右两栏、日志前后快照框……），只搬帧 HTML 不搬这类会导致「帧整体走形」。
+    # 约定放项目根的 proto_extra.css，构建时自动注入；文件不在就跳过，其他文档无感。
+    css_path = a.proto_css
+    if css_path is None:
+        base = os.path.dirname(os.path.abspath(a.data))
+        for cand in (os.path.join(base, "proto_extra.css"),
+                     os.path.join(base, os.pardir, "proto_extra.css")):
+            if os.path.exists(cand):
+                css_path = cand
+                break
+    if css_path and os.path.exists(css_path):
+        extra = open(css_path, encoding="utf-8").read()
+        tpl = tpl.replace("</style>", "\n" + extra + "\n</style>", 1)
+        print("注入项目原型样式 %s（%.1f KB）"
+              % (os.path.basename(css_path), len(extra.encode()) / 1024))
+
+    if a.nav:
+        out = build_with_nav(d, a.out, css_path)
+        print("\n→ %s（单页 + 左侧导航，总览与改动总览由合并脚本生成）" % a.out)
+        print("\n下一步：实拍核对")
+        print("  %s shot_verify.py --html %s" % (_PY(), a.out))
+        return
 
     # JSON 里出现 </script> 会提前闭合，统一转义
     payload = json.dumps(d, ensure_ascii=False, indent=1).replace("</", "<\\/")
