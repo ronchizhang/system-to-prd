@@ -212,8 +212,8 @@ assets/
   module_prd.html         四栏渲染器（数据驱动，别改）
   module.schema.json      数据契约，给人读的版本
   example_module.json     一份完整示例：现状稿，教育域，全套虚构
-references/               21 份专题文档
-scripts/                  25 个零依赖 Python 工具
+references/               22 份专题文档
+scripts/                  27 个零依赖 Python 工具
 docs/shots/               上面那几张图
 tests/                    冒烟测试，含「门禁必须会红」
 ```
