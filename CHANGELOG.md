@@ -14,7 +14,7 @@ Semantic versioning is not used here; versions track **structural** changes to t
 
 ## 内容卫生：内部标识与凭据进 CI
 
-公开仓库的示例最容易带出内部叫法——一条 `close --url-contains admin` 的命令注释，就把真实系统的名字留在了 `git log -p` 里。这类东西不影响功能，但会把内部信息顺手公开。
+公开仓库的示例最容易带出内部叫法——一行命令行注释里的主机名，就把真实系统的名字留在了 `git log -p` 里。这类东西不影响功能，但会把内部信息顺手公开。
 
 `tests/test_public_hygiene.py` 把这条变成门禁：内部标识、私钥与凭据型赋值、本机绝对路径、`.env` 类文件，四类各一条测试，跑在现有 CI 的 `unittest discover` 里，push 和 PR 都会被拦。
 
