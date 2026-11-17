@@ -185,6 +185,21 @@ class Workspace(object):
         return self.client.navigate(url, timeout=timeout)
 
     def evaluate(self, expression, return_by_value=True):
+        """跑一段 JS 并把值直接给你（不是 CDP 那层 {type, value} 外壳）。
+
+        底层 `CDPClient.evaluate` 返回的是 Runtime.evaluate 的原始 result，
+        取值还得再 .get("value")，写两行就忘了。这里拆开：
+        日常用 evaluate() 拿值，要原始结构用 evaluate_raw()。
+        """
+        res = self.client.evaluate(expression, return_by_value=return_by_value)
+        if isinstance(res, dict):
+            if "value" in res:
+                return res.get("value")
+            return res.get("description") if "description" in res else None
+        return res
+
+    def evaluate_raw(self, expression, return_by_value=True):
+        """原始 result（要看 type / objectId 时用）。"""
         return self.client.evaluate(expression, return_by_value=return_by_value)
 
     def close_extra(self):

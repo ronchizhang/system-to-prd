@@ -20,6 +20,7 @@
 import argparse
 import json
 import sys
+import urllib.error
 
 import tab_guard
 
@@ -96,15 +97,20 @@ def main():
     p_close.add_argument("--dry", action="store_true", help="只列出将要关闭的，不执行")
 
     args = ap.parse_args()
-    if args.cmd == "list":
-        return cmd_list(args)
-    if args.cmd == "close":
-        if not (args.blank or args.url_contains or args.all_but):
-            print("必须指定 --blank / --url-contains / --all-but 之一。"
-                  "\n先看清单：python scripts/cdp_tabs.py list")
-            return 1
+    if args.cmd == "close" and not (args.blank or args.url_contains or args.all_but):
+        print("必须指定 --blank / --url-contains / --all-but 之一。"
+              "\n先看清单：python scripts/cdp_tabs.py list")
+        return 1
+    try:
+        if args.cmd == "list":
+            return cmd_list(args)
         return cmd_close(args)
-    return 1
+    except (urllib.error.URLError, ConnectionError, OSError) as e:
+        # 浏览器没开 / 端口没在监听，是最常见的失败。直接说人话，
+        # 别把 urllib 的堆栈甩给人看 —— 那不是使用者该读的东西。
+        import cdp_boot
+        print("连不上端口 %d（%s）。\n\n%s" % (args.port, e, cdp_boot.hint(args.port)))
+        return 2
 
 
 if __name__ == "__main__":
