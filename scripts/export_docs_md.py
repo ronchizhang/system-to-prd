@@ -270,24 +270,32 @@ def fetch_pages(html_path, wait=2.0):
                                               "launch_chrome.py")))
     c.connect_page(tab["id"])
     last = None
-    deadline = time.time() + 25
-    while time.time() < deadline:
-        time.sleep(wait)
+    try:
+        deadline = time.time() + 25
+        while time.time() < deadline:
+            time.sleep(wait)
+            try:
+                r = c.send("Runtime.evaluate",
+                           {"expression": EXTRACT_JS, "returnByValue": True})
+                val = (r.get("result") or {}).get("value")
+                if val:
+                    last = json.loads(val)
+                    break
+            except CDPError:
+                pass
+            wait = 1.0
+    finally:
+        # 取完就关，异常/超时也关：这个标签页是本次导出专用，留着只会占内存
         try:
-            r = c.send("Runtime.evaluate",
-                       {"expression": EXTRACT_JS, "returnByValue": True})
-            val = (r.get("result") or {}).get("value")
-            if val:
-                last = json.loads(val)
-                break
+            c.send("Page.close", {})
         except CDPError:
             pass
-        wait = 1.0
-    try:
-        c.send("Page.close", {})
-    except CDPError:
-        pass
-    c.close()
+        c.close()
+        try:
+            import tab_guard
+            tab_guard.close_tab(9222, tab.get("id"))
+        except Exception:  # noqa: BLE001
+            pass
     if not last:
         sys.exit("在 %s 里取不到文档数据（超时）" % os.path.basename(html_path))
     return last

@@ -2,6 +2,23 @@
 
 > 从 SKILL.md v6.1 之前的完整历史，归档于此。
 
+### v6.9（2026-11-17）· 标签页只借不占：开出去的页必须关
+
+采集一轮开几十个页面，每页还要点弹窗。原来的脚本每开一个标签页就不管了，跑到后半程浏览器内存只涨不降，CDP 开始超时，抓回来的帧是半张——人还以为是页面慢。
+
+| 改了什么 | 细节 |
+|:--|:--|
+| **新增 `scripts/tab_guard.py`** | `Workspace` 上下文管理器：开专用页、记基线、退出即关（`atexit` 兜底层）；`close_extra()` 收掉 `window.open` / `target=_blank` 弹出来的页；`PRD_KEEP_TAB=1` 可保留 |
+| **`snapshot_page.py`** | `connect()` 改走 `Workspace`；每点一次按钮/页签就回收新页并打印「回收 N 个标签页」；`close_tab()` 由 workspace 统一收口 |
+| **`shot_verify.py`** | 不再劫持 `pages[0]`（原先会占用用户正在看的页），改开专用页；新增 `--keep-tab` |
+| **`export_docs_md.py`** | `Page.close` 挪进 `finally`，异常/超时也关，再用 HTTP `/json/close` 兜底 |
+| **新增 `scripts/cdp_tabs.py`** | 人工清理：`list` / `close --blank` / `close --url-contains` / `close --all-but`，默认不关非空白页，带 `--dry` |
+| **硬约束 19** | 「浏览器标签页只借不占，画完就关」，机制细则见 `references/browser-hygiene.md` |
+
+**`vendor_cdp.py` 未改**：它是 browser-automation-cdp 的上游副本，保持原样便于对比更新；标签页纪律放 `tab_guard.py`。
+
+自测（headless Chrome 9333）：连开三页回到基线；`window.open` 弹页被回收（3→4→3）；`keep=True` 保留生效；脚本中途抛异常（含已弹新页）退出后回到基线；`snapshot_page` 抓一帧前后都是 1 个标签页。
+
 ### v6.1（2026-11-03）· 四栏落地：用例、代码、实体关系的写法 + 标注跳转
 
 v6.0 定了「分四栏」，但只写了原则，没写**每栏怎么填**。这一版补上，并把三处实现坑固化。

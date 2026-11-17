@@ -234,6 +234,10 @@ python scripts/snapshot_page.py --base https://test1x.example.com \
     --name 管理分组 --open 管理分组
 ```
 
+每抓一帧都会自己收页：`snapshot_page` 开专用标签页、点击后弹出来的新页也会被回收，
+抓完（含中途报错）不留页。一整套跑下来浏览器里应该只剩你原来那个标签页。
+空白页超过 3 个就 `python scripts/cdp_tabs.py list` 看看，再 `close --blank` 收一次。
+
 抓完会打印每帧抽到了什么：
 
 ```
