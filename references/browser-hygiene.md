@@ -20,7 +20,7 @@
 from tab_guard import Workspace
 
 with Workspace(port=9222) as w:      # 开一个专用标签页，不碰用户正在看的
-    w.navigate("https://test1admin.example.com/personManage/list")
+    w.navigate("https://test1admin.example.com/person/list")
     w.evaluate("document.title")
     w.close_extra()                  # 点「查看」弹出来的新页，随手收掉
 # 退出 with：关自己的页 + 关弹出来的页，异常退出也关（atexit）
