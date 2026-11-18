@@ -53,39 +53,34 @@ def connect(port=9222, fresh=True):
 
     fresh=True 时新开一个专用标签页，不抢用户正在看的那个；
     抓取共用同一份浏览器 profile，所以登录态是现成的。
+
+    标签页由 tab_guard.Workspace 托管：抓完（含异常退出）一定关，
+    不在用户浏览器里堆一地。要留着人工看，设 PRD_KEEP_TAB=1。
     """
-    cdp = cdp_boot.load()
-    try:
-        cl = cdp.CDPClient(port=port, timeout=30)
-    except TypeError:
-        cl = cdp.CDPClient()
+    import tab_guard
 
-    if not fresh:
-        cl.ensure_page()          # 内部已 connect_page
-        return cl
-
-    cl.connect_browser()
-    r = cl.send("Target.createTarget", {"url": "about:blank"})
-    tid = (r or {}).get("targetId")
-    cl.close()
-    if not tid:
-        raise RuntimeError("新建标签页失败：%r" % (r,))
-    time.sleep(0.4)
-    cl.connect_page(tid)
-    cl._prd_tab_id = tid
+    ws = tab_guard.Workspace(port=port, reuse=not fresh)
+    ws.open()
+    cl = ws.client
+    cl._prd_ws = ws                 # 持有工作区，close_tab 时由它统一收口
+    cl._prd_tab_id = ws.target_id
     return cl
 
 
 def close_tab(cl):
     """抓完把这个专用标签页关掉，别在人家浏览器里堆一地。"""
+    ws = getattr(cl, "_prd_ws", None)
+    if ws is not None:
+        ws.close()
+        return
+    # 兜底：老路径（没有 Workspace 时）按 targetId 关
     tid = getattr(cl, "_prd_tab_id", None)
     if not tid:
         return
+    import tab_guard
     try:
         cl.close()
-        cl.connect_browser()
-        cl.send("Target.closeTarget", {"targetId": tid})
-        cl.close()
+        tab_guard.close_tab(getattr(cl, "port", 9222), tid)
     except Exception:  # noqa: BLE001
         pass
 
@@ -789,6 +784,13 @@ def snap_one(cl, base, spec, out_shots, shot_prefix, settle=2.5):
         wait_ready(cl, timeout=12)
         # 页签内容是懒加载的，wait_ready 常被页面其他区块满足，这里再稳一手
         time.sleep(3.0 if step == "tab" else 1.2)
+        # 「查看」这类按钮在部分系统里是 window.open / target=_blank：点一次就多一个
+        # 标签页，而脚本还停在自己那一页。不回收的话，一页一页抓下来内存只涨不降。
+        ws = getattr(cl, "_prd_ws", None)
+        if ws is not None:
+            closed = ws.close_extra()
+            if closed:
+                print("        · 回收点击新开的 %d 个标签页" % len(closed), flush=True)
         if step == "tab":
             # 点完必须核对真的选中了。多页签页面上「点了但没切」是静默失败：
             # 抽出来的结构照样有内容，只有跟截图比对才发现四帧一模一样。

@@ -302,8 +302,10 @@ system-to-prd/
 │   ├── five-sources.md           五源各自通路、证据强度分档、冲突处理
 │   ├── css-pitfalls.md           样式坑 16 条（含 code 溢出、.warnbar 误用、编号跳转被索引标签抢走）
 │   ├── gates.md / naming.md / change-ledger.md   门禁、稿次命名、改动台账
+│   ├── slimming.md              写肥了怎么减：分流、四步、止损线、反模式
+│   ├── slim-patterns.md         删留清单、砍列四方向、改写句式、13 条技术坑
 │   └── capture.md / redraw-spec.md / interaction.md / deliver-modes.md …
-└── scripts/                      24 个，零第三方依赖
+└── scripts/                      31 个，零第三方依赖
     ├── doctor.py                 环境自检（装完先跑）
     ├── init_run.py               建工作台 + 骨架 + 看进度
     ├── launch_chrome.py          起带调试端口的 Chrome
@@ -312,7 +314,11 @@ system-to-prd/
     ├── harvest.py                四源采集：枚举 / 接口 / 前端 chunk / 后端码
     ├── build_module_prd.py       数据 → 单文件四视图 PRD
     ├── check_delivery.py         交付验收（含叙事骨架检查）
-    ├── scan_wording.py           措辞体检：禁用词
+    ├── scan_wording.py           措辞 + 可读性体检：禁用词 / 超长段落 / 超宽表格（R1–R5）
+    ├── measure_doc.py            体重报告：模块×段字数矩阵、占比、表格列数分布
+    ├── split_prd.py              单文件 PRD → 每模块一个 JSON
+    ├── inject_prd.py             改好的 JSON 注回（只换 window.PRD_DATA）
+    ├── verify_slim.py            结构等价校验：8 段 / 改动点 / 引用 / 条数
     ├── gate.py                   闸门：模块级签名 / 文档级确认
     ├── merge_modules.py          多模块 → 全量 PRD
     ├── shot_verify.py            实拍核对 + 结构诊断

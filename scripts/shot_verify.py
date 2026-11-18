@@ -377,6 +377,8 @@ def main():
     ap.add_argument("--scale", type=float, default=1.0)
     ap.add_argument("--port", type=int, default=9222)
     ap.add_argument("--skip-shot", action="store_true", help="只诊断不截图")
+    ap.add_argument("--keep-tab", action="store_true",
+                    help="用完不关标签页（默认关，避免一页一页堆满浏览器）")
     args = ap.parse_args()
 
     html_abs = os.path.abspath(args.html)
@@ -392,16 +394,15 @@ def main():
     except ImportError as e:
         sys.exit("✗ %s" % e)
 
+    # 开一个专用标签页做核对，用完就关：既不动用户正在看的页，
+    # 也不会在浏览器里留下几十个已经没人管的 about:blank。
     try:
-        lst = json.loads(urllib.request.urlopen(
-            "http://127.0.0.1:%d/json/list" % args.port, timeout=5).read())
-    except Exception as e:
+        import tab_guard
+        ws = tab_guard.Workspace(port=args.port, keep=args.keep_tab)
+        ws.open()
+    except Exception as e:  # noqa: BLE001
         sys.exit("连不上 CDP（%s）。\n%s" % (e, cdp_boot.hint(args.port)))
-    pages = [t for t in lst if t.get("type") == "page"]
-    if not pages:
-        sys.exit("没有可用标签页")
-
-    P = cdp.CDPClient(port=args.port).connect_page(pages[0]["id"])
+    P = ws.client
     P.send("Emulation.setDeviceMetricsOverride", {
         "width": args.width, "height": args.height,
         "deviceScaleFactor": args.scale, "mobile": False})

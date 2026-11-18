@@ -20,6 +20,12 @@
   W6 旧口径残留 改了说法，但别处还留着旧说法（--term 旧=新 指定）
   W7 禁用词    「友好提示 / 视情况而定 / 类似 / 尽可能」这类，出现即说明没想清楚
 
+  R1 段落过长  一段超 110 字（读者一眼扫不到结论）
+  R2 表格过宽  一张表超 4 列（每格只能写半句，反而最啰嗦）
+  R3 全散文   模块正文超 1500 字却一张表都没有（该进表的东西写成了段落）
+  R4 长句      单句超 80 字（硬约束 18 的上限是 50，这里只抓明显失控的）
+  R5 论证标题  小标题里带「为什么」（那是设计说明，不是规格）
+
   T1 接口地址  正文里出现 POST /xxx、/demobackstage/…——读者是业务方，不是研发
   T2 字段名    驼峰 / 下划线字段名（paymentMethod、local_clearing_system）
   T3 常量枚举名 Constant.DEMO_FLAG、DEMO_LOCK_FORMAT
@@ -206,6 +212,9 @@ def scan_file(p, out):
             out.append(("W0", p, str(e)[:60], "读不了这个 json"))
             return
         walk_json(d, os.path.basename(p), out)
+        # module.json 才做 R 类：需要整模块视角（表格数、段落长度分布）
+        if isinstance(d, dict) and d.get("meta", {}).get("key") and d.get("sections"):
+            scan_module_readability(d, out, d["meta"]["key"])
     else:  # md / html / txt：整篇当文本扫
         try:
             s = open(p, encoding="utf-8", errors="ignore").read()
@@ -229,9 +238,89 @@ def iter_files(root, scan_log=False):
                 yield os.path.join(dirpath, fn)
 
 
+# ── R 类：可读性（硬约束 20）────────────────────────────────────────
+#
+# 为什么放在措辞体检里而不是另起一个脚本：这些错和 W/T 类同源——写着写着就滑回去。
+# 分成两个命令，团队只会跑一个。
+#
+# 三条判据来自 2026-11-18 对第 23 稿的实测：正文 59,306 → 35,439 字（-40%），
+# 五个模块的表格从大量 5–6 列收到 88% 落在 2–3 列。降幅来源不是删词，
+# 是「一句一逻辑 + 一张窄表」替代「一段散文 + 一张宽表」。
+P_RE = re.compile(r"<p[^>]*>([\s\S]*?)</p>")
+TABLE_RE = re.compile(r"<table[\s\S]*?</table>")
+TH_ROW_RE = re.compile(r"<tr>\s*((?:<th[^>]*>[\s\S]*?</th>\s*)+)</tr>")
+CJK_RE = re.compile(r"[\u4e00-\u9fff]")
+# 「不是 A 而是 B」：立假靶子。真有人会搞错 A 才留，否则直接说 B
+NEG_PAIR_RE = re.compile(r"不(?:是|在于)[^。！？；]{0,24}(?:而是|而在于)")
+WHY_HEAD_RE = re.compile(r"<h[34][^>]*>[^<]{0,30}为什么")
+
+R_LIMIT = {"para": 110, "cols": 4, "sentence": 80, "module_no_table": 1500}
+
+
+def cjk_len(s):
+    return len(CJK_RE.findall(s or ""))
+
+
+def scan_module_readability(mod, out, tag):
+    """模块级：段落长度、表格列数、全散文、长句、论证标题。tag 用来标是哪个模块。"""
+    secs = mod.get("sections") or []
+    total = 0
+    tables = 0
+    for sec in secs:
+        h = sec.get("html") or ""
+        n = sec.get("n")
+        total += cjk_len(TAG_RE.sub("", h))
+
+        for p in P_RE.findall(h):
+            t = TAG_RE.sub("", p).strip()
+            if cjk_len(t) > R_LIMIT["para"]:
+                out.append(("R1", "%s 段%s" % (tag, n), t[:44],
+                            "段落 %d 字，超上限 %d。拆成一短句 + 一张表，或拆成两条"
+                            % (cjk_len(t), R_LIMIT["para"])))
+
+        for tb in TABLE_RE.findall(h):
+            tables += 1
+            if "tech-map" in tb[:120]:      # 附录 B 是字段对照表，列多是对的
+                continue
+            hd = TH_ROW_RE.search(tb)
+            if not hd:
+                continue
+            cols = len(re.findall(r"<th", hd.group(1)))
+            if cols > R_LIMIT["cols"]:
+                head = TAG_RE.sub(" ", tb[:160]).strip()[:40]
+                out.append(("R2", "%s 段%s" % (tag, n), "%d 列 | %s" % (cols, head),
+                            "表格 %d 列。先砍这四类：控件列、论证列（为什么）、示例列、可合并列"
+                            % cols))
+
+        for m in NEG_PAIR_RE.finditer(TAG_RE.sub("", h)):
+            i = m.start()
+            seg = TAG_RE.sub("", h)
+            out.append(("R5", "%s 段%s" % (tag, n), seg[max(0, i - 18):m.end() + 18].strip(),
+                        "「不是 A 而是 B」立的是假靶子 —— 直接说 B"))
+
+        if WHY_HEAD_RE.search(h):
+            out.append(("R5", "%s 段%s" % (tag, n), WHY_HEAD_RE.search(h).group(0)[:38],
+                        "小标题里的「为什么」是设计说明，不是规格 —— 删掉或并进结论"))
+
+    if total > R_LIMIT["module_no_table"] and tables == 0:
+        out.append(("R3", tag, "%d 字 0 张表" % total,
+                    "全是散文。改成「一句话 + 一张表」，表格是规格的主力载体"))
+
+    # R4 长句：只扫段落，不扫表格（表内用分号并列是正常的）
+    for sec in secs:
+        for p in P_RE.findall(sec.get("html") or ""):
+            t = TAG_RE.sub("", p)
+            for sent in re.split(r"[。！？；]", t):
+                if cjk_len(sent) > R_LIMIT["sentence"]:
+                    out.append(("R4", "%s 段%s" % (tag, sec.get("n")), sent.strip()[:44],
+                                "单句 %d 字。上限 50（硬约束 18），超 80 基本是一句话塞了三件事"
+                                % cjk_len(sent)))
+
+
 CODE_NAME = {"W0": "读不了", "W1": "角色词", "W2": "稿次写法",
              "W3": "量词入标签", "W4": "占位残留", "W5": "双 V", "W6": "旧口径残留", "W7": "禁用词",
-             "T1": "接口地址", "T2": "字段名", "T3": "常量枚举名", "T4": "实现词"}
+             "T1": "接口地址", "T2": "字段名", "T3": "常量枚举名", "T4": "实现词",
+             "R1": "段落过长", "R2": "表格过宽", "R3": "全散文", "R4": "长句", "R5": "论证标题"}
 
 
 def main():
@@ -265,7 +354,7 @@ def main():
                          ensure_ascii=False, indent=1))
     else:
         if not out:
-            print("✓ 措辞体检通过：没有角色词、V 稿次、量词入标签、占位残留、技术标识"
+            print("✓ 措辞体检通过：没有角色词、V 稿次、量词入标签、占位残留、技术标识、超长段落/宽表"
                   + ("、旧口径残留" if TERMS else ""))
         else:
             by = {}

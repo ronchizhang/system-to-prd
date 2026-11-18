@@ -305,6 +305,29 @@ def check_one(root, key, want_audit=True, hard=False):
     secs = d.get("sections") or []
     add(OK if len(secs) == 8 else FAIL, "内容", "② 叙事 8 段", "%d/8 段" % len(secs))
 
+    # ---------------- 可读性（硬约束 20） ----------------
+    # 为什么并进交付门而不是另起一个命令：分成两个，团队只会跑一个。
+    # 日常改稿报黄，--strict 才升红——存量老文档一次能报上百条，
+    # 硬拦在门禁上就动不了了（见 references/gates.md 层 2a）。
+    try:
+        import scan_wording as SW
+        ro = []
+        SW.scan_module_readability(d, ro, key)
+        if not ro:
+            add(OK, "可读性", "段落 / 表格 / 长句",
+                "无超 110 字段落、无超 4 列表格、无超 80 字长句")
+        else:
+            by = {}
+            for code, where, snip, hint in ro:
+                by.setdefault(code, []).append((where, snip, hint))
+            for code in sorted(by):
+                it = by[code]
+                add(FAIL if hard else WARN, "可读性",
+                    "%s %s" % (code, SW.CODE_NAME.get(code, "")),
+                    "%d 处 · 首例 %s …%s… → %s" % (len(it), it[0][0], it[0][1], it[0][2]))
+    except Exception as e:  # noqa: BLE001
+        add(WARN, "可读性", "体检没跑起来", str(e)[:70])
+
     fts = d.get("facts") or []
     p0 = [f for f in fts if f.get("sev") == "P0"]
     add(OK if fts else FAIL, "内容", "④ 五源事实清单",
